@@ -1,0 +1,176 @@
+:root {
+  --bg: #091723;
+  --panel: #0d1c29;
+  --panel-line: rgba(120, 163, 196, 0.16);
+  --text: #eef7ff;
+  --muted: #8ea0b3;
+  --cyan: #4aa8d8;
+  --magenta: #c63a62;
+  --core: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: #07131d;
+  color: var(--text);
+  font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+body {
+  padding: 12px;
+}
+
+.app-shell {
+  min-height: calc(100vh - 24px);
+}
+
+.board-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - 24px);
+  padding: 10px;
+  border-radius: 26px;
+  border: 1px solid var(--panel-line);
+  background: var(--panel);
+}
+
+.start-screen {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 4;
+  background: rgba(7, 19, 29, 0.82);
+  border-radius: 26px;
+}
+
+.start-screen.is-hidden {
+  display: none;
+}
+
+.start-card {
+  width: min(520px, calc(100% - 32px));
+  padding: 28px 26px;
+  border-radius: 28px;
+  border: 1px solid rgba(120, 163, 196, 0.16);
+  background: rgba(9, 23, 35, 0.96);
+  text-align: center;
+}
+
+.start-kicker {
+  margin-bottom: 10px;
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.start-card h1 {
+  margin: 0 0 12px;
+  font-size: clamp(32px, 5vw, 54px);
+  line-height: 0.95;
+}
+
+.start-card p {
+  margin: 0 0 20px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.start-button {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 24px;
+  background: var(--cyan);
+  color: #07131d;
+  font: 700 16px "Segoe UI", Helvetica, Arial, sans-serif;
+  cursor: pointer;
+}
+
+.start-button:hover {
+  filter: brightness(1.08);
+}
+
+.board-overlay-top {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.board-overlay-bottom {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.title-chip,
+.status-chip,
+.help-chip {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(120, 163, 196, 0.16);
+  background: rgba(7, 19, 29, 0.86);
+  color: var(--text);
+}
+
+.title-chip {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.status-chip,
+.help-chip {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.status-chip.is-hidden {
+  display: none;
+}
+
+#game {
+  width: min(calc(100vw - 44px), calc(100vh - 92px));
+  height: min(calc(100vw - 44px), calc(100vh - 92px));
+  display: block;
+  border-radius: 24px;
+  background: transparent;
+}
+
+@media (max-width: 980px) {
+  body {
+    padding: 8px;
+  }
+
+  #game {
+    width: min(calc(100vw - 20px), calc(100vh - 120px));
+    height: min(calc(100vw - 20px), calc(100vh - 120px));
+  }
+
+  .help-chip,
+  .status-chip {
+    white-space: normal;
+    text-align: center;
+  }
+}

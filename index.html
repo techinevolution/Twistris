@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Twistris</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="board-wrap">
+        <div id="startScreen" class="start-screen">
+          <div class="start-card">
+            <div class="start-kicker">Twistris</div>
+            <h1>Build a square. Twist the stack.</h1>
+            <p>
+              Pieces fall from the top, the center mass turns when the balance tips,
+              and the goal is to grow the square at the core.
+            </p>
+            <button id="startButton" class="start-button" type="button">Start</button>
+          </div>
+        </div>
+        <div class="board-overlay-top">
+          <div class="title-chip">Twistris</div>
+          <div id="statusValue" class="status-chip">Build the square</div>
+        </div>
+        <div class="board-overlay-bottom">
+          <div class="help-chip">A/D move • W rotate • S drop • Space hard drop • P pause • R restart</div>
+        </div>
+        <canvas id="game" width="900" height="900" aria-label="Balance Stack prototype"></canvas>
+      </section>
+    </main>
+
+    <script src="./game.js"></script>
+  </body>
+</html>
