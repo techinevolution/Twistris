@@ -3,18 +3,78 @@
 ## First Milestone
 Feed the Pulse, recover salvage, and complete the first repair.
 
-This milestone should prove the full loop:
-- the player meets a damaged Pulse
-- the player completes a guided first interaction
-- the player gains a charge
-- the player recovers dud salvage
-- the player crafts the first repair material
-- the player reactivates the gyro that allows the Pulse to spin again
-- the player uses it to solve a blocked square-growth problem
+Current focus:
+- make the actual game support charges, duds, harvest, and first repair logic in normal play
+- build the tutorial after those mechanics exist
+
+This milestone should ultimately prove the full loop:
+- the player can earn a charge in normal play
+- the player can recover dud salvage in normal play
+- the player can craft the first repair material
+- the player can use it to solve a blocked square-growth problem
 - the run ends and the result is saved to a persistent profile
+- the tutorial later teaches that same loop through the damaged-Pulse opening
+
+## Core Game Systems First
+These are the current implementation priority.
+
+### 1. Run Economy
+- [ ] Make Pulse charges real in normal gameplay.
+- [ ] Make dud salvage real in normal gameplay.
+- [ ] Track run-earned Pulse charges separately from banked profile charges.
+- [ ] Track run-earned dud salvage separately from banked profile salvage.
+
+### 2. Harvest
+- [ ] Add a harvest summary screen at run end.
+- [ ] Show Pulse charges earned this run.
+- [ ] Show dud salvage earned this run.
+- [ ] Show what gets banked to the profile.
+- [ ] Confirm the updated profile totals after banking.
+- [ ] Show `Capacity Reached` automatically with no extra input.
+- [ ] Zoom the board slightly toward the screen at harvest start.
+- [ ] Slam the board back into place and add a brief shake before the regular blocks fall away.
+- [ ] Make everything outside the dud square fall away after the impact.
+- [ ] Keep the dud square visible for a beat before it fades.
+- [ ] Stream duds one-by-one into a gray bottom-right counter.
+- [ ] After dud collection, make the Pulse charge box glow.
+- [ ] Draw a beam from the Pulse charge box to a white bottom-left counter.
+- [ ] Send one traveling pulse along that beam for each earned charge.
+- [ ] After both duds and charges finish collecting, zoom back into the Pulse.
+- [ ] Return to the resting Pulse/start-screen state after the harvest animation ends.
+
+### 3. First Crafting Rule
+- [ ] Add a craftable repair block resource.
+- [ ] Add the first craft recipe: `8 duds + 1 Pulse charge = 1 repair block`.
+- [ ] Show the cost clearly before the craft is confirmed.
+- [ ] Deduct the recipe cost correctly.
+- [ ] Add feedback when the craft completes.
+
+### 4. Void Repair In Normal Play
+- [ ] Detect when a missing cell is blocking the next centered square expansion.
+- [ ] Add a message such as `Void detected` when that state appears.
+- [ ] Let the crafted repair block plug the required hole.
+- [ ] For milestone one, keep placement automatic or near-automatic.
+- [ ] Visually show the block traveling into the hole or being absorbed into position.
+
+### 5. Persistence
+- [ ] Create a local profile save schema.
+- [ ] Save player name.
+- [ ] Save banked Pulse charges.
+- [ ] Save banked dud salvage.
+- [ ] Save crafted repair block count.
+- [ ] Save repair progress/state of the Pulse.
+- [ ] Save basic stats such as total runs, total harvests, and best square size.
+- [ ] Add safe load, create, and reset profile flows.
+
+### 6. Damaged Pulse / Repair State
+- [ ] Design a baseline broken Pulse state for title and gameplay.
+- [ ] Add at least one visible repair improvement for milestone one.
+- [ ] Make the first repair visibly affect the Pulse immediately.
+- [ ] Show that the first repair reactivates the gyro or stabilizer system.
+- [ ] Keep the broken and repaired states readable even when zoomed out.
 
 ## Tutorial Stage Checklist
-This section is the single checklist for everything needed to make the first-run tutorial stage real.
+This section is for the first-run guided layer that should be built after the core systems above work in normal play.
 
 ### Pre-Entry / First-Run Presentation
 - [ ] Skip the normal title-screen start flow for first-time players.

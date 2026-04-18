@@ -153,6 +153,12 @@ Suggested shape for the run-end harvest screen:
   runStats: {
     coreLayersReached: 2,
     bestSquareSide: 5
+  },
+  presentation: {
+    state: "capacity_reached",
+    dudCounterCorner: "bottom_right",
+    chargeCounterCorner: "bottom_left",
+    returnToPulseScreen: true
   }
 }
 ```

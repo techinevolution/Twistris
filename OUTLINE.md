@@ -22,6 +22,19 @@ The new long-term goal is to repair the Pulse over many runs. The Pulse is damag
 12. Gain one Pulse charge whenever the centered square expands by one layer.
 13. Continue until collapse, restart, or a future harvest/exit action.
 
+## 2A. Current Production Priority
+The actual game should be stabilized before the tutorial is built in earnest.
+
+Current implementation order:
+1. Make the core run strong on its own.
+2. Add the underlying progression systems to normal gameplay.
+3. Build the tutorial as a guided first-run layer on top of those finished systems.
+
+Practical meaning:
+- tutorial work is not the current implementation focus
+- the systems it teaches should exist in normal play first
+- the tutorial should eventually explain real mechanics, not prototype-only exceptions
+
 ## 3. New Direction
 
 ### A. The Pulse Is Broken
@@ -128,6 +141,19 @@ Working direction:
 - summary shows newly earned duds/salvage
 - player confirms collection into persistent inventory
 
+Default harvest presentation flow:
+- show `Capacity Reached` without requiring player input
+- zoom the stack slightly toward the screen
+- slam the board back into place with a brief shake
+- only after the impact, let all non-dud outer blocks fall away
+- keep the dud square intact momentarily
+- fade the dud square and stream each dud into a gray counter in the bottom-right corner
+- once dud collection is done, highlight the Pulse charge box
+- draw a beam toward a white counter in the bottom-left corner
+- send one traveling pulse along the beam for each earned Pulse charge
+- after both duds and charges are collected, zoom back into the Pulse
+- return to the resting Pulse screen state
+
 ### D. Repair Crafting
 This is the first real long-term spend sink.
 
@@ -181,6 +207,7 @@ That keeps the fiction strong without destabilizing the current board loop too e
 - resources earned
 - best square reached
 - continue to repair screen or next run
+- post-harvest animation sequence for duds and charges
 
 ### C. Repair Screen
 - show damaged Pulse state
@@ -195,9 +222,10 @@ That keeps the fiction strong without destabilizing the current board loop too e
 ## 8. Technical Build Order
 This is the recommended sequence for implementation.
 
-1. Define the resource model in plain language.
-   - Pulse charges: harvest resource generated when the centered square expands by one layer.
-   - Duds: salvaged from influenced gray blocks at harvest end.
+1. Make the normal run support the new economy directly.
+   - Pulse charges in normal gameplay
+   - duds in normal gameplay
+   - repair-block and void-plug rules in normal gameplay
 2. Add persistent profile storage.
    - local save schema
    - load/create/reset flow
@@ -209,7 +237,8 @@ This is the recommended sequence for implementation.
 5. Add the first repair crafting screen.
    - spend charges and duds
    - unlock visible restoration
-6. Only after that, consider repair rewards that affect gameplay.
+6. Build the first-run tutorial last, after those mechanics already work in the main game.
+7. Only after that, consider repair rewards that affect gameplay.
 
 ## 9. Recommended First Milestone
 The first milestone should be narrow and prove the full loop.
