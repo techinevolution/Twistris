@@ -16,6 +16,7 @@
 html,
 body {
   margin: 0;
+  height: 100%;
   min-height: 100%;
   background: #07131d;
   color: var(--text);
@@ -42,12 +43,17 @@ body {
 }
 
 .start-screen {
+  --launch-progress: 0;
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px 24px 42px;
   z-index: 4;
-  background: rgba(7, 19, 29, 0.82);
+  background:
+    radial-gradient(circle at center, rgba(7, 19, 29, 0.04) 0, rgba(7, 19, 29, 0.14) 18%, rgba(7, 19, 29, 0.58) 58%, rgba(7, 19, 29, 0.86) 100%);
   border-radius: 26px;
 }
 
@@ -55,34 +61,16 @@ body {
   display: none;
 }
 
-.start-card {
-  width: min(520px, calc(100% - 32px));
-  padding: 28px 26px;
-  border-radius: 28px;
-  border: 1px solid rgba(120, 163, 196, 0.16);
-  background: rgba(9, 23, 35, 0.96);
-  text-align: center;
+.start-screen.is-launching {
+  pointer-events: none;
 }
 
-.start-kicker {
-  margin-bottom: 10px;
-  color: var(--cyan);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.start-card h1 {
-  margin: 0 0 12px;
-  font-size: clamp(32px, 5vw, 54px);
-  line-height: 0.95;
-}
-
-.start-card p {
-  margin: 0 0 20px;
-  color: var(--muted);
-  line-height: 1.5;
+.start-copy {
+  flex: 1 1 auto;
+  width: 100%;
+  opacity: calc(1 - var(--launch-progress) * 1.05);
+  transform: translateY(calc(var(--launch-progress) * -18px));
+  transition: opacity 220ms linear, transform 220ms ease;
 }
 
 .start-button {
@@ -94,10 +82,19 @@ body {
   color: #07131d;
   font: 700 16px "Segoe UI", Helvetica, Arial, sans-serif;
   cursor: pointer;
+  pointer-events: auto;
+  opacity: calc(1 - var(--launch-progress) * 1.35);
+  transform: translateY(calc(var(--launch-progress) * 24px));
+  transition: opacity 220ms linear, transform 220ms ease, filter 180ms ease;
 }
 
 .start-button:hover {
   filter: brightness(1.08);
+}
+
+.start-screen:not(.is-hidden) ~ .board-overlay-top,
+.start-screen:not(.is-hidden) ~ .board-overlay-bottom {
+  opacity: 0;
 }
 
 .board-overlay-top {
@@ -121,7 +118,7 @@ body {
   pointer-events: none;
 }
 
-.title-chip,
+.currency-chip,
 .status-chip,
 .help-chip {
   padding: 10px 14px;
@@ -131,12 +128,13 @@ body {
   color: var(--text);
 }
 
-.title-chip {
+.currency-chip {
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--cyan);
+  color: #f2d27a;
+  border-color: rgba(242, 210, 122, 0.22);
 }
 
 .status-chip,
@@ -151,11 +149,58 @@ body {
 }
 
 #game {
-  width: min(calc(100vw - 44px), calc(100vh - 92px));
-  height: min(calc(100vw - 44px), calc(100vh - 92px));
+  width: min(calc(100vw - 28px), calc(100vh - 28px));
+  height: min(calc(100vw - 28px), calc(100vh - 28px));
+  max-width: 100%;
+  max-height: 100%;
   display: block;
   border-radius: 24px;
   background: transparent;
+}
+
+#game:focus {
+  outline: none;
+}
+
+.game-key-sink {
+  position: absolute;
+  top: 0;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  border: 0;
+  padding: 0;
+}
+
+.is-embedded body {
+  padding: 0;
+  overflow: hidden;
+}
+
+.is-embedded .app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.is-embedded .board-wrap {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.is-embedded .start-screen {
+  border-radius: 0;
+}
+
+.is-embedded #game {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  border-radius: 0;
 }
 
 @media (max-width: 980px) {
@@ -163,13 +208,18 @@ body {
     padding: 8px;
   }
 
+  .start-screen {
+    padding: 20px 14px 30px;
+  }
+
   #game {
-    width: min(calc(100vw - 20px), calc(100vh - 120px));
-    height: min(calc(100vw - 20px), calc(100vh - 120px));
+    width: min(calc(100vw - 16px), calc(100vh - 16px));
+    height: min(calc(100vw - 16px), calc(100vh - 16px));
   }
 
   .help-chip,
-  .status-chip {
+  .status-chip,
+  .currency-chip {
     white-space: normal;
     text-align: center;
   }

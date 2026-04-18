@@ -10,24 +10,27 @@
     <main class="app-shell">
       <section class="board-wrap">
         <div id="startScreen" class="start-screen">
-          <div class="start-card">
-            <div class="start-kicker">Twistris</div>
-            <h1>Build a square. Twist the stack.</h1>
-            <p>
-              Pieces fall from the top, the center mass turns when the balance tips,
-              and the goal is to grow the square at the core.
-            </p>
-            <button id="startButton" class="start-button" type="button">Start</button>
-          </div>
+          <div class="start-copy" aria-hidden="true"></div>
+          <button id="startButton" class="start-button" type="button">Start</button>
         </div>
         <div class="board-overlay-top">
-          <div class="title-chip">Twistris</div>
           <div id="statusValue" class="status-chip">Build the square</div>
         </div>
         <div class="board-overlay-bottom">
-          <div class="help-chip">A/D move • W rotate • S drop • Space hard drop • P pause • R restart</div>
+          <div id="currencyValue" class="currency-chip">Pulse charges 0</div>
         </div>
-        <canvas id="game" width="900" height="900" aria-label="Balance Stack prototype"></canvas>
+        <input
+          id="gameKeySink"
+          class="game-key-sink"
+          type="password"
+          inputmode="none"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          aria-hidden="true"
+          tabindex="-1"
+        />
+        <canvas id="game" width="800" height="800" tabindex="0" aria-label="Balance Stack prototype"></canvas>
       </section>
     </main>
 

@@ -36,21 +36,25 @@ The game is not balanced around score races or line clearing. It is balanced aro
 This keeps the game focused on building onto a single central mass and avoids stranded junk at the floor.
 
 ### Mass / Rotation Rule
-Current imbalance is calculated as a weighted left-right torque-like sum:
+Current imbalance is calculated from a weighted horizontal center-of-mass model:
 - Each settled block contributes based on horizontal offset from center.
-- Blocks farther from center contribute more than near-center blocks.
-- Recently dropped pieces no longer receive extra weight.
+- Blocks outside the current core get extra leverage so long outer arms still matter.
+- The final twist check is normalized by total structure mass, so large stacks do not become arbitrarily twitchy.
+- The newly locked piece adds a small placement impulse so the latest move still feels like the visible cause of a twist.
 
 Current formula idea in code:
-- `mass += relX * (1 + distance * 0.28)`
+- `weightedOffset = totalTorque / totalWeight`
+- `tipPressure = weightedOffset + offsetDelta * shiftMultiplier + placementOffset * placementImpulse`
 
 Trigger behavior:
-- If `mass > threshold`, twist right.
-- If `mass < -threshold`, twist left.
+- If `tipPressure > threshold`, twist right.
+- If `tipPressure < -threshold`, twist left.
 - If within threshold, no twist.
 
-Current threshold:
-- `8`
+Current stability terms:
+- Base threshold: `0.82`
+- Core stability bonus per completed layer: `0.14`
+- Inner brace bonus from mass near the core: `0.36`
 
 ## 4. Current Visual Balance Rules
 
@@ -84,7 +88,7 @@ The latest direction fix aligns sign mapping with the current rotation transform
 Detached pieces disappearing is clean, but severe misses currently waste turns without creating a recovery option.
 
 ### C. Threshold Sensitivity
-With the current threshold and distance multiplier, small off-center builds can still feel more influential than expected depending on the local shape.
+The new model is more stable at high block counts, but the threshold, brace bonus, and placement impulse still need live play tuning so late-game twists stay understandable without feeling dull.
 
 ### D. Core Growth Pace
 Requiring fully completed centered squares is correct for the concept, but may be too strict without some extra reward or helper system.
@@ -104,11 +108,11 @@ Target behavior:
 
 If twists are too frequent:
 - Raise threshold slightly.
-- Lower the distance multiplier.
+- Lower the shift multiplier or placement impulse.
 
 If twists are too weak:
 - Lower threshold slightly.
-- Raise the distance multiplier.
+- Raise the shift multiplier or placement impulse.
 
 ### Growth Pressure
 Target behavior:
@@ -136,7 +140,7 @@ Show `left`, `stable`, or `right` preview before lock.
 
 ## 9. Immediate Tuning Checklist
 - [ ] Confirm left-heavy and right-heavy twist directions through play.
-- [ ] Test the current threshold against early, mid, and large stack shapes.
+- [ ] Test the current center-of-mass threshold against early, mid, and large stack shapes.
 - [ ] Decide whether detached-piece discard is temporary or permanent.
 - [ ] Decide whether square growth should directly drive score or another resource.
 - [ ] Decide whether blocked rotations should have a stronger visual response.

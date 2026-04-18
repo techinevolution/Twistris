@@ -2,21 +2,73 @@
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+const isEmbedded = window.self !== window.top;
+
+document.documentElement.classList.toggle("is-embedded", isEmbedded);
 
 const statusValue = document.getElementById("statusValue");
+const currencyValue = document.getElementById("currencyValue");
 const startScreen = document.getElementById("startScreen");
 const startButton = document.getElementById("startButton");
+const gameKeySink = document.getElementById("gameKeySink");
+const GAME_CONTROL_CODES = new Set([
+  "ArrowLeft",
+  "ArrowRight",
+  "ArrowUp",
+  "ArrowDown",
+  "Space",
+  "Enter",
+  "KeyA",
+  "KeyD",
+  "KeyS",
+  "KeyW",
+  "KeyX",
+  "KeyP",
+  "KeyR",
+]);
+const useKeySinkFocus = /Mac/.test(navigator.platform || navigator.userAgent);
 
+function focusGameSurface() {
+  const active = document.activeElement;
+  const focusTarget = useKeySinkFocus && gameKeySink ? gameKeySink : canvas;
+  if (
+    active &&
+    active !== document.body &&
+    active !== document.documentElement &&
+    active !== focusTarget &&
+    typeof active.blur === "function"
+  ) {
+    active.blur();
+  }
+  if (focusTarget && typeof focusTarget.focus === "function") {
+    focusTarget.focus({ preventScroll: true });
+  }
+}
+
+const STAGE_SIZE = 800;
 const GRID_SIZE = 27;
 const CELL_SIZE = 24;
 const CENTER = Math.floor(GRID_SIZE / 2);
 const TICK_BASE = 0.52;
 const TICK_SOFT = 0.12;
 const LOCK_THRESHOLD = 0.16;
-const BALANCE_THRESHOLD = 8;
+const BALANCE_BASE_THRESHOLD = 0.82;
+const BALANCE_CORE_THRESHOLD_STEP = 0.14;
+const BALANCE_CENTER_BRACE_BONUS = 0.36;
+const BALANCE_OUTER_RING_WEIGHT = 0.35;
+const BALANCE_SHIFT_MULTIPLIER = 1.65;
+const BALANCE_PLACEMENT_IMPULSE = 0.12;
+const BALANCE_CENTERED_BUFFER = 0.2;
 const ROTATION_STEP = Math.PI / 2;
 const ROTATION_ANIM_TIME = 0.34;
 const FADE_DURATION = 4;
+const INTRO_LAUNCH_TIME = 2.05;
+const INTRO_IDLE_CAMERA_ZOOM = 6.35;
+const INTRO_IDLE_PULSE_SCALE = 1.06;
+const INTRO_IDLE_GRID_ALPHA = 0.36;
+const PULSE_HEARTBEAT_CYCLE = 1.74;
+const PULSE_HEARTBEAT_WINDOW = 0.82;
+const PULSE_PARTICLE_COUNT = 24;
 
 const COLORS = {
   cyan: "#4aa8d8",
@@ -28,6 +80,56 @@ const COLORS = {
   edgeMagenta: "#ef5b87",
   bg: "#091723",
 };
+
+const LOGO_PATTERNS = {
+  T: [
+    "111",
+    "010",
+    "010",
+    "010",
+    "010",
+  ],
+  W: [
+    "10001",
+    "10001",
+    "10101",
+    "10101",
+    "01010",
+  ],
+  I: [
+    "1",
+    "1",
+    "1",
+    "1",
+    "1",
+  ],
+  S: [
+    "111",
+    "100",
+    "111",
+    "001",
+    "111",
+  ],
+  R: [
+    "1110",
+    "1001",
+    "1110",
+    "1010",
+    "1001",
+  ],
+};
+
+const START_LOGO_WORDS = [
+  { text: "TWIS", colorKey: "cyan" },
+  { text: "TRIS", colorKey: "magenta" },
+];
+const START_LOGO_ROW_COUNT = 5;
+const START_LOGO_LETTER_GAP = 1;
+const START_LOGO_WORD_GAP = 1;
+const START_LOGO_CELL_PITCH = 12.6;
+const START_LOGO_CELL_SIZE = 13.9;
+const START_LOGO_TOP = 74;
+const START_LOGO_LAYOUT = createStartLogoLayout();
 
 const SHAPES = [
   {
@@ -107,10 +209,15 @@ const justPressed = new Set();
 let canvasWidth = canvas.clientWidth;
 let canvasHeight = canvas.clientHeight;
 let canvasRatio = Math.min(window.devicePixelRatio || 1, 2);
+let renderTime = 0;
 
 class BalanceStackGame {
   constructor() {
     this.started = false;
+    this.elapsedTime = 0;
+    this.coreParticles = [];
+    this.pulseParticles = [];
+    this.resetIntroState(true);
     this.resetState();
     this.updateStartScreen();
   }
@@ -131,11 +238,16 @@ class BalanceStackGame {
     this.orientationTurns = 0;
     this.lastBalance = 0;
     this.coreLayers = 0;
+    this.coreChargeCount = 0;
+    this.coreGrowthCount = 0;
     this.paused = false;
     this.rotationVisual = 0;
     this.rotationTimer = 0;
     this.pendingBoard = null;
     this.pendingOrientationTurns = 0;
+    this.coreParticles = [];
+    this.pulseParticles = [];
+    this.pulseParticleTimer = 0;
 
     this.seedCore();
     this.setStatus("");
@@ -143,6 +255,11 @@ class BalanceStackGame {
   }
 
   startGame() {
+    this.beginStartSequence();
+  }
+
+  restart() {
+    this.resetIntroState(false);
     this.started = true;
     this.resetState();
     this.spawnPiece();
@@ -150,7 +267,27 @@ class BalanceStackGame {
     this.updateStartScreen();
   }
 
-  restart() {
+  resetIntroState(showTitle) {
+    this.launching = false;
+    this.launchProgress = 0;
+    this.titleSpinAngle = 0;
+    this.titleSettleAngle = 0;
+    this.titleSpinSpeed = showTitle ? 0.95 : 0;
+    this.titleCameraZoom = showTitle ? INTRO_IDLE_CAMERA_ZOOM : 1;
+    this.titlePulseScale = showTitle ? INTRO_IDLE_PULSE_SCALE : 1;
+    this.titleGridAlpha = showTitle ? INTRO_IDLE_GRID_ALPHA : 1;
+  }
+
+  beginStartSequence() {
+    if (this.started || this.launching) return;
+    this.launching = true;
+    this.launchProgress = 0;
+    this.titleSettleAngle = nearestQuarterTurn(this.titleSpinAngle);
+    this.updateStartScreen();
+  }
+
+  finishStartSequence() {
+    this.resetIntroState(false);
     this.started = true;
     this.resetState();
     this.spawnPiece();
@@ -176,6 +313,11 @@ class BalanceStackGame {
   updateStartScreen() {
     if (startScreen) {
       startScreen.classList.toggle("is-hidden", this.started);
+      startScreen.classList.toggle("is-launching", this.launching);
+      startScreen.style.setProperty("--launch-progress", this.launching ? this.launchProgress.toFixed(3) : "0");
+    }
+    if (startButton) {
+      startButton.disabled = this.launching;
     }
   }
 
@@ -183,15 +325,18 @@ class BalanceStackGame {
     return SHAPES[Math.floor(Math.random() * SHAPES.length)];
   }
 
-  spawnPiece() {
-    const shape = this.nextShape;
-    this.nextShape = this.randomShape();
+  spawnPiece(shapeOverride = null) {
+    const shape = shapeOverride || this.nextShape;
+    if (!shapeOverride) {
+      this.nextShape = this.randomShape();
+    }
     const cells = shape.cells.map((cell) => ({ ...cell }));
     const bounds = this.boundsForCells(cells);
     const spawnX = CENTER - Math.round((bounds.minX + bounds.maxX) / 2);
     const spawnY = -bounds.minY - 3;
 
     this.current = {
+      shape,
       color: shape.color,
       cells,
       x: spawnX,
@@ -291,10 +436,15 @@ class BalanceStackGame {
   }
 
   update(dt) {
+    this.elapsedTime += dt;
+    this.updateCoreParticles(dt);
+    this.updatePulseParticles(dt);
+
     if (!this.started) {
       if (justPressed.has("Enter")) {
         this.startGame();
       }
+      this.updateIntroAnimation(dt);
       this.updateHUD();
       return;
     }
@@ -383,10 +533,11 @@ class BalanceStackGame {
 
     const landed = this.worldCells(this.current);
     if (!this.attachesToStructure(landed)) {
+      const retryShape = this.current.shape;
       this.setStatus("Missed the stack");
       this.current = null;
       this.lockTimer = 0;
-      this.spawnPiece();
+      this.spawnPiece(retryShape);
       this.updateGhost();
       return;
     }
@@ -408,8 +559,8 @@ class BalanceStackGame {
       };
     }
 
-    this.evaluateBalance(landed);
     this.recalculateCoreSquare();
+    this.evaluateBalance(landed);
     this.current = null;
     this.lockTimer = 0;
     this.spawnPiece();
@@ -438,28 +589,30 @@ class BalanceStackGame {
   }
 
   evaluateBalance(landedCells) {
-    // Balance is a torque-like weighted sum around the center, so farther blocks matter more.
-    let massScore = 0;
-    for (let y = 0; y < GRID_SIZE; y += 1) {
-      for (let x = 0; x < GRID_SIZE; x += 1) {
-        if (!this.board[y][x]) continue;
-        const relX = x - CENTER;
-        const relY = y - CENTER;
-        const distance = Math.hypot(relX, relY);
-        massScore += relX * (1 + distance * 0.28);
-      }
-    }
-
-    this.lastBalance = massScore;
+    const landedLookup = new Set(landedCells.map((cell) => cellKey(cell.x, cell.y)));
+    const previousProfile = analyzeBalanceProfile(this.board, this.coreLayers, landedLookup);
+    const totalProfile = analyzeBalanceProfile(this.board, this.coreLayers);
+    const offsetDelta = totalProfile.weightedOffset - previousProfile.weightedOffset;
+    // Use a normalized center-of-mass offset so large stacks stay readable instead of accumulating arbitrary torque.
+    const tipPressure =
+      totalProfile.weightedOffset +
+      offsetDelta * BALANCE_SHIFT_MULTIPLIER +
+      averageHorizontalOffset(landedCells) * BALANCE_PLACEMENT_IMPULSE;
     const centeredPlacement = averageCenterDistance(landedCells) <= 2.3;
+    const stabilityThreshold =
+      BALANCE_BASE_THRESHOLD +
+      this.coreLayers * BALANCE_CORE_THRESHOLD_STEP +
+      totalProfile.braceRatio * BALANCE_CENTER_BRACE_BONUS;
 
-    if (centeredPlacement && Math.abs(massScore) < BALANCE_THRESHOLD * 1.35) {
+    this.lastBalance = tipPressure;
+
+    if (centeredPlacement && Math.abs(tipPressure) < stabilityThreshold + BALANCE_CENTERED_BUFFER) {
       return;
     }
 
-    if (massScore > BALANCE_THRESHOLD) {
+    if (tipPressure > stabilityThreshold) {
       this.rotateStructure(1);
-    } else if (massScore < -BALANCE_THRESHOLD) {
+    } else if (tipPressure < -stabilityThreshold) {
       this.rotateStructure(-1);
     }
   }
@@ -543,8 +696,145 @@ class BalanceStackGame {
     }
   }
 
+  updateIntroAnimation(dt) {
+    if (!this.launching) {
+      this.titleSpinSpeed = lerp(this.titleSpinSpeed, 0.82, clamp(dt * 1.8, 0, 1));
+      this.titleCameraZoom = lerp(this.titleCameraZoom, INTRO_IDLE_CAMERA_ZOOM, clamp(dt * 1.5, 0, 1));
+      this.titlePulseScale = lerp(this.titlePulseScale, INTRO_IDLE_PULSE_SCALE, clamp(dt * 1.6, 0, 1));
+      this.titleGridAlpha = lerp(this.titleGridAlpha, INTRO_IDLE_GRID_ALPHA, clamp(dt * 1.6, 0, 1));
+      this.titleSpinAngle += this.titleSpinSpeed * dt;
+      return;
+    }
+
+    this.launchProgress = clamp(this.launchProgress + dt / INTRO_LAUNCH_TIME, 0, 1);
+    const eased = easeInOutCubic(this.launchProgress);
+    this.titleSpinSpeed = lerp(this.titleSpinSpeed, 0, clamp(dt * 2.6, 0, 1));
+    this.titleSpinAngle += this.titleSpinSpeed * dt;
+    this.titleSpinAngle = lerpAngle(
+      this.titleSpinAngle,
+      this.titleSettleAngle,
+      clamp(dt * (1.2 + eased * 4.2), 0, 1)
+    );
+    this.titleCameraZoom = lerp(INTRO_IDLE_CAMERA_ZOOM, 1, eased);
+    this.titlePulseScale = lerp(INTRO_IDLE_PULSE_SCALE, 1, eased);
+    this.titleGridAlpha = lerp(INTRO_IDLE_GRID_ALPHA, 1, eased);
+    this.updateStartScreen();
+
+    if (this.launchProgress >= 1) {
+      this.finishStartSequence();
+    }
+  }
+
+  updateCoreParticles(dt) {
+    if (this.coreParticles.length === 0) return;
+
+    for (const particle of this.coreParticles) {
+      particle.age += dt;
+    }
+
+    this.coreParticles = this.coreParticles.filter((particle) => particle.age < particle.life);
+  }
+
+  updatePulseParticles(dt) {
+    if (this.started) {
+      this.pulseParticleTimer = 0;
+      this.pulseParticles = [];
+      return;
+    }
+
+    this.pulseParticleTimer = (this.pulseParticleTimer + dt) % PULSE_HEARTBEAT_CYCLE;
+
+    if (this.pulseParticleTimer > PULSE_HEARTBEAT_WINDOW) {
+      this.pulseParticles = [];
+      return;
+    }
+
+    const beatProgress = clamp(this.pulseParticleTimer / PULSE_HEARTBEAT_WINDOW, 0, 1);
+    const beat = Math.pow(Math.sin(beatProgress * Math.PI), 1.15);
+    if (beat <= 0.001) {
+      this.pulseParticles = [];
+      return;
+    }
+    const baseRadius = CELL_SIZE * 0.36;
+    const travel = CELL_SIZE * 0.92;
+    const majorSize = 1.8 + beat * 0.52;
+    const minorSize = 1.2 + beat * 0.36;
+    const particlesPerSet = Math.max(6, Math.floor(PULSE_PARTICLE_COUNT / 2));
+    const configs = [
+      {
+        alphaMajor: 0.72,
+        alphaMinor: 0.56,
+        angleOffset: 0,
+        colorKey: "cyan",
+        layer: "back",
+        radiusOffset: -CELL_SIZE * 0.08,
+        sizeScale: 0.92,
+      },
+      {
+        alphaMajor: 0.86,
+        alphaMinor: 0.68,
+        angleOffset: Math.PI / particlesPerSet,
+        colorKey: "magenta",
+        layer: "front",
+        radiusOffset: CELL_SIZE * 0.06,
+        sizeScale: 1.02,
+      },
+    ];
+
+    this.pulseParticles = [];
+    for (const config of configs) {
+      for (let index = 0; index < particlesPerSet; index += 1) {
+        const angle = -Math.PI / 2 + config.angleOffset + (index * Math.PI * 2) / particlesPerSet;
+        const isMajor = index % 2 === 0;
+        this.pulseParticles.push({
+          angle,
+          alpha: beat * (isMajor ? config.alphaMajor : config.alphaMinor),
+          colorKey: config.colorKey,
+          layer: config.layer,
+          radius: baseRadius + beat * travel + config.radiusOffset,
+          size: (isMajor ? majorSize : minorSize) * config.sizeScale,
+        });
+      }
+    }
+  }
+
+  spawnCoreGrowthParticles(gainedLayers) {
+    const burstCount = 14 + gainedLayers * 10;
+    const ringHalf = ((this.coreLayers * 2 + 1) * CELL_SIZE) / 2 + CELL_SIZE * 1.25;
+
+    for (let i = 0; i < burstCount; i += 1) {
+      const side = Math.floor(Math.random() * 4);
+      const offset = lerp(-ringHalf, ringHalf, Math.random());
+      let startX = 0;
+      let startY = 0;
+
+      if (side === 0) {
+        startX = -ringHalf;
+        startY = offset;
+      } else if (side === 1) {
+        startX = ringHalf;
+        startY = offset;
+      } else if (side === 2) {
+        startX = offset;
+        startY = -ringHalf;
+      } else {
+        startX = offset;
+        startY = ringHalf;
+      }
+
+      this.coreParticles.push({
+        age: 0,
+        life: 0.75 + Math.random() * 0.35,
+        size: 2 + Math.random() * 2.4,
+        startX,
+        startY,
+      });
+    }
+  }
+
   recalculateCoreSquare() {
     // The core only grows when the stack contains a larger complete square centered on the pivot.
+    const previousLayers = this.coreLayers;
     let layers = 0;
     const maxLayers = Math.min(CENTER, 8);
 
@@ -563,32 +853,85 @@ class BalanceStackGame {
     }
 
     this.coreLayers = layers;
+
+    const gainedLayers = Math.max(0, layers - previousLayers);
+    if (gainedLayers > 0) {
+      this.coreGrowthCount += gainedLayers;
+      this.coreChargeCount += gainedLayers;
+      this.spawnCoreGrowthParticles(gainedLayers);
+    }
+  }
+
+  getCoreVisualState() {
+    const pulse = 0.5 + 0.5 * Math.sin(this.elapsedTime * 2.2);
+    const blockSpin = this.started ? 0 : this.titleSpinAngle;
+
+    return {
+      blockSpin,
+      cameraZoom: this.started ? 1 : this.titleCameraZoom,
+      gridAlpha: this.started ? 1 : this.titleGridAlpha,
+      pulse,
+      pulseScale: this.started ? 1 : this.titlePulseScale,
+    };
   }
 
   draw() {
     ctx.setTransform(canvasRatio, 0, 0, canvasRatio, 0, 0);
+    renderTime = this.elapsedTime;
 
-    const width = canvasWidth;
-    const height = canvasHeight;
-    ctx.clearRect(0, 0, width, height);
+    const frameWidth = canvasWidth;
+    const frameHeight = canvasHeight;
+    const stage = getStageLayout(frameWidth, frameHeight);
+    const width = STAGE_SIZE;
+    const height = STAGE_SIZE;
+
+    ctx.clearRect(0, 0, frameWidth, frameHeight);
     ctx.fillStyle = COLORS.bg;
-    roundRect(ctx, 0, 0, width, height, 22, true);
+    roundRect(ctx, 0, 0, frameWidth, frameHeight, 22, true);
 
+    const coreVisual = this.getCoreVisualState();
     ctx.save();
+    ctx.translate(stage.offsetX, stage.offsetY);
+    ctx.scale(stage.scale, stage.scale);
+    roundRect(ctx, 0, 0, width, height, 22, true);
+    if (!this.started) {
+      drawStartLogo(ctx, width, this.launching ? this.launchProgress : 0);
+    }
     ctx.translate(width / 2, height / 2);
-    drawGrid(ctx);
+    ctx.scale(coreVisual.cameraZoom, coreVisual.cameraZoom);
+    drawGrid(ctx, coreVisual.gridAlpha);
     this.drawStructure();
-    drawCoreSquare(ctx, this.coreLayers, this.rotationVisual);
-    this.drawGhostPiece();
-    this.drawCurrentPiece();
+    drawCoreField(ctx, this.coreLayers, this.rotationVisual, coreVisual, this.started && this.coreLayers > 0);
+    drawCoreParticles(ctx, this.coreParticles);
+    drawPulseParticles(ctx, this.pulseParticles, coreVisual, "back");
+    drawCoreSquare(ctx, this.coreLayers, this.rotationVisual, coreVisual, this.started && this.coreLayers > 0);
+    drawPulseParticles(ctx, this.pulseParticles, coreVisual, "front");
+    if (this.started) {
+      this.drawGhostPiece();
+      this.drawCurrentPiece();
+    }
     ctx.restore();
 
-    drawSpawnPreview(ctx, this.nextShape);
+    if (this.started) {
+      ctx.save();
+      ctx.translate(stage.offsetX, stage.offsetY);
+      ctx.scale(stage.scale, stage.scale);
+      drawSpawnPreview(ctx, this.nextShape, width, height);
+      ctx.restore();
+    }
 
     if (this.gameOver) {
+      ctx.save();
+      ctx.translate(stage.offsetX, stage.offsetY);
+      ctx.scale(stage.scale, stage.scale);
       drawOverlay(ctx, width, height, "Stack collapsed", "Press R to restart");
+      ctx.restore();
     } else if (this.paused) {
+      ctx.save();
+      ctx.translate(stage.offsetX, stage.offsetY);
+      ctx.scale(stage.scale, stage.scale);
       drawOverlay(ctx, width, height, "Paused", "Press P to resume");
+      ctx.restore();
     }
   }
 
@@ -598,8 +941,18 @@ class BalanceStackGame {
     for (let y = 0; y < GRID_SIZE; y += 1) {
       for (let x = 0; x < GRID_SIZE; x += 1) {
         const block = this.board[y][x];
-        if (!block) continue;
-        drawCellFill(ctx, x, y, block.color, this.blockFade(x, y));
+        if (!block || block.seed) continue;
+        const influenced = this.coreLayers > 0 && Math.max(Math.abs(x - CENTER), Math.abs(y - CENTER)) <= this.coreLayers;
+        const shake = influenced ? getInfluenceShakeOffset(x, y, this.elapsedTime) : { x: 0, y: 0 };
+        const alpha = influenced ? Math.max(0.68, this.blockFade(x, y) * 0.82) : this.blockFade(x, y);
+        if (influenced) {
+          drawInfluencedCellFill(ctx, x, y, block.color, alpha, shake.x, shake.y);
+        } else {
+          drawCellFill(ctx, x, y, block.color, alpha, shake.x, shake.y);
+        }
+        if (influenced) {
+          drawInfluenceCellMask(ctx, x, y, shake.x, shake.y);
+        }
       }
     }
     drawMassOutline(ctx, this.board);
@@ -630,7 +983,9 @@ class BalanceStackGame {
   }
 
   updateHUD() {
-    // The minimal top status should stay quiet during game-over; the main overlay handles that state.
+    if (currencyValue) {
+      currencyValue.textContent = `Pulse charges ${this.coreChargeCount}`;
+    }
   }
 }
 
@@ -642,16 +997,103 @@ function averageCenterDistance(cells) {
   return total / Math.max(1, cells.length);
 }
 
+function averageHorizontalOffset(cells) {
+  let total = 0;
+  for (const cell of cells) {
+    total += cell.x - CENTER;
+  }
+  return total / Math.max(1, cells.length);
+}
+
+function analyzeBalanceProfile(board, coreLayers, excludedCells = null) {
+  let totalWeight = 0;
+  let totalTorque = 0;
+  let braceWeight = 0;
+  const braceRadius = Math.max(1, coreLayers + 1);
+
+  for (let y = 0; y < GRID_SIZE; y += 1) {
+    for (let x = 0; x < GRID_SIZE; x += 1) {
+      const block = board[y][x];
+      if (!block) continue;
+      if (excludedCells && excludedCells.has(cellKey(x, y))) continue;
+
+      const relX = x - CENTER;
+      const ring = Math.max(Math.abs(relX), Math.abs(y - CENTER));
+      const outerRing = Math.max(0, ring - braceRadius);
+      const weight = 1 + outerRing * BALANCE_OUTER_RING_WEIGHT;
+
+      totalWeight += weight;
+      totalTorque += relX * weight;
+
+      if (ring <= braceRadius) {
+        braceWeight += weight;
+      }
+    }
+  }
+
+  return {
+    braceRatio: totalWeight > 0 ? braceWeight / totalWeight : 0,
+    weightedOffset: totalWeight > 0 ? totalTorque / totalWeight : 0,
+  };
+}
+
+function cellKey(x, y) {
+  return `${x},${y}`;
+}
+
 function lerp(a, b, t) {
   return a + (b - a) * t;
+}
+
+function lerpAngle(from, to, t) {
+  const delta = Math.atan2(Math.sin(to - from), Math.cos(to - from));
+  return from + delta * t;
 }
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function drawGrid(context) {
+function nearestQuarterTurn(angle) {
+  return Math.round(angle / ROTATION_STEP) * ROTATION_STEP;
+}
+
+function hashUnit(value) {
+  const raw = Math.sin(value) * 43758.5453123;
+  return raw - Math.floor(raw);
+}
+
+function getInfluenceShakeOffset(gridX, gridY, time) {
+  const seed = hashUnit(gridX * 12.9898 + gridY * 78.233);
+  const window = Math.floor(time * 3.2 + seed * 9.7);
+  const active = hashUnit(window * 19.17 + seed * 41.83);
+  if (active < 0.9) {
+    return { x: 0, y: 0 };
+  }
+
+  const strength = 0.088 + hashUnit(window * 7.31 + seed * 29.7) * 0.264;
+  return {
+    x: Math.sin(time * 33 + seed * 40) * strength,
+    y: Math.cos(time * 29 + seed * 35) * strength * 0.82,
+  };
+}
+
+function easeInCubic(value) {
+  return value * value * value;
+}
+
+function easeOutCubic(value) {
+  return 1 - Math.pow(1 - value, 3);
+}
+
+function easeInOutCubic(value) {
+  return value < 0.5 ? 4 * value * value * value : 1 - Math.pow(-2 * value + 2, 3) / 2;
+}
+
+function drawGrid(context, alpha = 1) {
   const boardLength = GRID_SIZE * CELL_SIZE;
+  context.save();
+  context.globalAlpha = alpha;
   context.strokeStyle = COLORS.grid;
   context.lineWidth = 1;
   for (let i = 0; i <= GRID_SIZE; i += 1) {
@@ -668,49 +1110,437 @@ function drawGrid(context) {
     context.lineTo(offset, boardLength / 2);
     context.stroke();
   }
+  context.restore();
 }
 
-function drawCoreSquare(context, layers, angle) {
-  const sideCells = layers * 2 + 1;
-  const solidSize = sideCells * CELL_SIZE;
-  const inset = 6;
+function drawCoreParticles(context, particles) {
+  if (!particles || particles.length === 0) return;
 
   context.save();
-  context.rotate(angle);
-  context.fillStyle = "rgba(255,255,255,0.08)";
-  roundRect(context, -solidSize / 2, -solidSize / 2, solidSize, solidSize, 8, true);
-  context.fillStyle = "rgba(255,255,255,0.14)";
-  roundRect(context, -solidSize / 2 + 2, -solidSize / 2 + 2, solidSize - 4, solidSize - 4, 6, true);
-  context.strokeStyle = COLORS.coreLine;
-  context.lineWidth = 7;
-  context.setLineDash([14, 10]);
-  roundRect(
-    context,
-    -solidSize / 2 + inset,
-    -solidSize / 2 + inset,
-    solidSize - inset * 2,
-    solidSize - inset * 2,
-    Math.max(6, 18 - layers),
-    false
-  );
-  context.stroke();
-  context.setLineDash([]);
-  context.strokeStyle = "rgba(255,255,255,0.26)";
-  context.lineWidth = 2;
+  for (const particle of particles) {
+    const progress = clamp(particle.age / particle.life, 0, 1);
+    const eased = easeInCubic(progress);
+    const x = lerp(particle.startX, 0, eased);
+    const y = lerp(particle.startY, 0, eased);
+    const size = lerp(particle.size, 1, progress);
+    const alpha = 1 - progress;
+
+    context.strokeStyle = `rgba(255,255,255,${alpha * 0.28})`;
+    context.lineWidth = Math.max(1, size * 0.9);
+    context.beginPath();
+    context.moveTo(particle.startX, particle.startY);
+    context.lineTo(x, y);
+    context.stroke();
+
+    context.fillStyle = `rgba(255,255,255,${alpha * 0.95})`;
+    context.beginPath();
+    context.arc(x, y, size, 0, Math.PI * 2);
+    context.fill();
+  }
+  context.restore();
+}
+
+function drawPulseParticles(context, particles, visual, layer = "all") {
+  if (!particles || particles.length === 0) return;
+
+  context.save();
+  context.rotate(visual ? visual.blockSpin : 0);
+  for (const particle of particles) {
+    if (layer !== "all" && particle.layer !== layer) continue;
+    const x = Math.cos(particle.angle) * particle.radius;
+    const y = Math.sin(particle.angle) * particle.radius;
+    const size = particle.size;
+    const alpha = particle.alpha;
+    const half = size / 2;
+    const fillColor = particle.colorKey === "cyan" ? COLORS.cyan : COLORS.magenta;
+    const edgeColor = particle.colorKey === "cyan" ? COLORS.edgeCyan : COLORS.edgeMagenta;
+
+    context.fillStyle = hexToRgba(fillColor, alpha * 0.62);
+    context.strokeStyle = hexToRgba(edgeColor, alpha);
+    context.lineWidth = Math.max(0.8, size * 0.18);
+    roundRect(context, x - half, y - half, size, size, Math.min(1.3, size * 0.22), true);
+    context.stroke();
+  }
+  context.restore();
+}
+
+function drawPulseCornerAccent(context, halfSize, length, color, xSign, ySign) {
+  const outerInset = 3;
+  const outerX = xSign * (halfSize - outerInset);
+  const outerY = ySign * (halfSize - outerInset);
+  const innerX = xSign * Math.max(0, halfSize - length);
+  const innerY = ySign * Math.max(0, halfSize - length);
+
+  context.save();
+  context.strokeStyle = color;
+  context.shadowColor = color;
+  context.shadowBlur = 8;
+  context.lineWidth = 1.8;
+  context.lineCap = "square";
   context.beginPath();
-  context.arc(0, 0, 16, 0, Math.PI * 2);
+  context.moveTo(innerX, outerY);
+  context.lineTo(outerX, outerY);
+  context.lineTo(outerX, innerY);
   context.stroke();
   context.restore();
 }
 
-function drawCellFill(context, gridX, gridY, colorKey, alpha) {
-  const x = (gridX - CENTER) * CELL_SIZE;
-  const y = (gridY - CENTER) * CELL_SIZE;
-  const inset = 1.5;
-  const color = COLORS[colorKey];
+function drawCoreField(context, layers, angle, visual, showInfluence) {
+  if (!showInfluence || layers <= 0) return;
+
+  const fieldSize = (layers * 2 + 1) * CELL_SIZE - 3;
+  const fieldHalf = fieldSize / 2;
+  const shadeAlpha = 0.24 + Math.min(0.14, layers * 0.024);
+  const outlineAlpha = 0.46 + (visual ? visual.pulse : 0.5) * 0.12;
+  const inset = Math.min(6, Math.max(3, CELL_SIZE * 0.18));
 
   context.save();
-  context.fillStyle = hexToRgba(color, alpha);
+  context.rotate((visual ? visual.blockSpin : 0) + angle);
+  context.fillStyle = `rgba(3, 8, 14, ${shadeAlpha})`;
+  roundRect(context, -fieldHalf, -fieldHalf, fieldSize, fieldSize, 4, true);
+
+  context.strokeStyle = `rgba(10,18,28,${outlineAlpha * 0.65})`;
+  context.lineWidth = 4;
+  context.setLineDash([7, 7]);
+  roundRect(context, -fieldHalf + inset, -fieldHalf + inset, fieldSize - inset * 2, fieldSize - inset * 2, 2, false);
+  context.stroke();
+  context.strokeStyle = `rgba(255,255,255,${outlineAlpha})`;
+  context.lineWidth = 2.15;
+  context.setLineDash([7, 7]);
+  roundRect(context, -fieldHalf + inset, -fieldHalf + inset, fieldSize - inset * 2, fieldSize - inset * 2, 2, false);
+  context.stroke();
+  context.setLineDash([]);
+  context.restore();
+}
+
+function drawCoreSquare(context, layers, angle, visual, showInfluence) {
+  const pulse = visual ? visual.pulse : 0.5;
+  const pulseScale = visual && visual.pulseScale ? visual.pulseScale : 1;
+  const pulseSize = CELL_SIZE * 1.02 * pulseScale;
+  const slabSize = CELL_SIZE * 0.78 * pulseScale;
+  const chamberSize = CELL_SIZE * 0.54 * pulseScale;
+  const chamberInnerSize = Math.max(CELL_SIZE * 0.24, chamberSize - CELL_SIZE * 0.16 * pulseScale);
+  const coreBlockSize = CELL_SIZE * (0.35 + pulse * 0.012) * pulseScale;
+
+  context.save();
+  context.rotate((visual ? visual.blockSpin : 0) + angle);
+
+  const plateHalf = pulseSize / 2;
+  const outerFill = context.createLinearGradient(-plateHalf, -plateHalf, plateHalf, plateHalf);
+  outerFill.addColorStop(0, "#51586f");
+  outerFill.addColorStop(0.5, "#3f4659");
+  outerFill.addColorStop(1, "#2f3546");
+  context.fillStyle = outerFill;
+  roundRect(context, -plateHalf, -plateHalf, pulseSize, pulseSize, 3, true);
+
+  const slabFill = context.createLinearGradient(-slabSize / 2, -slabSize / 2, slabSize / 2, slabSize / 2);
+  slabFill.addColorStop(0, "#6d7590");
+  slabFill.addColorStop(0.42, "#5c647d");
+  slabFill.addColorStop(1, "#4b5368");
+  context.fillStyle = slabFill;
+  roundRect(context, -slabSize / 2, -slabSize / 2, slabSize, slabSize, 2, true);
+
+  context.strokeStyle = "rgba(230,238,255,0.14)";
+  context.lineWidth = 0.9;
+  roundRect(context, -slabSize / 2, -slabSize / 2, slabSize, slabSize, 2, false);
+  context.stroke();
+
+  const chamberFill = context.createLinearGradient(-chamberSize / 2, -chamberSize / 2, chamberSize / 2, chamberSize / 2);
+  chamberFill.addColorStop(0, "#32384b");
+  chamberFill.addColorStop(1, "#1d2232");
+  context.fillStyle = chamberFill;
+  roundRect(context, -chamberSize / 2, -chamberSize / 2, chamberSize, chamberSize, 1.6, true);
+
+  const wellFill = context.createLinearGradient(
+    -chamberInnerSize / 2,
+    -chamberInnerSize / 2,
+    chamberInnerSize / 2,
+    chamberInnerSize / 2
+  );
+  wellFill.addColorStop(0, "#161926");
+  wellFill.addColorStop(1, "#0d101a");
+  context.fillStyle = wellFill;
+  roundRect(context, -chamberInnerSize / 2, -chamberInnerSize / 2, chamberInnerSize, chamberInnerSize, 1, true);
+
+  drawPulseCornerAccent(context, slabSize / 2, Math.max(4.5, slabSize * 0.23), "#98edff", -1, -1);
+  drawPulseCornerAccent(context, slabSize / 2, Math.max(4.5, slabSize * 0.23), "#ffadd6", 1, -1);
+  drawPulseCornerAccent(context, slabSize / 2, Math.max(4.5, slabSize * 0.23), "#ffadd6", -1, 1);
+  drawPulseCornerAccent(context, slabSize / 2, Math.max(4.5, slabSize * 0.23), "#98edff", 1, 1);
+
+  const outerInset = coreBlockSize / 2;
+  const blockFill = context.createLinearGradient(-outerInset, -outerInset, outerInset, outerInset);
+  blockFill.addColorStop(0, "#fefeff");
+  blockFill.addColorStop(0.45, "#eef4ff");
+  blockFill.addColorStop(1, "#b8c7ff");
+  context.fillStyle = blockFill;
+  roundRect(context, -outerInset, -outerInset, coreBlockSize, coreBlockSize, 3, true);
+
+  context.strokeStyle = "rgba(240,246,255,0.96)";
+  context.lineWidth = 1.7;
+  roundRect(context, -outerInset, -outerInset, coreBlockSize, coreBlockSize, 3, false);
+  context.stroke();
+
+  const innerInset = coreBlockSize * 0.16;
+  const innerSize = coreBlockSize - innerInset * 2;
+  const innerFill = context.createLinearGradient(-innerSize / 2, -innerSize / 2, innerSize / 2, innerSize / 2);
+  innerFill.addColorStop(0, "rgba(255,255,255,0.96)");
+  innerFill.addColorStop(1, "rgba(226,235,255,0.34)");
+  context.fillStyle = innerFill;
+  roundRect(context, -innerSize / 2, -innerSize / 2, innerSize, innerSize, 2, true);
+  context.restore();
+}
+
+function getTetrominoPalette(colorKey, influenced = false) {
+  if (influenced) {
+    return colorKey === "cyan"
+      ? {
+          core: "#c3ccd3",
+          edge: "#d8e0e6",
+          glow: "#eef4f8",
+          panelA: "#98a1a8",
+          panelB: "#707880",
+          shellA: "#2b3037",
+          shellB: "#171b20",
+          sparkle: "#e6edf2",
+        }
+      : {
+          core: "#8a9097",
+          edge: "#bcc2c7",
+          glow: "#d7dde2",
+          panelA: "#666c73",
+          panelB: "#464b51",
+          shellA: "#262a2f",
+          shellB: "#14181c",
+          sparkle: "#d6dce0",
+        };
+  }
+
+  return colorKey === "cyan"
+    ? {
+        core: "#f8fdff",
+        edge: "#8fe6ff",
+        glow: "#d4fbff",
+        panelA: "#72cef2",
+        panelB: "#2c80a9",
+        shellA: "#10293e",
+        shellB: "#08121c",
+        sparkle: "#e6fbff",
+      }
+    : {
+        core: "#fff7fb",
+        edge: "#ff9ac3",
+        glow: "#ffd1e6",
+        panelA: "#f06e9d",
+        panelB: "#8e2f56",
+        shellA: "#351322",
+        shellB: "#170911",
+        sparkle: "#ffe3f0",
+      };
+}
+
+function getStartLogoPalette(colorKey) {
+  return colorKey === "cyan"
+    ? {
+        core: "#ffffff",
+        edge: "#d9f8ff",
+        glow: "#baf3ff",
+        panelA: "#a6efff",
+        panelB: "#67c8eb",
+        shellA: "#7bdcf8",
+        shellB: "#4aa8d8",
+        sparkle: "#f2feff",
+      }
+    : {
+        core: "#fffaff",
+        edge: "#ffd2e4",
+        glow: "#ffbfd8",
+        panelA: "#ffb0cd",
+        panelB: "#f06e9d",
+        shellA: "#f58ab0",
+        shellB: "#c63a62",
+        sparkle: "#fff1f8",
+      };
+}
+
+function drawTechCellRect(context, x, y, size, palette, options = {}) {
+  const alpha = options.alpha ?? 1;
+  const flicker = options.flicker ?? false;
+  const sparkle = options.sparkle ?? 0;
+  const seed = options.seed ?? 0;
+  const radius = Math.min(3.4, size * 0.14);
+  const half = size / 2;
+  const shellInset = size * 0.02;
+  const panelInset = size * 0.065;
+  const lightInset = size * 0.16;
+  const coreInset = size * 0.24;
+  const shellSize = size - shellInset * 2;
+  const panelSize = size - panelInset * 2;
+  const lightSize = size - lightInset * 2;
+  const coreSize = size - coreInset * 2;
+  const flickerWave = 0.55 + 0.45 * Math.sin(renderTime * 11 + seed * 6.2);
+  const shimmerWave = 0.55 + 0.45 * Math.sin(renderTime * 7.5 + seed * 9.7);
+  const lightAlpha = alpha * (flicker ? 0.2 + flickerWave * 0.34 : 0.18);
+  const coreAlpha = alpha * (flicker ? 0.46 + flickerWave * 0.28 : 0.44);
+  const edgeAlpha = alpha * (flicker ? 0.64 + shimmerWave * 0.2 : 0.7);
+
+  context.save();
+  context.translate(x, y);
+
+  const shellFill = context.createLinearGradient(-half, -half, half, half);
+  shellFill.addColorStop(0, hexToRgba(palette.shellA, alpha));
+  shellFill.addColorStop(1, hexToRgba(palette.shellB, alpha));
+  context.fillStyle = shellFill;
+  roundRect(context, -half + shellInset, -half + shellInset, shellSize, shellSize, radius, true);
+
+  const panelFill = context.createLinearGradient(-half, -half, half, half);
+  panelFill.addColorStop(0, hexToRgba(palette.panelA, alpha * 0.98));
+  panelFill.addColorStop(1, hexToRgba(palette.panelB, alpha * 0.96));
+  context.fillStyle = panelFill;
+  roundRect(context, -half + panelInset, -half + panelInset, panelSize, panelSize, radius * 0.82, true);
+
+  context.strokeStyle = hexToRgba(palette.edge, edgeAlpha * 0.9);
+  context.lineWidth = Math.max(0.9, size * 0.08);
+  roundRect(context, -half + panelInset, -half + panelInset, panelSize, panelSize, radius * 0.82, false);
+  context.stroke();
+
+  context.fillStyle = "rgba(255,255,255,0.06)";
+  roundRect(context, -half + panelInset + 1.2, -half + panelInset + 1.2, panelSize * 0.52, Math.max(2, panelSize * 0.12), 1.1, true);
+
+  const backlightFill = context.createLinearGradient(-half, -half, half, half);
+  backlightFill.addColorStop(0, `rgba(255,255,255,${lightAlpha})`);
+  backlightFill.addColorStop(1, hexToRgba(palette.glow, lightAlpha * 0.52));
+  context.fillStyle = backlightFill;
+  roundRect(context, -half + lightInset, -half + lightInset, lightSize, lightSize, radius * 0.58, true);
+
+  const coreFill = context.createLinearGradient(-half, -half, half, half);
+  coreFill.addColorStop(0, `rgba(255,255,255,${coreAlpha})`);
+  coreFill.addColorStop(1, hexToRgba(palette.core, coreAlpha));
+  context.fillStyle = coreFill;
+  roundRect(context, -half + coreInset, -half + coreInset, coreSize, coreSize, radius * 0.42, true);
+
+  if (sparkle > 0.01) {
+    const sparkleAlpha = alpha * sparkle * 0.28;
+    const sparkleX = (-0.18 + hashUnit(seed * 14.7) * 0.38) * size;
+    const sparkleY = (-0.16 + hashUnit(seed * 22.1) * 0.36) * size;
+    const sparkleRadius = size * (0.11 + hashUnit(seed * 31.4) * 0.06);
+    const sparkleX2 = (0.08 + hashUnit(seed * 41.8) * 0.26) * size;
+    const sparkleY2 = (0.02 + hashUnit(seed * 53.2) * 0.28) * size;
+    const sparkleRadius2 = size * (0.06 + hashUnit(seed * 63.6) * 0.04);
+
+    context.fillStyle = hexToRgba(palette.sparkle, sparkleAlpha);
+    context.beginPath();
+    context.arc(sparkleX, sparkleY, sparkleRadius, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = hexToRgba(palette.sparkle, sparkleAlpha * 0.72);
+    context.beginPath();
+    context.arc(sparkleX2, sparkleY2, sparkleRadius2, 0, Math.PI * 2);
+    context.fill();
+  }
+
+  context.restore();
+}
+
+function createStartLogoLayout() {
+  const cells = [];
+  let column = 0;
+
+  for (let wordIndex = 0; wordIndex < START_LOGO_WORDS.length; wordIndex += 1) {
+    const word = START_LOGO_WORDS[wordIndex];
+
+    for (let letterIndex = 0; letterIndex < word.text.length; letterIndex += 1) {
+      const letter = word.text[letterIndex];
+      const pattern = LOGO_PATTERNS[letter];
+      const width = Math.max(...pattern.map((row) => row.length));
+
+      for (let y = 0; y < pattern.length; y += 1) {
+        for (let x = 0; x < pattern[y].length; x += 1) {
+          if (pattern[y][x] !== "1") continue;
+          cells.push({
+            x: column + x,
+            y,
+            colorKey: word.colorKey,
+            seed: x * 0.83 + y * 0.47 + wordIndex * 2.13 + letterIndex * 0.61,
+          });
+        }
+      }
+
+      column += width;
+      if (letterIndex < word.text.length - 1) {
+        column += START_LOGO_LETTER_GAP;
+      }
+    }
+
+    if (wordIndex < START_LOGO_WORDS.length - 1) {
+      column += START_LOGO_WORD_GAP;
+    }
+  }
+
+  return {
+    cols: Math.max(1, column),
+    rows: START_LOGO_ROW_COUNT,
+    cells,
+  };
+}
+
+function drawStartLogo(context, width, launchProgress = 0) {
+  const fade = clamp(1 - launchProgress * 1.18, 0, 1);
+  if (fade <= 0.01) return;
+
+  const logoWidth = (START_LOGO_LAYOUT.cols - 1) * START_LOGO_CELL_PITCH + START_LOGO_CELL_SIZE;
+  const startX = width / 2 - logoWidth / 2 + START_LOGO_CELL_SIZE / 2;
+  const startY = START_LOGO_TOP - launchProgress * 18 + START_LOGO_CELL_SIZE / 2;
+
+  context.save();
+  context.globalAlpha = fade;
+  for (const cell of START_LOGO_LAYOUT.cells) {
+    const x = startX + cell.x * START_LOGO_CELL_PITCH;
+    const y = startY + cell.y * START_LOGO_CELL_PITCH;
+    const palette = getStartLogoPalette(cell.colorKey);
+    drawTechCellRect(context, x, y, START_LOGO_CELL_SIZE, palette, {
+      alpha: 1,
+      flicker: true,
+      seed: cell.seed,
+      sparkle: 0,
+    });
+  }
+  context.restore();
+}
+
+function drawCellFill(context, gridX, gridY, colorKey, alpha, offsetX = 0, offsetY = 0) {
+  const x = (gridX - CENTER) * CELL_SIZE + offsetX;
+  const y = (gridY - CENTER) * CELL_SIZE + offsetY;
+  const palette = getTetrominoPalette(colorKey, false);
+  const sparkle = clamp((1 - alpha) * 1.4, 0, 0.42);
+  const seed = gridX * 0.73 + gridY * 1.17 + (colorKey === "cyan" ? 0.12 : 0.41);
+  drawTechCellRect(context, x, y, CELL_SIZE - 0.6, palette, {
+    alpha,
+    flicker: true,
+    seed,
+    sparkle,
+  });
+}
+
+function drawInfluencedCellFill(context, gridX, gridY, colorKey, alpha, offsetX = 0, offsetY = 0) {
+  const x = (gridX - CENTER) * CELL_SIZE + offsetX;
+  const y = (gridY - CENTER) * CELL_SIZE + offsetY;
+  const palette = getTetrominoPalette(colorKey, true);
+  const seed = gridX * 0.73 + gridY * 1.17 + (colorKey === "cyan" ? 0.18 : 0.48);
+  drawTechCellRect(context, x, y, CELL_SIZE - 0.6, palette, {
+    alpha,
+    flicker: false,
+    seed,
+    sparkle: 0,
+  });
+}
+
+function drawInfluenceCellMask(context, gridX, gridY, offsetX = 0, offsetY = 0) {
+  const x = (gridX - CENTER) * CELL_SIZE + offsetX;
+  const y = (gridY - CENTER) * CELL_SIZE + offsetY;
+  const inset = 1.5;
+
+  context.save();
+  context.fillStyle = "rgba(6, 8, 12, 0.12)";
   roundRect(context, x - CELL_SIZE / 2 + inset, y - CELL_SIZE / 2 + inset, CELL_SIZE - inset * 2, CELL_SIZE - inset * 2, 3, true);
   context.restore();
 }
@@ -718,16 +1548,14 @@ function drawCellFill(context, gridX, gridY, colorKey, alpha) {
 function drawActiveCell(context, gridX, gridY, colorKey) {
   const x = (gridX - CENTER) * CELL_SIZE;
   const y = (gridY - CENTER) * CELL_SIZE;
-  const inset = 1.5;
-  const color = COLORS[colorKey];
-
-  context.save();
-  context.fillStyle = color;
-  context.strokeStyle = colorKey === "cyan" ? COLORS.edgeCyan : COLORS.edgeMagenta;
-  context.lineWidth = 2;
-  roundRect(context, x - CELL_SIZE / 2 + inset, y - CELL_SIZE / 2 + inset, CELL_SIZE - inset * 2, CELL_SIZE - inset * 2, 3, true);
-  context.stroke();
-  context.restore();
+  const palette = getTetrominoPalette(colorKey, false);
+  const seed = gridX * 0.91 + gridY * 1.29 + (colorKey === "cyan" ? 0.2 : 0.52);
+  drawTechCellRect(context, x, y, CELL_SIZE - 0.2, palette, {
+    alpha: 1,
+    flicker: true,
+    seed,
+    sparkle: 0,
+  });
 }
 
 function drawGhostCell(context, gridX, gridY) {
@@ -747,7 +1575,7 @@ function drawMassOutline(context, board) {
   for (let y = 0; y < GRID_SIZE; y += 1) {
     for (let x = 0; x < GRID_SIZE; x += 1) {
       const block = board[y][x];
-      if (!block) continue;
+      if (!block || block.seed) continue;
 
       const left = x > 0 ? board[y][x - 1] : null;
       const right = x < GRID_SIZE - 1 ? board[y][x + 1] : null;
@@ -792,7 +1620,7 @@ function drawMassOutline(context, board) {
 
 function drawSpawnPreview(context, piece) {
   if (!piece) return;
-  const boxX = canvasWidth - 168;
+  const boxX = STAGE_SIZE - 168;
   const boxY = 36;
 
   context.save();
@@ -806,14 +1634,31 @@ function drawSpawnPreview(context, piece) {
   context.fillText("Next piece", boxX + 18, boxY + 24);
 
   const size = 26;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
   for (const cell of piece.cells) {
-    const px = boxX + 62 + cell.x * size;
-    const py = boxY + 70 + cell.y * size;
-    context.fillStyle = hexToRgba(COLORS[piece.color], 0.16);
-    context.strokeStyle = COLORS[piece.color];
-    context.lineWidth = 2;
-    roundRect(context, px, py, size - 2, size - 2, 4, true);
-    context.stroke();
+    minX = Math.min(minX, cell.x);
+    minY = Math.min(minY, cell.y);
+    maxX = Math.max(maxX, cell.x);
+    maxY = Math.max(maxY, cell.y);
+  }
+  const previewCenterX = boxX + 66;
+  const previewCenterY = boxY + 78;
+  const pieceCenterX = (minX + maxX) / 2;
+  const pieceCenterY = (minY + maxY) / 2;
+  for (const cell of piece.cells) {
+    const px = previewCenterX + (cell.x - pieceCenterX) * size;
+    const py = previewCenterY + (cell.y - pieceCenterY) * size;
+    const palette = getTetrominoPalette(piece.color, false);
+    const seed = cell.x * 0.87 + cell.y * 1.13 + (piece.color === "cyan" ? 0.23 : 0.57);
+    drawTechCellRect(context, px, py, size - 4, palette, {
+      alpha: 0.96,
+      flicker: true,
+      seed,
+      sparkle: 0,
+    });
   }
   context.restore();
 }
@@ -830,6 +1675,15 @@ function drawOverlay(context, width, height, title, subtitle) {
   context.font = "600 18px Segoe UI, sans-serif";
   context.fillText(subtitle, width / 2, height / 2 + 28);
   context.restore();
+}
+
+function getStageLayout(width, height) {
+  const scale = Math.max(0.1, Math.min(width / STAGE_SIZE, height / STAGE_SIZE));
+  return {
+    offsetX: (width - STAGE_SIZE * scale) / 2,
+    offsetY: (height - STAGE_SIZE * scale) / 2,
+    scale,
+  };
 }
 
 function roundRect(context, x, y, w, h, r, fill) {
@@ -853,11 +1707,40 @@ function hexToRgba(hex, alpha) {
 
 const game = new BalanceStackGame();
 
+if (typeof window !== "undefined") {
+  window.__TWISTRIS_TEST_API__ = {
+    BalanceStackGame,
+    GRID_SIZE,
+    CENTER,
+    SHAPES,
+    analyzeBalanceProfile,
+    averageCenterDistance,
+    averageHorizontalOffset,
+    clamp,
+    nearestQuarterTurn,
+  };
+}
+
 if (startButton) {
   startButton.addEventListener("click", () => {
     game.startGame();
+    focusGameSurface();
   });
 }
+
+if (gameKeySink) {
+  gameKeySink.addEventListener("input", () => {
+    gameKeySink.value = "";
+  });
+}
+
+canvas.addEventListener("pointerdown", () => {
+  focusGameSurface();
+});
+
+canvas.addEventListener("touchstart", () => {
+  focusGameSurface();
+}, { passive: true });
 
 function resizeCanvas() {
   canvasRatio = Math.min(window.devicePixelRatio || 1, 2);
@@ -869,18 +1752,24 @@ function resizeCanvas() {
 }
 
 window.addEventListener("keydown", (event) => {
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space"].includes(event.code)) {
+  if (GAME_CONTROL_CODES.has(event.code)) {
+    focusGameSurface();
     event.preventDefault();
+    event.stopPropagation();
   }
   if (!keys.has(event.code)) {
     justPressed.add(event.code);
   }
   keys.add(event.code);
-});
+}, true);
 
 window.addEventListener("keyup", (event) => {
+  if (GAME_CONTROL_CODES.has(event.code)) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
   keys.delete(event.code);
-});
+}, true);
 
 window.addEventListener("blur", () => {
   keys.clear();

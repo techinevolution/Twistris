@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Twistris Smoke Tests</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        background: #0a1620;
+        color: #eef7ff;
+        font: 14px/1.5 "Segoe UI", Helvetica, Arial, sans-serif;
+      }
+
+      h1 {
+        margin: 0 0 16px;
+        font-size: 22px;
+      }
+
+      .result {
+        padding: 10px 12px;
+        margin: 0 0 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(120, 163, 196, 0.18);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .pass {
+        border-color: rgba(103, 214, 157, 0.32);
+        color: #b8ffd7;
+      }
+
+      .fail {
+        border-color: rgba(255, 115, 115, 0.42);
+        color: #ffd0d0;
+      }
+
+      .summary {
+        margin-top: 18px;
+        font-weight: 700;
+      }
+
+      #game,
+      #startScreen,
+      #startButton,
+      #statusValue,
+      #currencyValue,
+      #gameKeySink {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+      }
+    </style>
+    <script>
+      window.requestAnimationFrame = () => 0;
+      window.cancelAnimationFrame = () => {};
+    </script>
+  </head>
+  <body>
+    <h1>Twistris Smoke Tests</h1>
+    <div id="results"></div>
+
+    <div id="startScreen"></div>
+    <button id="startButton" type="button">Start</button>
+    <div id="statusValue"></div>
+    <div id="currencyValue"></div>
+    <input id="gameKeySink" type="password" />
+    <canvas id="game" width="800" height="800"></canvas>
+
+    <script src="../game.js"></script>
+    <script>
+      const resultsNode = document.getElementById("results");
+      const api = window.__TWISTRIS_TEST_API__;
+      let passes = 0;
+      let failures = 0;
+
+      function logResult(ok, label, detail = "") {
+        const node = document.createElement("div");
+        node.className = `result ${ok ? "pass" : "fail"}`;
+        node.textContent = ok ? `PASS: ${label}` : `FAIL: ${label}${detail ? ` - ${detail}` : ""}`;
+        resultsNode.appendChild(node);
+        if (ok) {
+          passes += 1;
+        } else {
+          failures += 1;
+        }
+      }
+
+      function assert(condition, label, detail = "") {
+        logResult(Boolean(condition), label, detail);
+      }
+
+      function createBoard() {
+        return Array.from({ length: api.GRID_SIZE }, () => Array(api.GRID_SIZE).fill(null));
+      }
+
+      function closeEnough(a, b, epsilon = 0.0001) {
+        return Math.abs(a - b) <= epsilon;
+      }
+
+      try {
+        assert(Boolean(api), "test API exposed");
+
+        assert(
+          closeEnough(api.nearestQuarterTurn(Math.PI / 3), Math.PI / 2),
+          "nearestQuarterTurn rounds to closest quarter turn"
+        );
+
+        assert(
+          closeEnough(api.averageCenterDistance([{ x: api.CENTER, y: api.CENTER }]), 0),
+          "averageCenterDistance is zero at exact center"
+        );
+
+        const balancedBoard = createBoard();
+        balancedBoard[api.CENTER][api.CENTER - 1] = { color: "cyan" };
+        balancedBoard[api.CENTER][api.CENTER + 1] = { color: "cyan" };
+        const balancedProfile = api.analyzeBalanceProfile(balancedBoard, 0);
+        assert(
+          closeEnough(balancedProfile.weightedOffset, 0),
+          "analyzeBalanceProfile stays neutral for symmetric mass"
+        );
+
+        const rightHeavyBoard = createBoard();
+        rightHeavyBoard[api.CENTER][api.CENTER + 1] = { color: "cyan" };
+        rightHeavyBoard[api.CENTER][api.CENTER + 2] = { color: "cyan" };
+        const rightHeavyProfile = api.analyzeBalanceProfile(rightHeavyBoard, 0);
+        assert(
+          rightHeavyProfile.weightedOffset > 0,
+          "analyzeBalanceProfile trends positive for right-heavy mass"
+        );
+
+        const gameInstance = new api.BalanceStackGame();
+        assert(
+          Boolean(gameInstance.board[api.CENTER][api.CENTER] && gameInstance.board[api.CENTER][api.CENTER].seed),
+          "new game seeds the center block"
+        );
+
+        assert(
+          gameInstance.attachesToStructure([{ x: api.CENTER + 1, y: api.CENTER }]),
+          "adjacent landed cell attaches to seeded center"
+        );
+
+        assert(
+          !gameInstance.attachesToStructure([{ x: api.CENTER + 4, y: api.CENTER + 4 }]),
+          "detached landed cell does not attach"
+        );
+
+        const coreGame = new api.BalanceStackGame();
+        for (let y = api.CENTER - 1; y <= api.CENTER + 1; y += 1) {
+          for (let x = api.CENTER - 1; x <= api.CENTER + 1; x += 1) {
+            coreGame.board[y][x] = { color: "cyan", seed: x === api.CENTER && y === api.CENTER, age: 0 };
+          }
+        }
+        coreGame.recalculateCoreSquare();
+        assert(coreGame.coreLayers === 1, "recalculateCoreSquare detects a 3x3 centered square");
+      } catch (error) {
+        logResult(false, "unexpected exception", error && error.message ? error.message : String(error));
+      }
+
+      const summary = document.createElement("div");
+      summary.className = "summary";
+      summary.textContent = `Completed ${passes + failures} checks: ${passes} passed, ${failures} failed.`;
+      resultsNode.appendChild(summary);
+    </script>
+  </body>
+</html>

@@ -1,150 +1,73 @@
 # AGENTS.md
 
+## Purpose
+This file is a short map for coding agents working in Twistris.
+
+Keep this file brief. Put detailed product, balance, and milestone planning in the dedicated docs listed below.
+
 ## Project
-Working title: **Twistris**
+Twistris is a browser-based falling-block puzzle game where tetrominoes attach to a central mass called the Pulse. The stack may rotate after lock if the structure becomes imbalanced. There are no line clears.
 
-Twistris is a browser-based falling-block puzzle prototype where tetrominoes always fall from the top, attach to a central mass, and can rotate that settled mass by one 90 degree step if the overall structure becomes imbalanced.
+Current long-term direction:
+- feed and repair a damaged Pulse across many runs
+- harvest Pulse charges and dud salvage
+- save progress to a persistent local profile
 
-The defining objective is to grow a larger centered square. There are no line clears.
+## Source Of Truth
+- [README.md](/Users/katherinephillips/Documents/Twistris/README.md): player-facing project summary
+- [OUTLINE.md](/Users/katherinephillips/Documents/Twistris/OUTLINE.md): product direction, milestone definitions, future mechanics
+- [TODO.md](/Users/katherinephillips/Documents/Twistris/TODO.md): active implementation backlog
+- [DATA_FORMATS.md](/Users/katherinephillips/Documents/Twistris/DATA_FORMATS.md): runtime state and persistence guidance
+- [BALANCE_PLAN.md](/Users/katherinephillips/Documents/Twistris/BALANCE_PLAN.md): twist heuristic and tuning targets
+- [TESTING.md](/Users/katherinephillips/Documents/Twistris/TESTING.md): verification strategy and smoke checks
 
----
+If this file and those docs disagree, update this file to match the deeper docs unless the deeper docs are clearly stale.
 
-## 1. Core Gameplay Agent
-Responsible for the main loop already implemented in the prototype.
+## Code Map
+- [index.html](/Users/katherinephillips/Documents/Twistris/index.html): shell, overlays, HUD mounts, canvas
+- [style.css](/Users/katherinephillips/Documents/Twistris/style.css): layout, overlays, title presentation
+- [game.js](/Users/katherinephillips/Documents/Twistris/game.js): gameplay loop, state, rendering, tutorial/title logic
+- [tests/smoke.html](/Users/katherinephillips/Documents/Twistris/tests/smoke.html): browser smoke-test harness
 
-### Responsibilities
-- Handle title screen and start flow
-- Spawn pieces
-- Process movement, rotation, soft drop, hard drop
-- Lock pieces when grounded
-- Enforce that new pieces attach to the existing structure
-- Trigger post-lock balance evaluation
+## Current Milestone
+Build the first milestone from [TODO.md](/Users/katherinephillips/Documents/Twistris/TODO.md):
+- Feed the Pulse, recover salvage, and complete the first repair.
 
-### Current state
-- Implemented
+Key milestone rules:
+- first session starts by clicking the Pulse and entering a player name
+- the tutorial exists to restore the failed gyro/stabilizer so the Pulse can spin again
+- Pulse rotation is intentionally disabled until that repair is complete
+- Pulse charges come from centered square growth
+- duds come from influenced gray blocks at harvest end
+- first craft rule is `8 duds + 1 Pulse charge = 1 repair block`
 
----
+## Working Rules
+- Keep the game dependency-light and openable directly in a browser.
+- Prefer extracting or preserving pure logic helpers when changing board rules so they remain testable.
+- When adding new systems, update the relevant planning doc in the same change if the design has shifted.
+- Use current project vocabulary consistently:
+  - Pulse
+  - Pulse charges
+  - Duds
+  - Harvest
+  - Repair block
+- Future mechanics belong in the backlog unless they are explicitly being pulled into the active milestone.
 
-## 2. Piece Agent
-Handles tetromino definitions and active-piece control.
+## Testing Expectations
+- For visual or interaction changes, verify in a browser with [index.html](/Users/katherinephillips/Documents/Twistris/index.html).
+- For logic regressions, use [tests/smoke.html](/Users/katherinephillips/Documents/Twistris/tests/smoke.html).
+- If you change balance, attachment, core-growth, harvest, or profile rules, add or update smoke coverage where practical.
+- This repo currently has no Node-based test runner. Do not assume npm, node, or bundler tooling exists.
 
-### Responsibilities
-- Store tetromino shapes
-- Spawn the current piece and next-piece preview
-- Apply 90 degree piece rotation
-- Support minimal kick logic
-- Generate ghost position
+## Good Candidate Test Targets
+- attachment to the existing structure
+- core square growth detection
+- balance profile direction and stability
+- preview layout math
+- profile save/load shape
+- tutorial gating for gyro-disabled vs gyro-restored states
 
-### Current state
-- Implemented
-
----
-
-## 3. Stack Agent
-Owns the persistent structure built by the player.
-
-### Responsibilities
-- Store settled blocks on the grid
-- Validate attachment to the central mass
-- Reject detached landed pieces
-- Expose stack shape for balance and rendering
-
-### Current state
-- Implemented
-
----
-
-## 4. Balance Agent
-Controls the game’s signature twist rule.
-
-### Responsibilities
-- Evaluate left-versus-right mass around the center
-- Weight outer blocks more strongly than near-center blocks
-- Decide whether the structure is stable or should rotate
-- Remain readable and tunable, not physically realistic
-
-### Current state
-- Implemented, still a tuning hotspot
-
----
-
-## 5. Rotation Agent
-Handles the quarter-turn of the settled stack.
-
-### Responsibilities
-- Rotate the settled board state by exactly 90 degrees
-- Block rotations that would move cells outside the field
-- Animate the visible turn smoothly
-- Keep gameplay paused during turn animation
-
-### Current state
-- Implemented
-
----
-
-## 6. Core Square Agent
-Tracks the central square objective.
-
-### Responsibilities
-- Detect the largest fully completed centered square
-- Draw the solid core and dotted inner outline
-- Keep the outline inside occupied cells only
-- Drive any future score or growth reward systems
-
-### Current state
-- Implemented for detection and rendering
-
----
-
-## 7. Input / Feel Agent
-Keeps the game readable and responsive.
-
-### Responsibilities
-- Familiar falling-block controls
-- Clean soft drop behavior
-- Pause and restart handling
-- Prevent jitter or multi-step fall glitches
-
-### Current state
-- Implemented, with ongoing tuning
-
----
-
-## 8. Visual Feedback Agent
-Communicates the state of the stack clearly.
-
-### Responsibilities
-- Matte board rendering
-- Outer-perimeter outline only
-- Gradual fade on older outer blocks
-- Status chip for exceptional states only
-- Start screen and overlays
-
-### Current state
-- Implemented
-
----
-
-## 9. Missing / Future Systems
-These are the most natural next systems for Twistris.
-
-### A. Growth Reward Agent
-- Reward completed square expansion with score or another resource
-
-### B. Stability Agent
-- Bank balanced placements into a future rescue or cancel action
-
-### C. Recovery Agent
-- Add a miss tray, hold tray, or other forgiveness mechanic for detached drops
-
-### D. Forecast Agent
-- Preview likely twist direction before lock
-
----
-
-## 10. Recommended Next Build Order
-1. Confirm twist direction and threshold tuning
-2. Add a reward for square growth
-3. Add one recovery mechanic for detached placements
-4. Add a twist-direction preview before lock
-5. Revisit progression, score, or mode ideas only after the core loop feels strong
+## Avoid
+- bloating this file into a full design document
+- introducing build-tool assumptions without adding the tooling explicitly
+- mixing future backlog mechanics into milestone one without updating the docs first
