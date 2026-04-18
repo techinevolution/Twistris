@@ -10,6 +10,7 @@ const statusValue = document.getElementById("statusValue");
 const currencyValue = document.getElementById("currencyValue");
 const startScreen = document.getElementById("startScreen");
 const startButton = document.getElementById("startButton");
+const boardWrap = document.querySelector(".board-wrap");
 const gameKeySink = document.getElementById("gameKeySink");
 const GAME_CONTROL_CODES = new Set([
   "ArrowLeft",
@@ -69,6 +70,17 @@ const INTRO_IDLE_GRID_ALPHA = 0.36;
 const PULSE_HEARTBEAT_CYCLE = 1.74;
 const PULSE_HEARTBEAT_WINDOW = 0.82;
 const PULSE_PARTICLE_COUNT = 24;
+const HARVEST_IMPACT_TIME = 0.744;
+const HARVEST_FALL_TIME = 0.84;
+const HARVEST_DUD_EMIT_INTERVAL = 0.04;
+const HARVEST_DUD_TRAVEL_TIME = 0.34;
+const HARVEST_CHARGE_EMIT_INTERVAL = 0.216;
+const HARVEST_CHARGE_TRAVEL_TIME = 0.456;
+const HARVEST_RETURN_TIME = 1.02;
+const HARVEST_MAX_ZOOM = 1.08;
+const HARVEST_COUNTER_X_INSET = 126;
+const HARVEST_COUNTER_Y = STAGE_SIZE - 48;
+const HARVEST_COUNTER_VALUE_Y = 13;
 
 const COLORS = {
   cyan: "#4aa8d8",
@@ -215,6 +227,9 @@ class BalanceStackGame {
   constructor() {
     this.started = false;
     this.elapsedTime = 0;
+    this.bankedDuds = 0;
+    this.bankedPulseCharges = 0;
+    this.harvestSequence = null;
     this.coreParticles = [];
     this.pulseParticles = [];
     this.resetIntroState(true);
@@ -232,6 +247,7 @@ class BalanceStackGame {
     this.lastMoveDir = 0;
     this.lockTimer = 0;
     this.gameOver = false;
+    this.harvestSequence = null;
     this.piecesPlaced = 0;
     this.lockSequence = 0;
     this.rotationCount = 0;
@@ -248,6 +264,7 @@ class BalanceStackGame {
     this.coreParticles = [];
     this.pulseParticles = [];
     this.pulseParticleTimer = 0;
+    this.setHarvestPresentation(false);
 
     this.seedCore();
     this.setStatus("");
@@ -261,6 +278,7 @@ class BalanceStackGame {
   restart() {
     this.resetIntroState(false);
     this.started = true;
+    this.setHarvestPresentation(false);
     this.resetState();
     this.spawnPiece();
     this.updateGhost();
@@ -278,6 +296,12 @@ class BalanceStackGame {
     this.titleGridAlpha = showTitle ? INTRO_IDLE_GRID_ALPHA : 1;
   }
 
+  setHarvestPresentation(active) {
+    if (boardWrap) {
+      boardWrap.classList.toggle("is-harvesting", active);
+    }
+  }
+
   beginStartSequence() {
     if (this.started || this.launching) return;
     this.launching = true;
@@ -289,6 +313,7 @@ class BalanceStackGame {
   finishStartSequence() {
     this.resetIntroState(false);
     this.started = true;
+    this.setHarvestPresentation(false);
     this.resetState();
     this.spawnPiece();
     this.updateGhost();
@@ -428,7 +453,7 @@ class BalanceStackGame {
   }
 
   hardDrop() {
-    if (!this.current || this.gameOver) return;
+    if (!this.current || this.gameOver || this.harvestSequence) return;
     while (this.movePiece(0, 1)) {
       // Drop until collision.
     }
@@ -445,6 +470,13 @@ class BalanceStackGame {
         this.startGame();
       }
       this.updateIntroAnimation(dt);
+      this.updateHUD();
+      return;
+    }
+
+    if (this.harvestSequence) {
+      this.updateHarvestSequence(dt);
+      this.updateRotationAnimation(dt);
       this.updateHUD();
       return;
     }
@@ -548,7 +580,7 @@ class BalanceStackGame {
     for (const cell of landed) {
       // Collapse only if a locked structure extends outside the playable field.
       if (cell.x < 0 || cell.x >= GRID_SIZE || cell.y < 0 || cell.y >= GRID_SIZE) {
-        this.gameOver = true;
+        this.startHarvestSequence();
         return;
       }
       this.board[cell.y][cell.x] = {
@@ -565,6 +597,208 @@ class BalanceStackGame {
     this.lockTimer = 0;
     this.spawnPiece();
     this.updateGhost();
+  }
+
+  startHarvestSequence() {
+    if (this.harvestSequence) return;
+
+    const dudBlocks = [];
+    const outerBlocks = [];
+    for (let y = 0; y < GRID_SIZE; y += 1) {
+      for (let x = 0; x < GRID_SIZE; x += 1) {
+        const block = this.board[y][x];
+        if (!block || block.seed) continue;
+
+        const influenced = this.coreLayers > 0 && Math.max(Math.abs(x - CENTER), Math.abs(y - CENTER)) <= this.coreLayers;
+        const descriptor = {
+          x,
+          y,
+          color: block.color,
+          seed: x * 0.73 + y * 1.17 + (block.color === "cyan" ? 0.18 : 0.48),
+          driftX: (hashUnit(x * 17.13 + y * 11.7) - 0.5) * 46,
+          fallDistance: 220 + hashUnit(x * 8.9 + y * 3.7) * 170,
+          fallDelay: hashUnit(x * 2.7 + y * 5.1) * 0.34,
+          fallSpin: (hashUnit(x * 13.2 + y * 9.4) - 0.5) * 0.34,
+        };
+
+        if (influenced) {
+          dudBlocks.push(descriptor);
+        } else {
+          outerBlocks.push(descriptor);
+        }
+      }
+    }
+
+    this.current = null;
+    this.ghost = [];
+    this.lockTimer = 0;
+    this.dropTimer = 0;
+    this.moveTimer = 0;
+    this.lastMoveDir = 0;
+    this.paused = false;
+    this.gameOver = false;
+    this.setStatus("");
+    this.setHarvestPresentation(true);
+    keys.clear();
+    justPressed.clear();
+
+    this.harvestSequence = {
+      phase: "impact",
+      phaseTime: 0,
+      outerBlocks,
+      dudBlocks,
+      activeDudParticles: [],
+      activeChargeParticles: [],
+      emittedDuds: 0,
+      emittedCharges: 0,
+      visibleDuds: dudBlocks.length,
+      displayDuds: this.bankedDuds,
+      displayCharges: this.bankedPulseCharges,
+      dudCounterPulse: 0,
+      chargeCounterPulse: 0,
+      harvestedDuds: dudBlocks.length,
+      harvestedCharges: this.coreChargeCount,
+      impactLabel: "Capacity Reached",
+    };
+  }
+
+  advanceHarvestPhase(nextPhase) {
+    if (!this.harvestSequence) return;
+    this.harvestSequence.phase = nextPhase;
+    this.harvestSequence.phaseTime = 0;
+  }
+
+  updateHarvestSequence(dt) {
+    const harvest = this.harvestSequence;
+    if (!harvest) return;
+
+    harvest.phaseTime += dt;
+    harvest.dudCounterPulse = Math.max(0, harvest.dudCounterPulse - dt / 0.24);
+    harvest.chargeCounterPulse = Math.max(0, harvest.chargeCounterPulse - dt / 0.24);
+
+    if (harvest.phase === "impact") {
+      if (harvest.phaseTime >= HARVEST_IMPACT_TIME) {
+        this.advanceHarvestPhase("fall");
+      }
+      return;
+    }
+
+    if (harvest.phase === "fall") {
+      if (harvest.phaseTime >= HARVEST_FALL_TIME) {
+        if (harvest.dudBlocks.length > 0) {
+          this.advanceHarvestPhase("duds");
+        } else if (harvest.harvestedCharges > 0) {
+          this.advanceHarvestPhase("charges");
+        } else {
+          this.advanceHarvestPhase("return");
+        }
+      }
+      return;
+    }
+
+    if (harvest.phase === "duds") {
+      while (
+        harvest.emittedDuds < harvest.dudBlocks.length &&
+        harvest.phaseTime >= harvest.emittedDuds * HARVEST_DUD_EMIT_INTERVAL
+      ) {
+        const block = harvest.dudBlocks[harvest.emittedDuds];
+        const startX = STAGE_SIZE / 2 + (block.x - CENTER) * CELL_SIZE;
+        const startY = STAGE_SIZE / 2 + (block.y - CENTER) * CELL_SIZE;
+        harvest.activeDudParticles.push({
+          age: 0,
+          duration: HARVEST_DUD_TRAVEL_TIME,
+          startX,
+          startY,
+          controlX: startX + (STAGE_SIZE - HARVEST_COUNTER_X_INSET - startX) * 0.38,
+          controlY: startY + 18 + hashUnit(block.seed * 12.3) * 42,
+          targetX: STAGE_SIZE - HARVEST_COUNTER_X_INSET,
+          targetY: HARVEST_COUNTER_Y + HARVEST_COUNTER_VALUE_Y,
+          color: block.color,
+          seed: block.seed,
+          arrived: false,
+        });
+        harvest.emittedDuds += 1;
+        harvest.visibleDuds = Math.max(0, harvest.dudBlocks.length - harvest.emittedDuds);
+      }
+
+      for (const particle of harvest.activeDudParticles) {
+        particle.age = Math.min(particle.duration, particle.age + dt);
+      }
+
+      const remainingDuds = [];
+      for (const particle of harvest.activeDudParticles) {
+        if (!particle.arrived && particle.age >= particle.duration) {
+          particle.arrived = true;
+          this.bankedDuds += 1;
+          harvest.displayDuds = this.bankedDuds;
+          harvest.dudCounterPulse = 1;
+        }
+        if (!particle.arrived) {
+          remainingDuds.push(particle);
+        }
+      }
+      harvest.activeDudParticles = remainingDuds;
+
+      if (harvest.emittedDuds >= harvest.dudBlocks.length && harvest.activeDudParticles.length === 0) {
+        if (harvest.harvestedCharges > 0) {
+          this.advanceHarvestPhase("charges");
+        } else {
+          this.advanceHarvestPhase("return");
+        }
+      }
+      return;
+    }
+
+    if (harvest.phase === "charges") {
+      while (
+        harvest.emittedCharges < harvest.harvestedCharges &&
+        harvest.phaseTime >= harvest.emittedCharges * HARVEST_CHARGE_EMIT_INTERVAL
+      ) {
+        harvest.activeChargeParticles.push({
+          age: 0,
+          duration: HARVEST_CHARGE_TRAVEL_TIME,
+          targetX: HARVEST_COUNTER_X_INSET,
+          targetY: HARVEST_COUNTER_Y + HARVEST_COUNTER_VALUE_Y,
+          arrived: false,
+        });
+        harvest.emittedCharges += 1;
+      }
+
+      for (const particle of harvest.activeChargeParticles) {
+        particle.age = Math.min(particle.duration, particle.age + dt);
+      }
+
+      const remainingCharges = [];
+      for (const particle of harvest.activeChargeParticles) {
+        if (!particle.arrived && particle.age >= particle.duration) {
+          particle.arrived = true;
+          this.bankedPulseCharges += 1;
+          harvest.displayCharges = this.bankedPulseCharges;
+          harvest.chargeCounterPulse = 1;
+        }
+        if (!particle.arrived) {
+          remainingCharges.push(particle);
+        }
+      }
+      harvest.activeChargeParticles = remainingCharges;
+
+      if (harvest.emittedCharges >= harvest.harvestedCharges && harvest.activeChargeParticles.length === 0) {
+        this.advanceHarvestPhase("return");
+      }
+      return;
+    }
+
+    if (harvest.phase === "return" && harvest.phaseTime >= HARVEST_RETURN_TIME) {
+      this.finishHarvestSequence();
+    }
+  }
+
+  finishHarvestSequence() {
+    this.setHarvestPresentation(false);
+    this.resetIntroState(true);
+    this.started = false;
+    this.resetState();
+    this.updateStartScreen();
   }
 
   attachesToStructure(landed) {
@@ -875,6 +1109,44 @@ class BalanceStackGame {
     };
   }
 
+  getHarvestViewState() {
+    const harvest = this.harvestSequence;
+    if (!harvest) return null;
+
+    let cameraZoom = 1;
+    let shakeX = 0;
+    let shakeY = 0;
+    let messageAlpha = 0;
+    let fieldAlpha = 1;
+
+    if (harvest.phase === "impact") {
+      const progress = clamp(harvest.phaseTime / HARVEST_IMPACT_TIME, 0, 1);
+      const swell = progress < 0.56 ? easeOutCubic(progress / 0.56) : 1 - easeInCubic((progress - 0.56) / 0.44);
+      const slam = clamp((progress - 0.6) / 0.28, 0, 1);
+      cameraZoom = 1 + swell * (HARVEST_MAX_ZOOM - 1);
+      const shakeStrength = (1 - slam) * Math.sin(slam * Math.PI * 4) * 7.5;
+      shakeX = Math.sin(this.elapsedTime * 62) * shakeStrength;
+      shakeY = Math.cos(this.elapsedTime * 54) * shakeStrength * 0.72;
+      messageAlpha = clamp(progress * 1.4, 0, 1);
+    } else if (harvest.phase === "fall") {
+      const progress = clamp(harvest.phaseTime / HARVEST_FALL_TIME, 0, 1);
+      const shakeStrength = (1 - progress) * 4.2;
+      shakeX = Math.sin(this.elapsedTime * 48) * shakeStrength;
+      shakeY = Math.cos(this.elapsedTime * 44) * shakeStrength * 0.68;
+      messageAlpha = 1 - progress;
+    } else if (harvest.phase === "duds") {
+      const totalSpan = Math.max(HARVEST_DUD_EMIT_INTERVAL * Math.max(1, harvest.dudBlocks.length), HARVEST_DUD_TRAVEL_TIME);
+      const progress = clamp(harvest.phaseTime / totalSpan, 0, 1);
+      fieldAlpha = 1 - easeOutCubic(progress);
+    } else if (harvest.phase === "return") {
+      const progress = clamp(harvest.phaseTime / HARVEST_RETURN_TIME, 0, 1);
+      cameraZoom = lerp(1, INTRO_IDLE_CAMERA_ZOOM, easeInOutCubic(progress));
+      fieldAlpha = 1 - progress;
+    }
+
+    return { cameraZoom, shakeX, shakeY, messageAlpha, fieldAlpha };
+  }
+
   draw() {
     ctx.setTransform(canvasRatio, 0, 0, canvasRatio, 0, 0);
     renderTime = this.elapsedTime;
@@ -890,6 +1162,7 @@ class BalanceStackGame {
     roundRect(ctx, 0, 0, frameWidth, frameHeight, 22, true);
 
     const coreVisual = this.getCoreVisualState();
+    const harvestView = this.getHarvestViewState();
     ctx.save();
     ctx.translate(stage.offsetX, stage.offsetY);
     ctx.scale(stage.scale, stage.scale);
@@ -897,22 +1170,31 @@ class BalanceStackGame {
     if (!this.started) {
       drawStartLogo(ctx, width, this.launching ? this.launchProgress : 0);
     }
-    ctx.translate(width / 2, height / 2);
-    ctx.scale(coreVisual.cameraZoom, coreVisual.cameraZoom);
-    drawGrid(ctx, coreVisual.gridAlpha);
-    this.drawStructure();
-    drawCoreField(ctx, this.coreLayers, this.rotationVisual, coreVisual, this.started && this.coreLayers > 0);
+    const boardZoom = harvestView ? harvestView.cameraZoom : coreVisual.cameraZoom;
+    const boardGridAlpha = harvestView ? 1 : coreVisual.gridAlpha;
+    const boardShakeX = harvestView ? harvestView.shakeX : 0;
+    const boardShakeY = harvestView ? harvestView.shakeY : 0;
+    const influenceAlpha = harvestView ? harvestView.fieldAlpha : 1;
+    ctx.translate(width / 2 + boardShakeX, height / 2 + boardShakeY);
+    ctx.scale(boardZoom, boardZoom);
+    drawGrid(ctx, boardGridAlpha);
+    if (harvestView) {
+      this.drawHarvestStructure();
+    } else {
+      this.drawStructure();
+    }
+    drawCoreField(ctx, this.coreLayers, this.rotationVisual, coreVisual, this.started && this.coreLayers > 0, influenceAlpha);
     drawCoreParticles(ctx, this.coreParticles);
     drawPulseParticles(ctx, this.pulseParticles, coreVisual, "back");
     drawCoreSquare(ctx, this.coreLayers, this.rotationVisual, coreVisual, this.started && this.coreLayers > 0);
     drawPulseParticles(ctx, this.pulseParticles, coreVisual, "front");
-    if (this.started) {
+    if (this.started && !harvestView) {
       this.drawGhostPiece();
       this.drawCurrentPiece();
     }
     ctx.restore();
 
-    if (this.started) {
+    if (this.started && !harvestView) {
       ctx.save();
       ctx.translate(stage.offsetX, stage.offsetY);
       ctx.scale(stage.scale, stage.scale);
@@ -920,7 +1202,13 @@ class BalanceStackGame {
       ctx.restore();
     }
 
-    if (this.gameOver) {
+    if (harvestView) {
+      ctx.save();
+      ctx.translate(stage.offsetX, stage.offsetY);
+      ctx.scale(stage.scale, stage.scale);
+      this.drawHarvestOverlay(harvestView, width, height);
+      ctx.restore();
+    } else if (this.gameOver) {
       ctx.save();
       ctx.translate(stage.offsetX, stage.offsetY);
       ctx.scale(stage.scale, stage.scale);
@@ -956,6 +1244,160 @@ class BalanceStackGame {
       }
     }
     drawMassOutline(ctx, this.board);
+    ctx.restore();
+  }
+
+  drawHarvestStructure() {
+    const harvest = this.harvestSequence;
+    if (!harvest) return;
+
+    ctx.save();
+    ctx.rotate(this.rotationVisual);
+
+    const fallProgress = harvest.phase === "fall" ? clamp(harvest.phaseTime / HARVEST_FALL_TIME, 0, 1) : 0;
+    const showOuter = harvest.phase === "impact" || harvest.phase === "fall";
+
+    if (showOuter) {
+      for (const block of harvest.outerBlocks) {
+        const localProgress = clamp((fallProgress - block.fallDelay) / Math.max(0.001, 1 - block.fallDelay), 0, 1);
+        const eased = easeInCubic(localProgress);
+        const x = (block.x - CENTER) * CELL_SIZE + block.driftX * eased;
+        const y = (block.y - CENTER) * CELL_SIZE + block.fallDistance * eased;
+        const alpha = 1 - easeOutCubic(localProgress);
+        if (alpha <= 0.01) continue;
+        drawFloatingCell(ctx, x, y, block.color, alpha, false, block.seed, CELL_SIZE - 0.6, block.fallSpin * localProgress);
+      }
+    }
+
+    const dudsVisible = harvest.phase === "impact" || harvest.phase === "fall" || harvest.phase === "duds";
+    if (dudsVisible) {
+      const emittedCount = harvest.dudBlocks.length - harvest.visibleDuds;
+      for (let index = 0; index < harvest.dudBlocks.length; index += 1) {
+        const block = harvest.dudBlocks[index];
+        if (index < emittedCount) continue;
+
+        let alpha = 1;
+        if (harvest.phase === "duds") {
+          const phaseFade = clamp(harvest.phaseTime / Math.max(0.001, HARVEST_DUD_TRAVEL_TIME * 1.5), 0, 1);
+          alpha = 1 - phaseFade * 0.22;
+        }
+        drawFloatingCell(
+          ctx,
+          (block.x - CENTER) * CELL_SIZE,
+          (block.y - CENTER) * CELL_SIZE,
+          block.color,
+          alpha,
+          true,
+          block.seed,
+          CELL_SIZE - 0.6
+        );
+      }
+    }
+
+    ctx.restore();
+  }
+
+  drawHarvestOverlay(harvestView, width, height) {
+    const harvest = this.harvestSequence;
+    if (!harvest) return;
+
+    const chargeCounter = { x: HARVEST_COUNTER_X_INSET, y: HARVEST_COUNTER_Y };
+    const dudCounter = { x: width - HARVEST_COUNTER_X_INSET, y: HARVEST_COUNTER_Y };
+    const chargeTarget = { x: chargeCounter.x, y: chargeCounter.y + HARVEST_COUNTER_VALUE_Y };
+    const pulseOrigin = { x: width / 2 + harvestView.shakeX, y: height / 2 + harvestView.shakeY };
+    const overlayAlpha = harvest.phase === "return" ? 1 - clamp(harvest.phaseTime / HARVEST_RETURN_TIME, 0, 1) : 1;
+
+    if (harvest.phase === "impact" || harvest.phase === "fall") {
+      ctx.save();
+      ctx.globalAlpha = harvestView.messageAlpha * overlayAlpha;
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#eef7ff";
+      ctx.font = '800 34px "Segoe UI", Helvetica, Arial, sans-serif';
+      ctx.fillText(harvest.impactLabel, width / 2, 92);
+      ctx.restore();
+    }
+
+    this.drawHarvestCounter(
+      chargeCounter.x,
+      chargeCounter.y,
+      "Pulse charges",
+      harvest.displayCharges,
+      "#ffffff",
+      "rgba(255,255,255,0.14)",
+      overlayAlpha,
+      harvest.chargeCounterPulse
+    );
+    this.drawHarvestCounter(
+      dudCounter.x,
+      dudCounter.y,
+      "Duds",
+      harvest.displayDuds,
+      "#a9b1b8",
+      "rgba(169,177,184,0.12)",
+      overlayAlpha,
+      harvest.dudCounterPulse
+    );
+
+    if (harvest.phase === "charges" || harvest.phase === "return" || harvest.activeChargeParticles.length > 0) {
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.shadowColor = `rgba(255,255,255,${overlayAlpha * 0.45})`;
+      ctx.shadowBlur = 14;
+      ctx.strokeStyle = `rgba(255,255,255,${overlayAlpha * 0.46})`;
+      ctx.lineWidth = 4.5;
+      ctx.beginPath();
+      ctx.moveTo(pulseOrigin.x, pulseOrigin.y);
+      ctx.lineTo(chargeTarget.x, chargeTarget.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    for (const particle of harvest.activeDudParticles) {
+      const progress = clamp(particle.age / particle.duration, 0, 1);
+      const x = quadraticBezier(particle.startX, particle.controlX, particle.targetX, progress);
+      const y = quadraticBezier(particle.startY, particle.controlY, particle.targetY, progress);
+      const size = lerp(11.5, 6.2, easeOutCubic(progress));
+      drawFloatingCell(ctx, x, y, particle.color, 0.96 * overlayAlpha, true, particle.seed, size);
+    }
+
+    for (const particle of harvest.activeChargeParticles) {
+      const progress = clamp(particle.age / particle.duration, 0, 1);
+      const x = lerp(pulseOrigin.x, particle.targetX, easeInOutCubic(progress));
+      const y = lerp(pulseOrigin.y, particle.targetY, easeInOutCubic(progress));
+      const radius = lerp(5.5, 4.2, progress);
+      ctx.save();
+      ctx.fillStyle = `rgba(255,255,255,${overlayAlpha * 0.95})`;
+      ctx.shadowColor = `rgba(255,255,255,${overlayAlpha * 0.85})`;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  drawHarvestCounter(x, y, label, value, numberColor, borderColor, alpha = 1, pulse = 0) {
+    const pop = 1 + easeOutCubic(pulse) * 0.16;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y);
+    ctx.fillStyle = "rgba(7, 19, 29, 0.9)";
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1;
+    roundRect(ctx, -74, -26, 148, 52, 18, true);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(142,160,179,0.82)";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = '700 11px "Segoe UI", Helvetica, Arial, sans-serif';
+    ctx.fillText(label.toUpperCase(), 0, -8);
+    ctx.fillStyle = numberColor;
+    ctx.save();
+    ctx.translate(0, 13);
+    ctx.scale(pop, pop);
+    ctx.font = '800 22px "Segoe UI", Helvetica, Arial, sans-serif';
+    ctx.fillText(String(value), 0, 0);
+    ctx.restore();
     ctx.restore();
   }
 
@@ -1185,13 +1627,13 @@ function drawPulseCornerAccent(context, halfSize, length, color, xSign, ySign) {
   context.restore();
 }
 
-function drawCoreField(context, layers, angle, visual, showInfluence) {
+function drawCoreField(context, layers, angle, visual, showInfluence, alphaScale = 1) {
   if (!showInfluence || layers <= 0) return;
 
   const fieldSize = (layers * 2 + 1) * CELL_SIZE - 3;
   const fieldHalf = fieldSize / 2;
-  const shadeAlpha = 0.24 + Math.min(0.14, layers * 0.024);
-  const outlineAlpha = 0.46 + (visual ? visual.pulse : 0.5) * 0.12;
+  const shadeAlpha = (0.24 + Math.min(0.14, layers * 0.024)) * alphaScale;
+  const outlineAlpha = (0.46 + (visual ? visual.pulse : 0.5) * 0.12) * alphaScale;
   const inset = Math.min(6, Math.max(3, CELL_SIZE * 0.18));
 
   context.save();
@@ -1438,6 +1880,22 @@ function drawTechCellRect(context, x, y, size, palette, options = {}) {
     context.fill();
   }
 
+  context.restore();
+}
+
+function drawFloatingCell(context, x, y, colorKey, alpha, influenced, seed, size = CELL_SIZE - 0.6, rotation = 0) {
+  const palette = getTetrominoPalette(colorKey, influenced);
+  context.save();
+  context.translate(x, y);
+  if (rotation) {
+    context.rotate(rotation);
+  }
+  drawTechCellRect(context, 0, 0, size, palette, {
+    alpha,
+    flicker: !influenced,
+    seed,
+    sparkle: influenced ? 0 : clamp((1 - alpha) * 1.1, 0, 0.36),
+  });
   context.restore();
 }
 
@@ -1703,6 +2161,11 @@ function hexToRgba(hex, alpha) {
   const g = (value >> 8) & 255;
   const b = value & 255;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function quadraticBezier(start, control, end, t) {
+  const inverse = 1 - t;
+  return inverse * inverse * start + 2 * inverse * t * control + t * t * end;
 }
 
 const game = new BalanceStackGame();

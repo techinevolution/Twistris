@@ -93,7 +93,9 @@ body {
 }
 
 .start-screen:not(.is-hidden) ~ .board-overlay-top,
-.start-screen:not(.is-hidden) ~ .board-overlay-bottom {
+.start-screen:not(.is-hidden) ~ .board-overlay-bottom,
+.board-wrap.is-harvesting .board-overlay-top,
+.board-wrap.is-harvesting .board-overlay-bottom {
   opacity: 0;
 }
 
@@ -107,6 +109,7 @@ body {
   gap: 8px;
   z-index: 2;
   pointer-events: none;
+  transition: opacity 180ms ease;
 }
 
 .board-overlay-bottom {
@@ -116,6 +119,7 @@ body {
   transform: translateX(-50%);
   z-index: 2;
   pointer-events: none;
+  transition: opacity 180ms ease;
 }
 
 .currency-chip,

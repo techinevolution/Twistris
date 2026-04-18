@@ -154,6 +154,23 @@
         }
         coreGame.recalculateCoreSquare();
         assert(coreGame.coreLayers === 1, "recalculateCoreSquare detects a 3x3 centered square");
+
+        const harvestGame = new api.BalanceStackGame();
+        for (let y = api.CENTER - 1; y <= api.CENTER + 1; y += 1) {
+          for (let x = api.CENTER - 1; x <= api.CENTER + 1; x += 1) {
+            harvestGame.board[y][x] = { color: "cyan", seed: x === api.CENTER && y === api.CENTER, age: 0 };
+          }
+        }
+        harvestGame.board[api.CENTER][api.CENTER + 3] = { color: "magenta", seed: false, age: 0 };
+        harvestGame.recalculateCoreSquare();
+        harvestGame.startHarvestSequence();
+        assert(harvestGame.harvestSequence.phase === "impact", "harvest begins with the impact phase");
+        assert(harvestGame.harvestSequence.harvestedDuds === 8, "harvest counts influenced blocks as duds");
+        assert(harvestGame.harvestSequence.outerBlocks.length === 1, "harvest keeps non-dud outer blocks separate");
+
+        harvestGame.finishHarvestSequence();
+        assert(!harvestGame.started, "finishHarvestSequence returns the game to the title state");
+        assert(harvestGame.harvestSequence === null, "finishHarvestSequence clears the active harvest sequence");
       } catch (error) {
         logResult(false, "unexpected exception", error && error.message ? error.message : String(error));
       }
