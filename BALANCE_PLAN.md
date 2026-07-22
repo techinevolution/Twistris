@@ -31,7 +31,7 @@ The game is not balanced around score races or line clearing. It is balanced aro
 
 ### Structure Attachment Rule
 - A landed piece must touch the existing structure by edge adjacency.
-- If it does not attach, it is discarded and the next piece spawns.
+- If it does not attach, the same shape currently returns from the spawn lane for another attempt.
 
 This keeps the game focused on building onto a single central mass and avoids stranded junk at the floor.
 
@@ -85,7 +85,7 @@ Current stability terms:
 The latest direction fix aligns sign mapping with the current rotation transform, but this should still be treated as a tuning hotspot until repeated play confirms it feels correct.
 
 ### B. Discarded Misses
-Detached pieces disappearing is clean, but severe misses currently waste turns without creating a recovery option.
+Detached pieces currently retry without a lasting consequence. A future cracked return and Bit Dust rule could turn repeated misses into a readable recovery choice, but that rule is not approved for implementation yet.
 
 ### C. Threshold Sensitivity
 The new model is more stable at high block counts, but the threshold, brace bonus, and placement impulse still need live play tuning so late-game twists stay understandable without feeling dull.
@@ -130,9 +130,11 @@ Reward only completed square expansion.
 Grant a “stability charge” after several balanced placements.
 - Spend it to cancel one rotation or rescue one detached drop.
 
-### C. Miss Tray
-Instead of destroying a detached piece immediately, send it to a one-slot tray.
-- If the player misses again while the tray is full, then punish them.
+### C. Cracked Return / Bit Dust
+Possible future direction:
+- first detached miss returns the piece in a cracked state
+- another failed placement may shatter it into Bit Dust
+- any dust pressure or crafting value must be defined before implementation
 
 ### D. Rotation Preview
 Show `left`, `stable`, or `right` preview before lock.
@@ -141,6 +143,6 @@ Show `left`, `stable`, or `right` preview before lock.
 ## 9. Immediate Tuning Checklist
 - [ ] Confirm left-heavy and right-heavy twist directions through play.
 - [ ] Test the current center-of-mass threshold against early, mid, and large stack shapes.
-- [ ] Decide whether detached-piece discard is temporary or permanent.
+- [ ] Decide the exact cracked-return and Bit Dust behavior before changing detached-piece retry.
 - [ ] Decide whether square growth should directly drive score or another resource.
 - [ ] Decide whether blocked rotations should have a stronger visual response.
