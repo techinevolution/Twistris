@@ -1,5 +1,10 @@
 import Phaser from "phaser";
 
+import {
+  WorldCameraController,
+  type WorldCameraMode,
+} from "../../presentation/camera/WorldCameraController";
+
 const STAGE_SIZE = 800;
 const GRID_SIZE = 27;
 const CELL_SIZE = 24;
@@ -156,12 +161,15 @@ function createPulse(scene: Phaser.Scene): Phaser.GameObjects.Container {
   return container;
 }
 
-export class BootTitleScene extends Phaser.Scene {
+export class WorldScene extends Phaser.Scene {
   onLaunchComplete: (() => void) | null = null;
   onLaunchProgress: ((progress: number) => void) | null = null;
 
   private phase: TitlePhase = "title";
+  private readonly cameraController = new WorldCameraController("title-closeup");
+  private readonly mountedSectors = new Set<string>();
   private world!: Phaser.GameObjects.Container;
+  private pulseSector!: Phaser.GameObjects.Container;
   private grid!: Phaser.GameObjects.Graphics;
   private pulse!: Phaser.GameObjects.Container;
   private logo!: Phaser.GameObjects.Container;
@@ -175,16 +183,21 @@ export class BootTitleScene extends Phaser.Scene {
   private ready = false;
 
   constructor() {
-    super("BootTitle");
+    super("World");
   }
 
   create() {
     this.cameras.main.setBackgroundColor(COLORS.bg);
     this.world = this.add.container(STAGE_SIZE / 2, STAGE_SIZE / 2);
+    this.world.setName("world-root");
+    this.pulseSector = this.add.container(0, 0);
+    this.pulseSector.setName("sector:pulse");
     this.grid = this.createGrid();
     this.pulse = createPulse(this);
     this.createParticles();
-    this.world.add([this.grid, ...this.particles, this.pulse]);
+    this.pulseSector.add([this.grid, ...this.particles, this.pulse]);
+    this.world.add(this.pulseSector);
+    this.mountSector("pulse");
     this.world.setScale(IDLE_ZOOM);
     this.grid.setAlpha(IDLE_GRID_ALPHA);
     this.pulse.setScale(IDLE_PULSE_SCALE);
@@ -219,6 +232,7 @@ export class BootTitleScene extends Phaser.Scene {
     if (!this.ready || this.phase !== "title") return false;
 
     this.phase = "launching";
+    this.setCameraMode("guided-pullback");
     this.launchElapsed = 0;
     this.settleDegrees = Math.round(this.titleSpinDegrees / 90) * 90;
     this.publishDiagnostics();
@@ -242,6 +256,7 @@ export class BootTitleScene extends Phaser.Scene {
     if (progress < 1) return;
 
     this.phase = "playing-preview";
+    this.setCameraMode("pulse-home");
     this.world.setScale(1);
     this.grid.setAlpha(1);
     this.pulse.setScale(1);
@@ -324,11 +339,22 @@ export class BootTitleScene extends Phaser.Scene {
 
   private publishDiagnostics() {
     const root = document.documentElement;
+    root.dataset.worldScene = "active";
+    root.dataset.worldCameraMode = this.cameraController.mode;
+    root.dataset.worldMountedSectors = [...this.mountedSectors].sort().join(",");
     root.dataset.titlePhase = this.phase;
     root.dataset.titleFps = String(this.fps);
     root.dataset.titleRenderer =
       this.game.renderer.type === Phaser.WEBGL ? "webgl" : "canvas";
     root.dataset.titleWorldScale = this.world ? this.world.scaleX.toFixed(3) : "0";
     root.dataset.titlePulseAngle = this.pulse ? this.pulse.angle.toFixed(1) : "0";
+  }
+
+  private mountSector(sectorId: string) {
+    this.mountedSectors.add(sectorId);
+  }
+
+  private setCameraMode(mode: WorldCameraMode) {
+    this.cameraController.setMode(mode);
   }
 }

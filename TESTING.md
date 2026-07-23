@@ -95,7 +95,7 @@ The proof is not the playable game and must remain isolated until its presentati
 
 Run `npm run dev`, then compare `/next/` with `/`.
 
-Current Boot/Title parity checks:
+Current World-scene title parity checks:
 
 - the block-built TWISTRIS logo retains its cyan and magenta treatment
 - the close Pulse spins over the faint grid with heartbeat particles
@@ -106,6 +106,7 @@ Current Boot/Title parity checks:
 - keyboard focus moves to the game surface
 - desktop and `390x844` mobile layouts remain square, centered, and free of overlap
 - the scene holds stable frame pacing without browser warnings
+- diagnostics report one active World scene, the expected camera mode, and only the Pulse sector mounted
 
 The route is not a replacement for `/` until all gameplay and presentation parity checks pass.
 

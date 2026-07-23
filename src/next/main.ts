@@ -1,8 +1,8 @@
 import Phaser from "phaser";
 
-import { BootTitleScene } from "../scenes/boot-title/BootTitleScene";
+import { WorldScene } from "../scenes/world/WorldScene";
 
-const titleScene = new BootTitleScene();
+const worldScene = new WorldScene();
 const stage = document.querySelector<HTMLElement>("#phaserTitle");
 const startScreen = document.querySelector<HTMLElement>("#startScreen");
 const startButton = document.querySelector<HTMLButtonElement>("#startButton");
@@ -16,16 +16,16 @@ function focusGameSurface() {
     document.activeElement === target ? "true" : "false";
 }
 
-titleScene.onLaunchProgress = (progress) => {
+worldScene.onLaunchProgress = (progress) => {
   startScreen?.style.setProperty("--launch-progress", progress.toFixed(3));
 };
 
-titleScene.onLaunchComplete = () => {
+worldScene.onLaunchComplete = () => {
   startScreen?.classList.add("is-hidden");
 };
 
 startButton?.addEventListener("click", () => {
-  if (!titleScene.startTransition()) return;
+  if (!worldScene.startTransition()) return;
   startScreen?.classList.add("is-launching");
   focusGameSurface();
 });
@@ -52,5 +52,5 @@ new Phaser.Game({
     width: 800,
     height: 800,
   },
-  scene: titleScene,
+  scene: worldScene,
 });

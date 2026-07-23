@@ -8,6 +8,7 @@ import {
   findCenteredSquareLayers,
   rotateBoard,
 } from "../src/domain/rules";
+import { WorldCameraController } from "../src/presentation/camera/WorldCameraController";
 
 const block = Object.freeze({ color: "#ffffff" });
 
@@ -129,5 +130,17 @@ describe("harvest rules", () => {
     expect(Object.isFrozen(result)).toBe(true);
     expect(Object.isFrozen(result.result)).toBe(true);
     expect(Object.isFrozen(result.result.earned)).toBe(true);
+  });
+});
+
+describe("world camera modes", () => {
+  it("enables free navigation only in Board mode", () => {
+    const camera = new WorldCameraController("title-closeup");
+
+    expect(camera.allowsFreeNavigation).toBe(false);
+    camera.setMode("pulse-home");
+    expect(camera.allowsFreeNavigation).toBe(false);
+    camera.setMode("board-free");
+    expect(camera.allowsFreeNavigation).toBe(true);
   });
 });

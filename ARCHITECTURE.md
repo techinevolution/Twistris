@@ -16,7 +16,8 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - `game.js`: constants, shapes, game state, input, controller effects, harvest presentation, rendering, and startup
 - `next/index.html`: in-progress Phaser runtime shell
 - `src/next/`: Phaser runtime bootstrap and DOM overlay behavior
-- `src/scenes/boot-title/`: temporary Boot/Title parity scaffold
+- `src/scenes/world/`: persistent Phaser World scene; the title is one presentation phase inside it
+- `src/presentation/camera/`: typed camera modes shared by the World scene and later Board controls
 - `proofs/phaser.html`: isolated Phaser proof page
 - `src/proof/phaser-proof.ts`: bounded scene, input, tween, camera, and diagnostics proof
 - `src/proof/phaser-proof.css`: proof-only page layout and touch controls
@@ -49,7 +50,7 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - **Harvest:** the controller creates an immutable result, applies it once to session inventory, and gives the animation a presentation copy.
 - **DOM shell:** the title button and small HUD surround the canvas.
 - **Phaser proof:** a separate page proves Twistris-styled rendering, camera shake, tweens, keyboard/touch input, FIT scaling, walking Bits, and lightweight runtime diagnostics.
-- **Boot/Title scaffold:** the first parity port reproduces the logo, close Pulse view, orbiting particles, responsive framing, focus handoff, and 2.05-second Start pullback. It is temporary migration scaffolding, not the final scene boundary.
+- **World scene scaffold:** the first parity port now keeps the logo, close Pulse view, orbiting particles, responsive framing, focus handoff, and 2.05-second Start pullback inside one persistent World scene. Its camera controller distinguishes title close-up, guided pullback, Pulse home, puzzle, and free Board modes. Only the Pulse sector is currently mounted.
 
 ## Approved Target Stack
 
