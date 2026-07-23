@@ -99,6 +99,35 @@
         return Math.abs(a - b) <= epsilon;
       }
 
+      function fillCenteredSquare(gameInstance, radius) {
+        for (let y = api.CENTER - radius; y <= api.CENTER + radius; y += 1) {
+          for (let x = api.CENTER - radius; x <= api.CENTER + radius; x += 1) {
+            gameInstance.board[y][x] = {
+              color: "cyan",
+              seed: x === api.CENTER && y === api.CENTER,
+              age: 0,
+            };
+          }
+        }
+      }
+
+      function setCurrentPiece(gameInstance, shape, x, y) {
+        gameInstance.current = {
+          shape,
+          color: shape.color,
+          cells: shape.cells.map((cell) => ({ ...cell })),
+          x,
+          y,
+        };
+      }
+
+      function completeHarvest(gameInstance, maxSteps = 20) {
+        for (let step = 0; step < maxSteps && gameInstance.harvestSequence; step += 1) {
+          gameInstance.updateHarvestSequence(2);
+        }
+        return gameInstance.harvestSequence === null;
+      }
+
       try {
         assert(Boolean(api), "test API exposed");
 
@@ -146,31 +175,131 @@
           "detached landed cell does not attach"
         );
 
-        const coreGame = new api.BalanceStackGame();
-        for (let y = api.CENTER - 1; y <= api.CENTER + 1; y += 1) {
-          for (let x = api.CENTER - 1; x <= api.CENTER + 1; x += 1) {
-            coreGame.board[y][x] = { color: "cyan", seed: x === api.CENTER && y === api.CENTER, age: 0 };
-          }
-        }
+        const randomValues = [0, 0.999];
+        let randomIndex = 0;
+        const deterministicGame = new api.BalanceStackGame({
+          random: () => randomValues[randomIndex++ % randomValues.length],
+        });
+        assert(deterministicGame.nextShape === api.SHAPES[0], "injected random source selects a repeatable next shape");
+        deterministicGame.spawnPiece();
+        assert(
+          deterministicGame.current.shape === api.SHAPES[0] && deterministicGame.nextShape === api.SHAPES[6],
+          "deterministic piece sequence advances predictably"
+        );
+
+        const lockGame = new api.BalanceStackGame({ random: () => 0 });
+        const squareShape = api.SHAPES.find((shape) => shape.name === "O");
+        setCurrentPiece(lockGame, squareShape, api.CENTER - 1, api.CENTER + 1);
+        const lockedCells = lockGame.worldCells(lockGame.current);
+        lockGame.lockPiece();
+        assert(lockGame.piecesPlaced === 1, "attached piece increments the placed-piece count");
+        assert(
+          lockedCells.every((cell) => lockGame.board[cell.y][cell.x]?.placementId === 1),
+          "successful lock writes every landed cell to the board"
+        );
+        assert(lockGame.current?.shape === api.SHAPES[0], "successful lock spawns the deterministic next piece");
+
+        const retryGame = new api.BalanceStackGame({ random: () => 0 });
+        setCurrentPiece(retryGame, squareShape, 0, 0);
+        retryGame.lockPiece();
+        assert(retryGame.piecesPlaced === 0, "detached piece does not increment the placed-piece count");
+        assert(retryGame.current?.shape === squareShape, "detached piece retries with the same shape");
+        assert(
+          retryGame.board.flat().filter(Boolean).length === 1,
+          "detached retry leaves the settled board unchanged"
+        );
+
+        const clockwiseGame = new api.BalanceStackGame({ random: () => 0 });
+        clockwiseGame.board[api.CENTER][api.CENTER + 2] = { color: "magenta", seed: false, age: 0 };
+        clockwiseGame.rotateStructure(1);
+        assert(
+          clockwiseGame.pendingBoard[api.CENTER + 2][api.CENTER]?.color === "magenta",
+          "clockwise rotation stages a right-side cell below the center"
+        );
+        clockwiseGame.updateRotationAnimation(1);
+        assert(
+          clockwiseGame.board[api.CENTER + 2][api.CENTER]?.color === "magenta" && clockwiseGame.orientationTurns === 1,
+          "clockwise rotation commits after its animation"
+        );
+
+        const counterclockwiseGame = new api.BalanceStackGame({ random: () => 0 });
+        counterclockwiseGame.board[api.CENTER][api.CENTER + 2] = { color: "magenta", seed: false, age: 0 };
+        counterclockwiseGame.rotateStructure(-1);
+        counterclockwiseGame.updateRotationAnimation(1);
+        assert(
+          counterclockwiseGame.board[api.CENTER - 2][api.CENTER]?.color === "magenta" &&
+            counterclockwiseGame.orientationTurns === 3,
+          "counterclockwise rotation moves a right-side cell above the center"
+        );
+
+        const coreGame = new api.BalanceStackGame({ random: () => 0 });
+        fillCenteredSquare(coreGame, 1);
         coreGame.recalculateCoreSquare();
         assert(coreGame.coreLayers === 1, "recalculateCoreSquare detects a 3x3 centered square");
 
-        const harvestGame = new api.BalanceStackGame();
-        for (let y = api.CENTER - 1; y <= api.CENTER + 1; y += 1) {
-          for (let x = api.CENTER - 1; x <= api.CENTER + 1; x += 1) {
-            harvestGame.board[y][x] = { color: "cyan", seed: x === api.CENTER && y === api.CENTER, age: 0 };
-          }
-        }
+        const multiGrowthGame = new api.BalanceStackGame({ random: () => 0 });
+        fillCenteredSquare(multiGrowthGame, 2);
+        multiGrowthGame.recalculateCoreSquare();
+        assert(multiGrowthGame.coreLayers === 2, "recalculateCoreSquare detects a 5x5 centered square");
+        assert(
+          multiGrowthGame.coreChargeCount === 2 && multiGrowthGame.coreGrowthCount === 2,
+          "multiple centered-square layers award one charge per gained layer"
+        );
+
+        const harvestGame = new api.BalanceStackGame({ random: () => 0 });
+        harvestGame.restart();
+        harvestGame.bankedDuds = 3;
+        harvestGame.bankedPulseCharges = 4;
+        fillCenteredSquare(harvestGame, 1);
         harvestGame.board[api.CENTER][api.CENTER + 3] = { color: "magenta", seed: false, age: 0 };
         harvestGame.recalculateCoreSquare();
         harvestGame.startHarvestSequence();
         assert(harvestGame.harvestSequence.phase === "impact", "harvest begins with the impact phase");
         assert(harvestGame.harvestSequence.harvestedDuds === 8, "harvest counts influenced blocks as duds");
         assert(harvestGame.harvestSequence.outerBlocks.length === 1, "harvest keeps non-dud outer blocks separate");
+        assert(harvestGame.harvestSequence.harvestedCharges === 1, "harvest captures run-earned Pulse charges");
+        assert(
+          harvestGame.bankedDuds === 3 && harvestGame.bankedPulseCharges === 4,
+          "harvest starts with run-earned and banked resources still separate"
+        );
 
-        harvestGame.finishHarvestSequence();
-        assert(!harvestGame.started, "finishHarvestSequence returns the game to the title state");
-        assert(harvestGame.harvestSequence === null, "finishHarvestSequence clears the active harvest sequence");
+        assert(completeHarvest(harvestGame), "harvest sequence reaches its return state and completes");
+        assert(
+          harvestGame.bankedDuds === 11 && harvestGame.bankedPulseCharges === 5,
+          "completed harvest adds the exact run totals to session bank values"
+        );
+        assert(!harvestGame.started, "completed harvest returns the game to the title state");
+        assert(harvestGame.coreChargeCount === 0, "completed harvest clears run-earned Pulse charges");
+
+        harvestGame.paused = true;
+        harvestGame.restart();
+        assert(harvestGame.started && harvestGame.current, "restart enters active play with a falling piece");
+        assert(!harvestGame.paused, "restart clears the paused state");
+        assert(
+          harvestGame.bankedDuds === 11 && harvestGame.bankedPulseCharges === 5,
+          "restart preserves session bank values"
+        );
+        assert(harvestGame.coreChargeCount === 0, "restart begins with no run-earned Pulse charges");
+
+        const lifecycleGame = new api.BalanceStackGame({ random: () => 0 });
+        assert(!lifecycleGame.started && !lifecycleGame.launching, "new game begins in the resting title state");
+        lifecycleGame.startGame();
+        assert(lifecycleGame.launching && !lifecycleGame.started, "Start enters the title launch transition");
+        lifecycleGame.finishStartSequence();
+        assert(
+          lifecycleGame.started && !lifecycleGame.launching && Boolean(lifecycleGame.current),
+          "finishing the title transition enters active play"
+        );
+        lifecycleGame.startHarvestSequence();
+        assert(
+          lifecycleGame.started && lifecycleGame.harvestSequence?.phase === "impact" && lifecycleGame.current === null,
+          "starting harvest suspends the active piece while preserving the run screen"
+        );
+        lifecycleGame.finishHarvestSequence();
+        assert(
+          !lifecycleGame.started && lifecycleGame.harvestSequence === null,
+          "finishing harvest restores the resting title state"
+        );
       } catch (error) {
         logResult(false, "unexpected exception", error && error.message ? error.message : String(error));
       }

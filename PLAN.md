@@ -16,8 +16,8 @@ Twistris is a dependency-free browser project with one HTML entry point, one sty
 
 ## Next Implementation Slices
 
-1. **Characterize current behavior**
-   Add deterministic coverage for locking, detached-piece retry, board rotation, centered-square growth, harvest totals, restart behavior, and run-versus-banked values.
+1. **Characterize current behavior - Complete**
+   The browser harness now covers deterministic piece selection, locking, detached-piece retry, both rotation directions, multi-layer centered-square growth, harvest totals, restart behavior, lifecycle transitions, and run-versus-banked values.
 
 2. **Clarify runtime state**
    Separate profile, run, lifecycle, and presentation state inside the existing runtime. Replace overlapping lifecycle booleans with an explicit phase while preserving behavior.
@@ -42,9 +42,9 @@ Twistris is a dependency-free browser project with one HTML entry point, one sty
 
 ## Recommended Next Slice
 
-Implement slice 1 only: strengthen the browser smoke harness and introduce deterministic test seams without changing game behavior or splitting production files yet.
+Implement slice 2 only: separate profile/session, run, lifecycle, and presentation state inside the existing runtime, then replace overlapping lifecycle booleans with one explicit phase while preserving behavior.
 
-This gives the refactor a safety net and provides evidence that later state and file moves preserve the game.
+Keep this as an internal state-boundary change. Do not split production files, add persistence, or change puzzle behavior in the same slice.
 
 ## Deferred Work
 

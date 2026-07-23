@@ -224,7 +224,8 @@ let canvasRatio = Math.min(window.devicePixelRatio || 1, 2);
 let renderTime = 0;
 
 class BalanceStackGame {
-  constructor() {
+  constructor({ random = Math.random } = {}) {
+    this.random = random;
     this.started = false;
     this.elapsedTime = 0;
     this.bankedDuds = 0;
@@ -347,7 +348,7 @@ class BalanceStackGame {
   }
 
   randomShape() {
-    return SHAPES[Math.floor(Math.random() * SHAPES.length)];
+    return SHAPES[Math.floor(this.random() * SHAPES.length)];
   }
 
   spawnPiece(shapeOverride = null) {

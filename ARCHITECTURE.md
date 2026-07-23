@@ -95,7 +95,7 @@ None currently. The project has no package manager, backend, account system, ana
 
 - `game.js` currently has a large change surface because it owns most systems.
 - Browser tests require the full runtime and a simulated DOM shell.
-- Random piece selection is not currently injectable for deterministic testing.
+- Random piece selection now accepts an optional injected source for deterministic browser tests.
 - Lifecycle booleans can represent unclear combinations.
 - Canvas rendering and game mutation share global state.
 - Product resource names and conversion recipes are still provisional.

@@ -16,10 +16,16 @@ The harness loads the production runtime into a hidden test DOM and currently ch
 - symmetric and off-center balance profiles
 - seeded center creation
 - attached and detached placement detection
-- centered `3x3` growth detection
+- deterministic piece selection
+- successful lock and detached-piece retry behavior
+- clockwise and counterclockwise board rotation
+- centered `3x3` and `5x5` growth
+- charge awards across multiple growth layers
 - harvest phase startup
-- Dud counting and outer-block separation
-- return to title state after harvest
+- exact Dud, charge, and outer-block harvest totals
+- final harvest banking and run-value reset
+- restart preservation of session bank values
+- title, launch, play, harvest, and return lifecycle behavior
 
 The harness is a characterization safety net, not complete unit coverage.
 
@@ -40,19 +46,15 @@ Open [index.html](index.html) and verify:
 - Dud and charge counters animate and the game returns to the Pulse screen
 - desktop, mobile-width, and embedded sizing remain readable
 
-## Next Coverage Slice
+## Next Coverage Targets
 
-Before refactoring production structure, add deterministic checks for:
+Add focused coverage as the corresponding state boundaries are introduced:
 
-- successful lock and board mutation
-- detached-piece retry preserving the same shape
-- clockwise and counterclockwise board rotation
-- blocked rotation at board bounds
-- multiple centered-square growth steps
 - exact immutable harvest-result calculation
-- restart preserving only intended profile/session values
-- lifecycle transitions between title, playing, paused, and harvesting
-- run-earned versus banked inventory
+- explicit lifecycle phases and invalid-transition prevention
+- profile/session, run, and presentation reset boundaries
+- skipped or interrupted harvest presentation
+- malformed and older-version profile data after persistence exists
 
 ## Validation Expectations
 
