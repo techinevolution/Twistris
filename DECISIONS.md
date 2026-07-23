@@ -1,5 +1,13 @@
 # Twistris Decisions
 
+## 2026-07-22: Give Bits A Shared Walking Animation
+
+Decision: Ordinary Bits and Charged Bits travel with two tiny feet. They walk along surfaces or copper traces and make a small hop into counters, module sockets, and firewall sockets.
+
+Reason: The movement gives individual Bits personality, makes resource travel easy to follow, and supports the visual idea of small units moving across the Board without requiring elaborate character animation.
+
+Consequences: The first fabricated Bit walks to its counter and later walks to the Gravity Module before jumping into place. Charged Bits use the same visual language. The animation should stay simple and reusable so routine crafting and Board actions remain quick.
+
 ## 2026-07-22: Use Feed The Pulse As The Play Action
 
 Decision: After the first Board threat reveal, return to the Pulse menu and introduce **FEED THE PULSE** as the persistent action for starting puzzle runs. The first normal mission is to generate four Pulse charges.
