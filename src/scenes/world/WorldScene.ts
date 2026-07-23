@@ -18,6 +18,7 @@ const IDLE_PULSE_SCALE = 1.06;
 const IDLE_GRID_ALPHA = 0.36;
 const LAUNCH_DURATION = 2050;
 const ROTATION_DURATION = 340;
+const CORE_GROWTH_DURATION = 960;
 const HEARTBEAT_CYCLE = 1740;
 const HEARTBEAT_WINDOW = 820;
 
@@ -176,6 +177,7 @@ function createPulse(scene: Phaser.Scene): Phaser.GameObjects.Container {
 export class WorldScene extends Phaser.Scene {
   onLaunchComplete: (() => void) | null = null;
   onLaunchProgress: ((progress: number) => void) | null = null;
+  onPulseChargesChanged: ((charges: number) => void) | null = null;
 
   private phase: WorldPhase = "title";
   private readonly cameraController = new WorldCameraController("title-closeup");
@@ -184,7 +186,9 @@ export class WorldScene extends Phaser.Scene {
   private pulseSector!: Phaser.GameObjects.Container;
   private structureContainer!: Phaser.GameObjects.Container;
   private grid!: Phaser.GameObjects.Graphics;
+  private coreFieldGraphics!: Phaser.GameObjects.Graphics;
   private structureGraphics!: Phaser.GameObjects.Graphics;
+  private coreGrowthGraphics!: Phaser.GameObjects.Graphics;
   private pieceGraphics!: Phaser.GameObjects.Graphics;
   private previewGraphics!: Phaser.GameObjects.Graphics;
   private previewLabel!: Phaser.GameObjects.Text;
@@ -204,6 +208,9 @@ export class WorldScene extends Phaser.Scene {
   private horizontalDirection = 0;
   private horizontalRepeatElapsed = 0;
   private rotationElapsed = 0;
+  private coreGrowthElapsed = CORE_GROWTH_DURATION;
+  private coreGrowthBoundaryHalf = 0;
+  private coreGrowthParticleCount = 0;
 
   constructor() {
     super("World");
@@ -218,7 +225,9 @@ export class WorldScene extends Phaser.Scene {
     this.grid = this.createGrid();
     this.structureContainer = this.add.container(0, 0);
     this.structureContainer.setName("pulse-structure");
+    this.coreFieldGraphics = this.add.graphics();
     this.structureGraphics = this.add.graphics();
+    this.coreGrowthGraphics = this.add.graphics();
     this.pieceGraphics = this.add.graphics();
     this.previewGraphics = this.add.graphics();
     this.previewLabel = this.add.text(250, -347, "Next piece", {
@@ -229,7 +238,12 @@ export class WorldScene extends Phaser.Scene {
     });
     this.previewLabel.setVisible(false);
     this.pulse = createPulse(this);
-    this.structureContainer.add([this.structureGraphics, this.pulse]);
+    this.structureContainer.add([
+      this.coreFieldGraphics,
+      this.structureGraphics,
+      this.coreGrowthGraphics,
+      this.pulse,
+    ]);
     this.createParticles();
     this.pulseSector.add([
       this.grid,
@@ -263,6 +277,7 @@ export class WorldScene extends Phaser.Scene {
       this.updateParticles();
     } else {
       for (const particle of this.particles) particle.setVisible(false);
+      this.updateCoreGrowth(delta);
       this.updatePuzzle(delta);
     }
 
@@ -293,6 +308,7 @@ export class WorldScene extends Phaser.Scene {
     if (action === "rotate") changed = this.puzzle.rotate();
     if (action === "softDrop") changed = this.puzzle.move(0, 1);
     if (action === "hardDrop") changed = this.puzzle.hardDrop() !== null;
+    this.consumeCoreGrowth();
     this.renderPuzzle();
     this.publishDiagnostics();
     return changed;
@@ -322,6 +338,7 @@ export class WorldScene extends Phaser.Scene {
     this.pulse.setAngle(0);
     this.logo.setVisible(false);
     this.puzzle.start();
+    this.onPulseChargesChanged?.(this.puzzle.pulseCharges);
     this.previewLabel.setVisible(true);
     this.renderPuzzle();
     this.onLaunchComplete?.();
@@ -414,12 +431,15 @@ export class WorldScene extends Phaser.Scene {
       });
     }
 
+    this.consumeCoreGrowth();
     this.renderPuzzle();
   }
 
   private renderPuzzle() {
     if (
       !this.structureGraphics ||
+      !this.coreFieldGraphics ||
+      !this.coreGrowthGraphics ||
       !this.pieceGraphics ||
       !this.previewGraphics
     ) {
@@ -430,6 +450,8 @@ export class WorldScene extends Phaser.Scene {
     this.pieceGraphics.clear();
     this.previewGraphics.clear();
     if (this.phase !== "playing") return;
+
+    this.drawCoreField();
 
     for (const cell of this.puzzle.ghostCells()) {
       this.drawPuzzleCell(
@@ -451,6 +473,14 @@ export class WorldScene extends Phaser.Scene {
           x,
           y,
           block.color === "magenta" ? "magenta" : "cyan",
+          1,
+          false,
+          CELL_SIZE,
+          this.puzzle.coreLayers > 0 &&
+            Math.max(
+              Math.abs(x - this.puzzle.center),
+              Math.abs(y - this.puzzle.center),
+            ) <= this.puzzle.coreLayers,
         );
       }
     }
@@ -495,6 +525,106 @@ export class WorldScene extends Phaser.Scene {
     this.publishDiagnostics();
   }
 
+  private consumeCoreGrowth() {
+    const growth = this.puzzle.takeCoreGrowth();
+    if (!growth) return;
+
+    this.coreGrowthElapsed = 0;
+    this.coreGrowthBoundaryHalf =
+      ((growth.coreLayers * 2 + 1) * CELL_SIZE) / 2 + CELL_SIZE * 1.25;
+    this.coreGrowthParticleCount = 14 + growth.gainedLayers * 10;
+    this.onPulseChargesChanged?.(growth.pulseCharges);
+    this.publishDiagnostics();
+  }
+
+  private updateCoreGrowth(delta: number) {
+    if (this.coreGrowthElapsed >= CORE_GROWTH_DURATION) {
+      this.coreGrowthGraphics.clear();
+      this.pulse.setScale(1);
+      return;
+    }
+
+    this.coreGrowthElapsed = Math.min(
+      CORE_GROWTH_DURATION,
+      this.coreGrowthElapsed + delta,
+    );
+    const progress = this.coreGrowthElapsed / CORE_GROWTH_DURATION;
+    const pulse = Math.sin(progress * Math.PI);
+    this.pulse.setScale(1 + pulse * 0.22);
+    this.drawCoreGrowthParticles(progress);
+    this.drawCoreField();
+    this.publishDiagnostics();
+  }
+
+  private drawCoreField() {
+    const graphics = this.coreFieldGraphics;
+    graphics.clear();
+    if (this.puzzle.coreLayers <= 0) return;
+
+    const fieldSize =
+      (this.puzzle.coreLayers * 2 + 1) * CELL_SIZE - 3;
+    const fieldHalf = fieldSize / 2;
+    const growthProgress =
+      this.coreGrowthElapsed < CORE_GROWTH_DURATION
+        ? this.coreGrowthElapsed / CORE_GROWTH_DURATION
+        : 1;
+    const growthPulse =
+      this.coreGrowthElapsed < CORE_GROWTH_DURATION
+        ? Math.sin(growthProgress * Math.PI)
+        : 0;
+
+    graphics.fillStyle(0x03080e, 0.24 + growthPulse * 0.1);
+    graphics.fillRoundedRect(
+      -fieldHalf,
+      -fieldHalf,
+      fieldSize,
+      fieldSize,
+      4,
+    );
+    graphics.lineStyle(4, 0x0a121c, 0.34 + growthPulse * 0.2);
+    graphics.strokeRoundedRect(
+      -fieldHalf + 4,
+      -fieldHalf + 4,
+      fieldSize - 8,
+      fieldSize - 8,
+      2,
+    );
+    graphics.lineStyle(2, COLORS.white, 0.5 + growthPulse * 0.42);
+    graphics.strokeRoundedRect(
+      -fieldHalf + 4,
+      -fieldHalf + 4,
+      fieldSize - 8,
+      fieldSize - 8,
+      2,
+    );
+  }
+
+  private drawCoreGrowthParticles(progress: number) {
+    const graphics = this.coreGrowthGraphics;
+    graphics.clear();
+    const eased = progress * progress * progress;
+    const alpha = 1 - progress;
+    const startHalf = this.coreGrowthBoundaryHalf;
+
+    for (let index = 0; index < this.coreGrowthParticleCount; index += 1) {
+      const side = index % 4;
+      const sideIndex = Math.floor(index / 4);
+      const sideCount = Math.ceil(this.coreGrowthParticleCount / 4);
+      const unit = (sideIndex + 0.5) / sideCount;
+      const offset = Phaser.Math.Linear(-startHalf, startHalf, unit);
+      const startX = side === 0 ? -startHalf : side === 1 ? startHalf : offset;
+      const startY = side === 2 ? -startHalf : side === 3 ? startHalf : offset;
+      const x = Phaser.Math.Linear(startX, 0, eased);
+      const y = Phaser.Math.Linear(startY, 0, eased);
+      const radius = Phaser.Math.Linear(3.2, 1, progress);
+
+      graphics.lineStyle(Math.max(1, radius * 0.8), COLORS.white, alpha * 0.24);
+      graphics.lineBetween(startX, startY, x, y);
+      graphics.fillStyle(COLORS.white, alpha * 0.94);
+      graphics.fillCircle(x, y, radius);
+    }
+  }
+
   private drawPuzzleCell(
     graphics: Phaser.GameObjects.Graphics,
     gridX: number,
@@ -503,12 +633,22 @@ export class WorldScene extends Phaser.Scene {
     alpha = 1,
     ghost = false,
     size = CELL_SIZE,
+    influenced = false,
   ) {
     const x = (gridX - this.puzzle.center) * CELL_SIZE;
     const y = (gridY - this.puzzle.center) * CELL_SIZE;
     const half = size / 2;
-    const edge = color === "cyan" ? COLORS.cyanEdge : COLORS.magentaEdge;
-    const panel = color === "cyan" ? COLORS.cyan : COLORS.magenta;
+    const edge = influenced
+      ? 0xd8e0e6
+      : color === "cyan"
+        ? COLORS.cyanEdge
+        : COLORS.magentaEdge;
+    const panel = influenced
+      ? 0x90989f
+      : color === "cyan"
+        ? COLORS.cyan
+        : COLORS.magenta;
+    const shell = influenced ? 0x2b3037 : 0x10293e;
 
     if (ghost) {
       graphics.fillStyle(COLORS.white, alpha * 0.38);
@@ -518,7 +658,7 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    graphics.fillStyle(0x10293e, alpha);
+    graphics.fillStyle(shell, alpha);
     graphics.fillRoundedRect(x - half, y - half, size, size, 3);
     graphics.fillStyle(panel, alpha);
     graphics.fillRoundedRect(x - half + 1.7, y - half + 1.7, size - 3.4, size - 3.4, 2.5);
@@ -635,6 +775,11 @@ export class WorldScene extends Phaser.Scene {
     root.dataset.worldPuzzleRotationCount = String(this.puzzle.rotationCount);
     root.dataset.worldPuzzleOrientation = String(this.puzzle.orientationTurns);
     root.dataset.worldPuzzleBalance = this.puzzle.lastBalance.toFixed(3);
+    root.dataset.worldPuzzleCoreLayers = String(this.puzzle.coreLayers);
+    root.dataset.worldPuzzlePulseCharges = String(this.puzzle.pulseCharges);
+    root.dataset.worldPuzzleCoreGrowthActive = String(
+      this.coreGrowthElapsed < CORE_GROWTH_DURATION,
+    );
     root.dataset.worldPuzzleStructureAngle = this.structureContainer
       ? this.structureContainer.angle.toFixed(1)
       : "0";

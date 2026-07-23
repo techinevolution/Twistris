@@ -2,6 +2,7 @@ import {
   analyzeBalance,
   attachesToStructure,
   createBoard,
+  findCenteredSquareLayers,
   rotateBoard,
   type Board,
   type GridCell,
@@ -30,6 +31,13 @@ export interface PendingRotation {
   readonly nextBoard: Board;
   readonly nextOrientationTurns: number;
   readonly tipPressure: number;
+}
+
+export interface CoreGrowth {
+  readonly previousLayers: number;
+  readonly coreLayers: number;
+  readonly gainedLayers: number;
+  readonly pulseCharges: number;
 }
 
 export const PUZZLE_SHAPES: ReadonlyArray<PieceShape> = Object.freeze([
@@ -138,6 +146,8 @@ export class PuzzleRun {
   rotationCount = 0;
   orientationTurns = 0;
   coreLayers = 0;
+  coreGrowthCount = 0;
+  pulseCharges = 0;
   lastBalance = 0;
   lastOutcome: LockOutcome | null = null;
   pendingRotation: PendingRotation | null = null;
@@ -145,6 +155,7 @@ export class PuzzleRun {
   private readonly random: () => number;
   private dropElapsed = 0;
   private lockElapsed = 0;
+  private pendingCoreGrowth: CoreGrowth | null = null;
 
   constructor({ size = 27, random = Math.random }: PuzzleRunOptions = {}) {
     this.size = size;
@@ -254,6 +265,12 @@ export class PuzzleRun {
     return true;
   }
 
+  takeCoreGrowth(): CoreGrowth | null {
+    const growth = this.pendingCoreGrowth;
+    this.pendingCoreGrowth = null;
+    return growth;
+  }
+
   private randomShape(): PieceShape {
     return PUZZLE_SHAPES[Math.floor(this.random() * PUZZLE_SHAPES.length)];
   }
@@ -328,11 +345,30 @@ export class PuzzleRun {
     }
 
     this.piecesPlaced += 1;
+    this.recalculateCoreSquare();
     this.stageBalanceRotation(landed);
     this.current = null;
     this.spawnPiece();
     this.lastOutcome = "locked";
     return this.lastOutcome;
+  }
+
+  private recalculateCoreSquare() {
+    const previousLayers = this.coreLayers;
+    const coreLayers = findCenteredSquareLayers(this.board, this.center, 8);
+    const gainedLayers = Math.max(0, coreLayers - previousLayers);
+
+    this.coreLayers = coreLayers;
+    if (gainedLayers === 0) return;
+
+    this.coreGrowthCount += gainedLayers;
+    this.pulseCharges += gainedLayers;
+    this.pendingCoreGrowth = Object.freeze({
+      previousLayers,
+      coreLayers,
+      gainedLayers,
+      pulseCharges: this.pulseCharges,
+    });
   }
 
   private stageBalanceRotation(landed: GridCell[]) {

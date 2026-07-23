@@ -99,4 +99,50 @@ describe("PuzzleRun", () => {
     expect(run.orientationTurns).toBe(1);
     expect(run.board[run.center + 6][run.center]).toBeTruthy();
   });
+
+  it("awards one Pulse Charge for each newly completed centered layer", () => {
+    const run = new PuzzleRun({ random: () => 0 });
+    for (let y = run.center - 1; y <= run.center + 1; y += 1) {
+      for (let x = run.center - 1; x <= run.center + 1; x += 1) {
+        if (x === run.center && y === run.center - 1) continue;
+        run.board[y][x] = { color: "cyan" };
+      }
+    }
+    run.start();
+    if (!run.current) throw new Error("Expected an active piece");
+    run.current.cells = [{ x: 0, y: 0 }];
+    run.current.x = run.center;
+
+    expect(run.hardDrop()).toBe("locked");
+    expect(run.coreLayers).toBe(1);
+    expect(run.coreGrowthCount).toBe(1);
+    expect(run.pulseCharges).toBe(1);
+    expect(run.takeCoreGrowth()).toEqual({
+      previousLayers: 0,
+      coreLayers: 1,
+      gainedLayers: 1,
+      pulseCharges: 1,
+    });
+    expect(run.takeCoreGrowth()).toBeNull();
+  });
+
+  it("awards multiple Pulse Charges when one lock completes multiple layers", () => {
+    const run = new PuzzleRun({ random: () => 0 });
+    for (let y = run.center - 2; y <= run.center + 2; y += 1) {
+      for (let x = run.center - 2; x <= run.center + 2; x += 1) {
+        if (x === run.center && y === run.center - 2) continue;
+        run.board[y][x] = { color: "cyan" };
+      }
+    }
+    run.start();
+    if (!run.current) throw new Error("Expected an active piece");
+    run.current.cells = [{ x: 0, y: 0 }];
+    run.current.x = run.center;
+
+    expect(run.hardDrop()).toBe("locked");
+    expect(run.coreLayers).toBe(2);
+    expect(run.coreGrowthCount).toBe(2);
+    expect(run.pulseCharges).toBe(2);
+    expect(run.takeCoreGrowth()?.gainedLayers).toBe(2);
+  });
 });

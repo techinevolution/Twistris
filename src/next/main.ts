@@ -10,6 +10,8 @@ const stage = document.querySelector<HTMLElement>("#phaserTitle");
 const startScreen = document.querySelector<HTMLElement>("#startScreen");
 const startButton = document.querySelector<HTMLButtonElement>("#startButton");
 const gameKeySink = document.querySelector<HTMLInputElement>("#gameKeySink");
+const pulseChargeCounter =
+  document.querySelector<HTMLElement>("#pulseChargeCounter");
 const useKeySinkFocus = /Mac/.test(navigator.platform || navigator.userAgent);
 const testActions = new Set<PuzzleAction>([
   "left",
@@ -32,6 +34,17 @@ worldScene.onLaunchProgress = (progress) => {
 
 worldScene.onLaunchComplete = () => {
   startScreen?.classList.add("is-hidden");
+};
+
+worldScene.onPulseChargesChanged = (charges) => {
+  if (pulseChargeCounter) {
+    const nextText = `Pulse charges ${charges}`;
+    if (pulseChargeCounter.textContent === nextText) return;
+    pulseChargeCounter.textContent = nextText;
+    pulseChargeCounter.classList.remove("is-awarded");
+    void pulseChargeCounter.offsetWidth;
+    pulseChargeCounter.classList.add("is-awarded");
+  }
 };
 
 startButton?.addEventListener("click", () => {

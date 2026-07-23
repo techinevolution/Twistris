@@ -54,7 +54,8 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - **Phaser proof:** a separate page proves Twistris-styled rendering, camera shake, tweens, keyboard/touch input, FIT scaling, walking Bits, and lightweight runtime diagnostics.
 - **World scene scaffold:** the first parity port now keeps the logo, close Pulse view, orbiting particles, responsive framing, focus handoff, and 2.05-second Start pullback inside one persistent World scene. Its camera controller distinguishes title close-up, guided pullback, Pulse home, puzzle, and free Board modes. Only the Pulse sector is currently mounted.
 - **Typed puzzle run:** `/next/` renders its active piece, ghost, settled cells, and next-piece preview from a DOM-free model that consumes the existing attachment, balance, and board-rotation rules.
-- **Twist presentation:** a successful off-balance lock stages a separate rotated board, freezes puzzle input, turns the settled mass and Pulse through the characterized 340 ms overshoot, then commits the staged board. Core growth, harvest, and progression still remain on the legacy route.
+- **Twist presentation:** a successful off-balance lock stages a separate rotated board, freezes puzzle input, turns the settled mass and Pulse through the characterized 340 ms overshoot, then commits the staged board.
+- **Core-growth presentation:** the typed puzzle run derives completed centered layers and awards run Charges before exposing a one-shot presentation event. The World scene consumes that event for the neutral field, inward burst, Pulse scale, and DOM HUD update without making economy outcomes depend on animation. Harvest and progression still remain on the legacy route.
 
 ## Approved Target Stack
 
@@ -145,7 +146,7 @@ Future persistence should use a versioned root object, safe defaults, and explic
 
 The project now uses npm for local development dependencies. It still has no backend, account system, analytics service, or cloud dependency.
 
-The current foundation includes Vite, TypeScript, Vitest, and Phaser. Phaser remains isolated to the proof until slice 7 ports the playable runtime incrementally. PWA packaging, Capacitor mobile shells, desktop wrappers, storefront SDKs, and platform achievements remain deferred.
+The current foundation includes Vite, TypeScript, Vitest, and Phaser. Phaser powers the isolated proof and the incrementally ported `/next/` World scene while the legacy route remains available for parity. PWA packaging, Capacitor mobile shells, desktop wrappers, storefront SDKs, and platform achievements remain deferred.
 
 ## Validation and Build Shape
 
@@ -162,7 +163,7 @@ Current:
 
 Next:
 
-- Slice 7 must first establish the persistent World scene, then continue with puzzle rendering and input inside it.
+- Slice 7 next ports harvest after centered-square growth and Charge feedback pass review.
 - Playwright will own critical browser flows, responsive checks, and selected visual comparisons after it is introduced.
 - The legacy smoke harness remains until equivalent coverage and runtime parity are approved.
 

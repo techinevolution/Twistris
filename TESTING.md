@@ -122,6 +122,12 @@ Current `/next/` puzzle checks:
 - the settled mass and Pulse rotate while the active piece, ghost, grid, and preview stay upright
 - puzzle input and gravity pause throughout the 340 ms rotation
 - the rotated board commits only when the visual quarter-turn completes
+- completing a centered `3x3` turns its enclosed Bits neutral and reveals the Pulse field
+- one run Charge is awarded for each newly completed centered layer
+- a multi-layer completion updates the Charge total atomically before presentation
+- core growth draws an inward white energy burst and briefly expands the Pulse
+- Charge feedback can overlap a staged twist without changing the awarded result
+- the bottom Charge HUD updates once and remains readable at desktop and mobile widths
 
 The route is not a replacement for `/` until all gameplay and presentation parity checks pass.
 

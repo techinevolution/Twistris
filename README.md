@@ -8,7 +8,7 @@ The intended game is one continuous motherboard world. Puzzle play, the Pulse hu
 
 ## Status
 
-Active demo prototype. The core falling, attachment, twisting, centered-square growth, Pulse charge, and animated harvest loops are playable. Vite, TypeScript, and Vitest provide the development foundation, and the isolated Phaser motion proof has passed. The incremental Phaser port has begun with Boot/Title parity at `/next/`; the current playable game remains at `/`. Persistent profiles, crafting, Gravity repair, the first firewall sector, Endless Feed, demo upgrades, and the first-run tutorial are planned but not implemented.
+Active demo prototype. The core falling, attachment, twisting, centered-square growth, Pulse charge, and animated harvest loops are playable on the trusted legacy route. Vite, TypeScript, and Vitest provide the development foundation, and the isolated Phaser motion proof has passed. The incremental Phaser port at `/next/` now includes the title pullback, core puzzle controls, balance-driven whole-Pulse rotation, centered-square growth, and run Charge feedback. Harvest remains on `/` until the next parity increment. Persistent profiles, crafting, Gravity repair, the first firewall sector, Endless Feed, demo upgrades, and the first-run tutorial are planned but not implemented.
 
 ## Quick Start
 
@@ -37,7 +37,7 @@ While the legacy controller remains, open `/tests/smoke.html` through the Vite d
 
 The isolated Phaser proof is available at `/proofs/phaser.html`. It does not replace or modify the playable game.
 
-The in-progress Phaser port is available at `/next/`. It currently implements the title and Start transition only.
+The in-progress Phaser port is available at `/next/`. It currently implements the title transition, core puzzle play, whole-Pulse twist, centered-square growth, and run Charge feedback while `/` remains the trusted full-loop comparison.
 
 ## Controls
 
@@ -67,7 +67,7 @@ Broader ideas may be developed locally under `notes/private/`, which is ignored 
 
 The browser is the primary target. The approved architecture keeps one portable web game codebase that can later be packaged for PC, Android, and iOS without forking core gameplay or progression logic.
 
-The current foundation uses TypeScript, Vite, Vitest, and Phaser. Phaser is currently isolated to the accepted motion proof; Playwright remains planned for later browser automation.
+The current foundation uses TypeScript, Vite, Vitest, and Phaser. Phaser now powers the accepted proof and the in-progress `/next/` runtime; Playwright remains planned for later browser automation.
 
 ## Project Docs
 
