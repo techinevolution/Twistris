@@ -55,3 +55,11 @@ Decision: Represent each harvest as an immutable result with a session-unique ID
 Reason: Earned inventory must survive skipped, interrupted, shortened, or changed animation timing without being duplicated.
 
 Consequences: Harvest presentation can evolve independently, while future profile persistence must retain result identity and exactly-once application semantics.
+
+## 2026-07-22: Keep Puzzle Rules DOM-Free
+
+Decision: Load a dependency-free `rules.js` before `game.js` and place board creation, attachment, rotation, balance, centered-square, and harvest calculations behind its frozen API.
+
+Reason: Puzzle behavior needs direct deterministic testing and should not depend on canvas, DOM mounts, animation state, or controller side effects.
+
+Consequences: `game.js` consumes rule results and retains orchestration and effects. New puzzle calculations should enter through `rules.js` unless their ownership clearly belongs elsewhere.

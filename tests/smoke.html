@@ -68,9 +68,11 @@
     <input id="gameKeySink" type="password" />
     <canvas id="game" width="800" height="800"></canvas>
 
+    <script src="../rules.js"></script>
     <script src="../game.js"></script>
     <script>
       const resultsNode = document.getElementById("results");
+      const rules = window.TwistrisRules;
       const api = window.__TWISTRIS_TEST_API__;
       let passes = 0;
       let failures = 0;
@@ -92,7 +94,7 @@
       }
 
       function createBoard() {
-        return Array.from({ length: api.GRID_SIZE }, () => Array(api.GRID_SIZE).fill(null));
+        return rules.createBoard(api.GRID_SIZE);
       }
 
       function closeEnough(a, b, epsilon = 0.0001) {
@@ -130,6 +132,14 @@
 
       try {
         assert(Boolean(api), "test API exposed");
+        assert(Boolean(rules), "DOM-free puzzle rules exposed");
+
+        const freshBoard = rules.createBoard(3);
+        freshBoard[0][0] = { color: "cyan" };
+        assert(
+          freshBoard.length === 3 && freshBoard[0].length === 3 && freshBoard[1][0] === null,
+          "createBoard returns independent square rows"
+        );
 
         assert(
           closeEnough(api.nearestQuarterTurn(Math.PI / 3), Math.PI / 2),
@@ -137,14 +147,15 @@
         );
 
         assert(
-          closeEnough(api.averageCenterDistance([{ x: api.CENTER, y: api.CENTER }]), 0),
+          closeEnough(rules.averageCenterDistance([{ x: api.CENTER, y: api.CENTER }], api.CENTER), 0),
           "averageCenterDistance is zero at exact center"
         );
 
         const balancedBoard = createBoard();
         balancedBoard[api.CENTER][api.CENTER - 1] = { color: "cyan" };
         balancedBoard[api.CENTER][api.CENTER + 1] = { color: "cyan" };
-        const balancedProfile = api.analyzeBalanceProfile(balancedBoard, 0);
+        const balanceOptions = { center: api.CENTER, outerRingWeight: 0.35 };
+        const balancedProfile = rules.analyzeBalanceProfile(balancedBoard, 0, balanceOptions);
         assert(
           closeEnough(balancedProfile.weightedOffset, 0),
           "analyzeBalanceProfile stays neutral for symmetric mass"
@@ -153,11 +164,27 @@
         const rightHeavyBoard = createBoard();
         rightHeavyBoard[api.CENTER][api.CENTER + 1] = { color: "cyan" };
         rightHeavyBoard[api.CENTER][api.CENTER + 2] = { color: "cyan" };
-        const rightHeavyProfile = api.analyzeBalanceProfile(rightHeavyBoard, 0);
+        const rightHeavyProfile = rules.analyzeBalanceProfile(rightHeavyBoard, 0, balanceOptions);
         assert(
           rightHeavyProfile.weightedOffset > 0,
           "analyzeBalanceProfile trends positive for right-heavy mass"
         );
+        const rightHeavyDecision = rules.analyzeBalance(
+          rightHeavyBoard,
+          0,
+          [{ x: api.CENTER + 2, y: api.CENTER }],
+          {
+            ...balanceOptions,
+            shiftMultiplier: 1.65,
+            placementImpulse: 0.12,
+            baseThreshold: 0.1,
+            coreThresholdStep: 0.14,
+            centerBraceBonus: 0.36,
+            centeredBuffer: 0.2,
+            centeredDistance: 2.3,
+          }
+        );
+        assert(rightHeavyDecision.direction === 1, "analyzeBalance returns a clockwise decision for right-heavy mass");
 
         const gameInstance = new api.BalanceStackGame();
         assert(
@@ -174,13 +201,13 @@
         );
 
         assert(
-          gameInstance.attachesToStructure([{ x: api.CENTER + 1, y: api.CENTER }]),
-          "adjacent landed cell attaches to seeded center"
+          rules.attachesToStructure(gameInstance.run.board, [{ x: api.CENTER + 1, y: api.CENTER }]),
+          "pure attachment rule accepts an adjacent landed cell"
         );
 
         assert(
-          !gameInstance.attachesToStructure([{ x: api.CENTER + 4, y: api.CENTER + 4 }]),
-          "detached landed cell does not attach"
+          !rules.attachesToStructure(gameInstance.run.board, [{ x: api.CENTER + 4, y: api.CENTER + 4 }]),
+          "pure attachment rule rejects a detached landed cell"
         );
 
         const randomValues = [0, 0.999];
@@ -219,6 +246,12 @@
 
         const clockwiseGame = new api.BalanceStackGame({ random: () => 0 });
         clockwiseGame.run.board[api.CENTER][api.CENTER + 2] = { color: "magenta", seed: false, age: 0 };
+        const directClockwiseBoard = rules.rotateBoard(clockwiseGame.run.board, 1, api.CENTER);
+        assert(
+          directClockwiseBoard[api.CENTER + 2][api.CENTER]?.color === "magenta" &&
+            clockwiseGame.run.board[api.CENTER][api.CENTER + 2]?.color === "magenta",
+          "rotateBoard returns a clockwise copy without mutating the source board"
+        );
         clockwiseGame.rotateStructure(1);
         assert(
           clockwiseGame.run.pendingBoard[api.CENTER + 2][api.CENTER]?.color === "magenta",
@@ -242,6 +275,10 @@
 
         const coreGame = new api.BalanceStackGame({ random: () => 0 });
         fillCenteredSquare(coreGame, 1);
+        assert(
+          rules.findCenteredSquareLayers(coreGame.run.board, api.CENTER, 8) === 1,
+          "pure centered-square rule detects a complete 3x3 layer"
+        );
         coreGame.recalculateCoreSquare();
         assert(coreGame.run.coreLayers === 1, "recalculateCoreSquare detects a 3x3 centered square");
 
@@ -261,6 +298,22 @@
         fillCenteredSquare(harvestGame, 1);
         harvestGame.run.board[api.CENTER][api.CENTER + 3] = { color: "magenta", seed: false, age: 0 };
         harvestGame.recalculateCoreSquare();
+        const directHarvest = rules.calculateHarvest(harvestGame.run.board, {
+          center: api.CENTER,
+          coreLayers: harvestGame.run.coreLayers,
+          resultId: "direct-harvest",
+          pulseCharges: harvestGame.run.coreChargeCount,
+        });
+        assert(
+          directHarvest.dudCells.length === 8 && directHarvest.outerCells.length === 1,
+          "pure harvest calculation separates influenced Duds from outer blocks"
+        );
+        assert(
+          directHarvest.result.earned.duds === 8 &&
+            directHarvest.result.earned.pulseCharges === 1 &&
+            Object.isFrozen(directHarvest.result),
+          "pure harvest calculation returns the immutable earned result"
+        );
         harvestGame.startHarvestSequence();
         const harvestResult = harvestGame.presentation.harvestSequence.result;
         assert(harvestGame.presentation.harvestSequence.phase === "impact", "harvest begins with the impact phase");
