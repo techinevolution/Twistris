@@ -71,7 +71,7 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 
 ## Recommended Next Slice
 
-Continue slice 7 by establishing the persistent motherboard World scene on `/next/` and moving the accepted title presentation into one of its layers.
+Continue slice 7 by establishing the persistent motherboard World scene on `/next/`, moving the accepted title presentation into one of its layers, and defining the camera-mode boundary that will later support Pulse-home, puzzle, and free Board exploration. Keep durable world state separate from mounted Phaser objects so a fog-hidden sector can eventually sleep or unload without breaking the continuous coordinate space.
 
 Once that continuous world boundary is proven, render the board, settled Pulse seed, falling piece, ghost, and next-piece preview inside it while consuming the existing typed rules. Match movement, rotation, drop timing, focus, and responsive behavior before porting twist and harvest presentation. Do not create player-visible page swaps between title, puzzle, Pulse hub, Craft, or Board; do not add progression or remove the legacy controller.
 

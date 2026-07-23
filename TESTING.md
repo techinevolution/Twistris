@@ -109,6 +109,17 @@ Current Boot/Title parity checks:
 
 The route is not a replacement for `/` until all gameplay and presentation parity checks pass.
 
+Future continuous-Board camera checks:
+
+- selecting **BOARD** animates outward from the current Pulse-home framing
+- desktop drag pans and the mouse wheel zooms without page scrolling
+- one-finger drag pans and pinch gestures zoom on touch screens
+- camera bounds prevent navigation beyond intentionally visible world space
+- recentering returns smoothly to the Pulse home framing
+- camera movement does not alter puzzle, mission, economy, or persistence outcomes
+- fog-hidden or distant sector presentation can sleep or unload without losing durable sector state
+- returning to a previously visited sector reconstructs its secured, infested, repaired, and discovered state correctly
+
 ## Demo Acceptance Flow
 
 The release candidate must verify the complete public demo:

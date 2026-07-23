@@ -1,5 +1,21 @@
 # Twistris Decisions
 
+## 2026-07-23: Keep The World Continuous Without Loading It All
+
+Decision: Preserve one connected Board coordinate space while mounting and simulating only the revealed sectors close enough to the active camera or current interaction.
+
+Reason: The player should experience one physical motherboard, but fog-hidden regions do not need graphics, particles, Bugs, physics, or input handlers consuming phone and desktop resources.
+
+Consequences: Durable sector facts live in compact domain and profile state. A sector presentation can be created or awakened as it becomes relevant and slept or removed when it leaves the active region. Unloading presentation must not discard secured, infested, repaired, discovered, or mission state.
+
+## 2026-07-23: Explore The Board Through The Existing World Camera
+
+Decision: Make **BOARD** pull the existing camera outward and enable free navigation across the revealed motherboard instead of opening a separate map screen.
+
+Reason: Continuous panning and zooming preserves the physical relationship between the Pulse, copper traces, modules, fog, and the first firewall sector.
+
+Consequences: Desktop input uses drag-to-pan and mouse-wheel zoom; touch input uses one-finger pan and pinch-to-zoom. Camera movement must be bounded to revealed space, preserve the Pulse as a recenter landmark, and remain separate from puzzle simulation outcomes.
+
 ## 2026-07-23: Keep The Entire Game On One Continuous Board
 
 Decision: Present puzzle play, the Pulse hub, crafting, repair, harvest, and Board activity as modes and camera framings of one persistent motherboard world.

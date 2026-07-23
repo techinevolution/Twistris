@@ -20,11 +20,22 @@ The whole game takes place on one continuous motherboard centered on the Pulse. 
 - The first-run false Tetris interface is a staged layer that physically fails and reveals the Pulse underneath it.
 - The recurring title/home view is the Pulse hub with **FEED THE PULSE**, **BOARD**, and **CRAFT** connected to the same machine.
 - **FEED THE PULSE** reframes the camera and activates puzzle play around the Pulse.
-- **BOARD** pulls the camera outward to the visible network and first firewall sector.
+- **BOARD** eases the existing camera outward, then lets the player explore the visible network and first firewall sector without leaving the motherboard.
 - **CRAFT** keeps the Pulse spatially present while an accessible interface appears over or beside it.
 - Harvest, repair, and Bit travel happen in the same world rather than cutting to reward or upgrade screens.
 
 Transitions should preserve spatial continuity whenever possible. HTML overlays may provide accessible text and commands, but they should feel attached to the persistent world rather than replacing it.
+
+Continuous does not mean that the entire future Board stays loaded. Fog-hidden or distant sectors may remain asleep or unmounted until the player reveals or approaches them. Their compact discovery, repair, infestation, and mission state persists so the sector can be reconstructed without changing what happened there.
+
+### Board Camera Controls
+
+- Desktop players drag to pan around the revealed Board and use the mouse wheel to zoom in or out.
+- Phone and tablet players drag with one finger to pan and pinch to zoom.
+- The camera remains bounded to discovered or intentionally visible motherboard space.
+- Only revealed sectors near the active view need full graphics, effects, Bugs, and interaction objects.
+- The Pulse remains a persistent spatial landmark and can recenter the camera on the home view.
+- Entering Board view begins with a guided pullback from the Pulse before free camera control is enabled.
 
 ## Audience
 

@@ -100,7 +100,9 @@ This is an ownership map, not permission to create every directory at once. Each
 - **Profile state:** versioned banked inventory, demo repair progress, first-sector status, Endless unlock, selected upgrades, and statistics.
 - **Application state:** typed events and explicit mode changes between first-run prelude, Pulse hub, puzzle, harvest, crafting, repair, Board, and pause.
 - **World scene:** one long-lived Phaser scene owns the visible Pulse, motherboard, puzzle space, modules, traces, Bits, Bugs, and camera.
+- **Sector residency:** the World scene does not require every Board sector to be instantiated. Compact sector state persists separately while only revealed sectors near the camera are mounted, awakened, rendered, and interactive.
 - **Presentation layers:** staged title/Tetris elements, fog, particles, camera effects, walking Bits, Bugs, HUD anchors, and interaction layers appear or transform without replacing the World scene or deciding outcomes.
+- **Camera controller:** explicit camera modes handle guided tutorial framing, Pulse-home framing, puzzle framing, and free Board exploration. Desktop wheel/drag and touch pinch/drag inputs feed this controller without changing domain outcomes.
 - **UI scene and DOM overlays:** accessible dialogs and commands may sit above the World scene without owning game outcomes.
 - **Tutorial director:** coordinates documented beats through real application events without owning economy or demo-board rules.
 - **Storage:** a platform-neutral adapter that validates and migrates the same serialized profile in browser or packaged builds.
@@ -171,6 +173,8 @@ Next:
 - The browser build remains canonical across web, desktop-wrapper, Android, and iOS packaging.
 - Platform APIs are accessed only through adapters.
 - Simulation outcomes are independent of render frame rate and visual-effect quality.
+- Board camera position and zoom are presentation state, bounded to revealed world space, and never affect puzzle or economy calculations.
+- Continuous world coordinates do not imply continuous resource use. Fog-hidden or distant sectors may remain unmounted or asleep, then reconstruct their presentation from compact domain and profile state when needed.
 
 ## Known Constraints and Risks
 
