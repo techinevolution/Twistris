@@ -2,17 +2,19 @@
 
 Twistris is a browser-based falling-block puzzle game built around the Pulse, a central mass that the player expands and stabilizes. Tetrominoes attach to the existing structure, the settled stack may twist when it becomes imbalanced, and there are no line clears.
 
-The long-term direction adds a persistent metagame: runs produce Pulse charges and salvage that help restore the damaged Pulse and the wider system connected to it.
+This repository is focused on a public demo: reveal the damaged Pulse, teach the puzzle and crafting loops, repair the Gravity Module, recover one firewall sector from Bugs, and unlock a replayable Endless Feed mode with a small upgrade set.
 
 ## Status
 
-Active prototype. The core falling, attachment, twisting, centered-square growth, Pulse charge, and animated harvest loops are playable. Persistent profiles, crafting, repair progression, missions, and the first-run tutorial are planned but not implemented.
+Active demo prototype. The core falling, attachment, twisting, centered-square growth, Pulse charge, and animated harvest loops are playable. The stack migration, persistent profile, crafting, Gravity repair, first firewall sector, Endless Feed, demo upgrades, and first-run tutorial are planned but not implemented.
 
 ## Quick Start
 
 Open [index.html](index.html) directly in a browser. No installation or build step is required.
 
 To run the browser smoke checks, open [tests/smoke.html](tests/smoke.html).
+
+These are the current prototype commands. The next approved refactor slice introduces Vite, TypeScript, and automated package scripts; update this section when that slice lands.
 
 ## Controls
 
@@ -28,7 +30,21 @@ To run the browser smoke checks, open [tests/smoke.html](tests/smoke.html).
 - Build outward from the Pulse and complete larger centered squares.
 - Earn Pulse charges when the centered square grows.
 - Reach capacity and harvest Pulse charges and Dud salvage.
-- Future: bank resources, fabricate repair materials, and restore the Pulse network between runs.
+- Demo target: bank resources, fabricate the first Bit, and restore the Gravity Module.
+- Demo target: secure one firewall sector and unlock Endless Feed.
+- Demo target: earn a small set of optional Endless upgrades.
+
+## Demo Boundary
+
+The tracked project stops at one recovered firewall sector and a replayable Endless mode. The remaining Board stays obscured and the full-game campaign is intentionally unspecified here.
+
+Broader ideas may be developed locally under `notes/private/`, which is ignored by Git. Nothing from that area is public scope until Katherine explicitly promotes it into the tracked project documents.
+
+## Platform Direction
+
+The browser is the primary target. The approved architecture keeps one portable web game codebase that can later be packaged for PC, Android, and iOS without forking core gameplay or progression logic.
+
+The planned foundation uses TypeScript, Vite, Phaser, Vitest, Playwright, and HTML/CSS overlays. None of those dependencies are installed yet.
 
 ## Project Docs
 

@@ -4,6 +4,8 @@
 
 Twistris has no Node-based test runner or build pipeline. Verification currently uses a browser smoke harness plus manual gameplay checks.
 
+This remains the required approach until the stack-foundation slice lands. Do not remove the smoke harness merely because a new runner exists.
+
 ## Browser Smoke Harness
 
 Open [tests/smoke.html](tests/smoke.html) in a browser.
@@ -58,6 +60,45 @@ Open [index.html](index.html) and verify:
 Add focused coverage as the corresponding state boundaries are introduced:
 
 - malformed and older-version profile data after persistence exists
+- pure crafting, mission, and first-sector transactions
+- tutorial event ordering without waiting for real animation durations
+- platform-adapter contracts using browser-safe fakes
+
+## Planned Automated Stack
+
+After the approved migration:
+
+- **Vitest:** pure puzzle, economy, profile, mission, demo-board, migration, and transaction rules.
+- **Playwright:** title-to-run flow, keyboard and touch input, scene transitions, responsive layouts, tutorial checkpoints, and selected visual comparisons.
+- **TypeScript:** compile-time checks for state, events, save data, scene contracts, and platform adapters.
+- **Vite build:** production asset and module validation.
+
+The browser smoke harness may be retired only after its characterization cases have equivalent coverage and the Phaser runtime has demonstrated parity.
+
+## Demo Acceptance Flow
+
+The release candidate must verify the complete public demo:
+
+1. First-run reveal completes without unintended input.
+2. The first Bit is crafted and walks into the Gravity Module upgrade slot.
+3. The gyro stabilizes before the firewall failure and Bug reveal.
+4. **FEED THE PULSE** starts the four-charge mission with full controls.
+5. Harvested resources are banked exactly once.
+6. The player can obtain the demo Charged Bit and secure the first firewall sector.
+7. The demo-complete result unlocks Endless Feed.
+8. Endless Feed remains replayable across save and reload.
+9. The selected demo upgrades unlock, equip, save, and affect only their documented rules.
+10. No inaccessible second sector or unfinished full-game surface appears in the release.
+
+## Performance Validation
+
+- Target smooth 60 FPS presentation on desktop and modern mobile hardware.
+- Test at desktop, mobile-width, high-density, and reduced-effects settings.
+- Include at least one modest Android-class device or profile and one older supported iPhone-class device before a mobile release.
+- Check long tutorial sequences, harvest particles, walking Bits, Bug swarms, fog, blur, and Board camera movement.
+- Pool repeated objects, cull off-camera and fog-hidden entities, and cap resolution and effect counts.
+- Pause unnecessary simulation and animation when the page or packaged app enters the background.
+- Performance reductions may change visual density but must never change economy, mission, repair, or demo-board outcomes.
 
 ## Validation Expectations
 
@@ -67,3 +108,4 @@ Add focused coverage as the corresponding state boundaries are introduced:
 - Balance changes: perform repeated left-heavy, right-heavy, early-run, and late-run manual scenarios.
 - Persistence changes: test missing, valid, malformed, and older-version saves.
 - Harvest changes: verify inventory awards remain correct if animation is skipped, interrupted, or reduced.
+- Stack migration changes: run both legacy characterization and new automated checks until parity is approved.

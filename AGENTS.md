@@ -53,7 +53,20 @@ When unsure, choose the smallest clean implementation that can be understood, re
 - `game.js`: controller state, animation, rendering, input, and runtime effects
 - `tests/smoke.html`: browser smoke-test harness
 
-The current refactor direction is incremental. Do not rewrite the game or add a framework. Preserve direct browser opening and extract testable boundaries one slice at a time.
+The approved refactor direction is incremental migration to TypeScript, Vite, and Phaser. Do not rewrite the game in one pass. Follow the slice order in PLAN.md, preserve the legacy runtime until parity is proven, and add only the tooling or boundary owned by the current slice.
+
+## Demo Scope
+
+This repository targets the public demo only:
+
+- complete onboarding and first unrestricted mission
+- Gravity Module repair
+- one broken firewall sector
+- one sector recovery and demo-complete result
+- Endless Feed unlock
+- approximately three or four demo upgrades
+
+Do not add further Board sectors, a detailed full-game campaign, or speculative post-demo mechanics to tracked files. Broader ideation belongs in the gitignored `notes/private/` area until Katherine explicitly promotes it.
 
 ## Commands
 
@@ -63,25 +76,35 @@ The current refactor direction is incremental. Do not rewrite the game or add a 
 - Syntax check: `node --check rules.js && node --check game.js` when Node is available
 - Build/lint/typecheck: none currently
 
+Slice 5 will replace these with package scripts for development, build, tests, and type checking. Once those scripts exist, use the commands documented in README.md and package metadata instead of these prototype commands.
+
 ## Coding Conventions
 
-- Keep the project dependency-light and browser-native.
+- Keep the game browser-first and packageable for future desktop and mobile wrappers.
 - Prefer pure helpers for board, balance, harvest, and persistence rules.
 - Keep run-earned resources separate from banked profile resources.
 - Keep visual animation state separate from economy transactions.
+- Keep Phaser out of puzzle, economy, demo-board, mission, profile, and persistence rules.
+- Access storage, audio, haptics, fullscreen, lifecycle, achievements, and storefront features through platform adapters.
+- Keep simulation outcomes independent of frame rate and reduced-effects settings.
 - Use the terms in PROJECT_OUTLINE.md; unresolved names in PLAN.md remain provisional.
 
 ## Boundaries
 
 - Do not add online accounts, cloud sync, payments, or external services without approval.
 - Do not mix deferred mechanics into the current slice.
+- Do not let local private design notes override PROJECT_OUTLINE.md or PLAN.md.
 - Do not store transient animation state in a profile.
 - Do not commit personal data; use synthetic profile examples.
+- Do not add React, a backend, cloud services, a database, or a second engine without approval.
+- Do not start Capacitor, desktop-wrapper, or storefront packaging before PLAN.md schedules it.
 
 ## Validation Before Final Report
 
 - Run the browser smoke harness for logic changes.
 - Inspect `index.html` in a browser for visual or interaction changes.
+- During and after migration, run the package build, test, and typecheck commands introduced by the active slice.
+- Validate visual slices at desktop and mobile-class viewports and report performance limitations honestly.
 - Update the relevant project doc when a product or architecture decision changes.
 
 ## Final Report

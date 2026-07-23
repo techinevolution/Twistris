@@ -1,5 +1,45 @@
 # Twistris Decisions
 
+## 2026-07-22: Scope The Public Repository To The Demo
+
+Decision: Make the tracked Twistris repository entirely about releasing the demo. The demo ends after the player completes onboarding, repairs the Gravity Module, secures the first firewall sector, unlocks Endless Feed, and gains access to a small upgrade set.
+
+Reason: This produces a complete, testable, replayable release without requiring the full Board campaign to be designed or built first.
+
+Consequences: Additional Board regions, campaign structure, large crafting trees, and detailed post-demo systems are outside the tracked scope. The public demo may hint that more Board exists, but it does not specify what lies beyond the first sector.
+
+## 2026-07-22: Keep Full-Game Ideation Local Until Promoted
+
+Decision: Store speculative post-demo ideas under the gitignored `notes/private/` area. Do not track or publish them until Katherine explicitly promotes an idea into the project outline, decisions, and plan.
+
+Reason: The private area preserves creative exploration while keeping GitHub focused on the demo and avoiding accidental promises about the full game.
+
+Consequences: Local notes are not a source of truth for implementation. Agents must follow tracked project documents and must not commit the private ideation directory.
+
+## 2026-07-22: Modernize Around A Browser-First Game Stack
+
+Decision: Migrate Twistris incrementally to TypeScript and Vite, use Phaser for scenes and animated presentation, use Vitest for pure logic, and use Playwright for critical browser and visual flows.
+
+Reason: The documented onboarding, crafting, first Board sector, fog, Bugs, camera work, and walking Bits exceed the safe scope of the current 2,177-line runtime. A game-oriented scene and tween system addresses the difficult presentation work while typed domain modules protect economy and progression behavior.
+
+Consequences: A local development server and production build replace direct `file://` opening after the toolchain migration. The current runtime and smoke harness remain until the new stack proves behavioral and visual parity. React, a backend, and additional engines are not part of the approved stack.
+
+## 2026-07-22: Keep One Portable Web Game Codebase
+
+Decision: Treat the browser build as canonical and preserve later packaging paths to PC, Android, and iOS through thin wrappers and platform adapters.
+
+Reason: Phaser targets desktop and mobile browsers, while the same web build can later be wrapped for stores without rewriting the game.
+
+Consequences: Browser standards are the default. Platform-specific storage, haptics, fullscreen, lifecycle, achievements, and storefront calls must remain behind adapters. PWA, Capacitor, desktop-wrapper, and storefront work are deferred until the browser game is ready.
+
+## 2026-07-22: Make Performance A Cross-Platform Constraint
+
+Decision: Target smooth 60 FPS presentation on desktop and modern mobile hardware. Cap render resolution, pool repeated Bits, Bugs, and particles, cull hidden Board entities, suspend unnecessary work in the background, and provide reduced effects.
+
+Reason: The puzzle simulation is modest, but fog, blur, particles, swarms, and long cinematic sequences can create avoidable rendering pressure on phones.
+
+Consequences: Every visual slice needs desktop and mobile-class validation. Domain simulation must remain independent of render frame rate, and visual effects may scale down without changing outcomes.
+
 ## 2026-07-22: Give Bits A Shared Walking Animation
 
 Decision: Ordinary Bits and Charged Bits travel with two tiny feet. They walk along surfaces or copper traces and make a small hop into counters, upgrade slots, and firewall sockets.
@@ -55,6 +95,8 @@ Decision: Keep Twistris dependency-light, directly openable in a browser, and fr
 Reason: The prototype works with a very small surface area, and the planned state boundaries do not require a framework.
 
 Consequences: Refactors should use browser-compatible JavaScript and incremental file extraction.
+
+Status: Superseded by **Modernize Around A Browser-First Game Stack** after the full onboarding and Board scope was defined.
 
 ## 2026-07-22: Refactor Incrementally Before Adding the Metagame
 

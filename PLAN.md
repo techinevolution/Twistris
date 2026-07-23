@@ -8,11 +8,15 @@ The browser runtime remains centered on `game.js`, but board and economy calcula
 
 ## Current Product Goal
 
-Prepare the prototype for persistent Pulse restoration without changing the feel of the existing puzzle loop. The immediate work is architectural stabilization and trustworthy state separation, followed by the smallest complete harvest-to-profile loop.
+Release a polished browser-first demo that carries players through the complete onboarding sequence, the first mission and progression loop, one firewall-sector recovery, and an Endless Feed mode with a small upgrade set.
+
+The immediate work remains a behavior-preserving toolchain migration and a bounded Phaser proof. Demo persistence and metagame implementation follow only after the new presentation stack proves that it can reproduce the current game smoothly.
 
 ## Current Architecture Shape
 
-Twistris is a dependency-free browser project with one HTML entry point, one stylesheet, one JavaScript runtime, and a browser smoke harness. See [ARCHITECTURE.md](ARCHITECTURE.md) for the current map, risks, and intended boundaries.
+Twistris is currently a dependency-free browser project with one HTML entry point, one stylesheet, one JavaScript runtime, and a browser smoke harness.
+
+The approved target is a TypeScript and Vite browser game using Phaser for scenes and animated presentation, Vitest for pure logic, Playwright for browser and visual flows, and HTML/CSS overlays for accessible interface surfaces. See [ARCHITECTURE.md](ARCHITECTURE.md) for the current and target maps.
 
 ## Next Implementation Slices
 
@@ -28,50 +32,79 @@ Twistris is a dependency-free browser project with one HTML entry point, one sty
 4. **Extract pure puzzle rules - Complete**
    `rules.js` now owns board creation, attachment, rotation, balance analysis, centered-square detection, and harvest calculation without DOM or canvas access. The controller consumes those results and retains effects.
 
-5. **Add local profile persistence**
-   Introduce a small versioned save shape with safe load, create, reset, and migration behavior. Keep transient animation state out of the save.
+5. **Introduce the modern toolchain without changing behavior**
+   Add the package manifest and lockfile, Vite, TypeScript, and Vitest. Establish `dev`, `build`, `test`, and `typecheck` commands. Move pure rules first and keep the current browser smoke harness until equivalent automated coverage passes.
 
-6. **Separate runtime presentation**
-   Incrementally isolate canvas rendering and input from the game controller. Keep the active board on canvas and prepare DOM surfaces for profile, missions, harvesting, fabrication, and repair.
+6. **Prove Phaser with one bounded visual slice**
+   Reproduce the Pulse, one falling piece, camera shake or zoom, and one walking Bit with its slot jump. Verify keyboard and touch input, responsive scaling, and stable frame pacing on desktop and at least one mobile-class viewport. Stop and reassess if the proof cannot preserve the current visual identity and feel.
 
-7. **Build the first complete progression loop**
-   Track run-earned resources, show a harvest summary, bank them to the profile, and complete one visible Pulse repair.
+7. **Port the existing playable runtime incrementally**
+   Create Boot/Title, Puzzle, and UI scene boundaries. Port current rendering, input, rotation, harvest, and title behavior in reviewable pieces while retaining the pure rules and characterization tests. Remove the legacy runtime only after parity is demonstrated.
 
-8. **Build the first-run tutorial**
-   Teach the real, already-working run and repair systems. Do not create tutorial-only versions of unfinished mechanics.
+8. **Establish application, domain, and platform boundaries**
+   Separate puzzle, economy, profile, mission, and demo-board logic from Phaser scenes. Add a typed application event boundary and adapters for storage, audio, haptics, fullscreen, lifecycle, and later platform achievements. Do not call wrapper-specific APIs from domain logic.
+
+9. **Add local profile persistence**
+   Introduce a small versioned save shape with safe load, create, reset, and migration behavior. Persist demo inventory, Gravity Module repair, first-sector status, mission progress, Endless Feed unlock, selected upgrades, and tutorial flags only when their rules are approved. Keep transient animation and scene state out of the save.
+
+10. **Build the first complete progression loop**
+    Track run-earned resources, show a harvest result, bank it to the profile, craft the first Bit, and install it in the Gravity Module.
+
+11. **Build the first Board reclamation slice**
+    Add only the Pulse region, fog boundary, broken firewall, and one Bug-held sector required by the demo. Keep reclamation outcomes pure and separate from walking-Bit and Bug presentation.
+
+12. **Add the first mission and repeatable game loop**
+    Use **FEED THE PULSE** to start the four-charge mission, return through harvest and crafting, and advance the first Board objective.
+
+13. **Build the first-run tutorial**
+    Implement the documented reveal sequence using the real title, puzzle, crafting, repair, Board, and mission systems. Support one-time automatic play plus later replay. Do not create tutorial-only economy or demo-board rules.
+
+14. **Complete the firewall recovery and demo ending**
+    Give the player an attainable Charged Bit path, send it to the broken firewall, secure the first sector, present a clear demo-complete result, and unlock **ENDLESS FEED**.
+
+15. **Add the demo's Endless upgrade loop**
+    Select and implement approximately three or four upgrades, including evaluation of the optional Gyro Override. Keep upgrade costs attainable, expose no more than two equipment slots if slots are used, and preserve the identity of automatic twisting.
+
+16. **Harden and release the demo**
+    Tune onboarding and firewall pacing, add replay/reset/settings and reduced-effects behavior, complete accessibility and performance checks, validate save migrations, and prepare the browser release. Do not expand the public scope to additional Board sectors.
 
 ## Recommended Next Slice
 
-Implement slice 5 only: add a small versioned local profile with safe create, load, reset, and migration behavior.
+Implement slice 5 only: introduce Vite, TypeScript, and Vitest while preserving the current title, puzzle, harvest, controls, and visible presentation.
 
-Persist only approved banked inventory and profile progress. The approved initial inventory is Pulse charges, Duds, and Bits. Keep run state and presentation state out of storage, and do not add Charged Bits or Bit Dust until their rules are resolved. Crafting behavior itself remains outside slice 5.
+This slice must not add Phaser, change gameplay, redesign the UI, add persistence, or delete the browser smoke harness. It is complete only when the development build, production build, typecheck, new unit-test command, existing smoke harness, and manual browser checks all pass.
 
 ## Deferred Work
 
-- Fabrication recipes beyond the established first Bit recipe.
-- Cracked-piece return and Bit Dust pressure.
-- Repair-pattern placement gameplay.
-- Random Charged Bits inside falling pieces.
-- Mission variety beyond the first resource goal.
-- Bit Battles or system-reclamation activities.
-- Infinite or expanding-board mode.
-- Large crafting trees, modification slots, and puzzle power upgrades.
+- Fabrication beyond the established first Bit and required demo Charged Bit path.
+- Mission variety beyond the demo's first objective.
+- Additional Board regions or a detailed full-game campaign.
+- Large crafting trees and upgrade sets beyond the demo.
+- PWA installation and offline packaging.
+- Capacitor projects for Android and iOS.
+- A desktop wrapper and storefront integration.
+
+Detailed post-demo design belongs in the gitignored local ideation area and is not part of this public implementation plan.
 
 ## Open Questions
 
-- What recipes create Charged Bits and later repair materials?
-- Is Bit Dust a banked resource, an in-run pressure system, or both?
+- How does the demo create or award the Charged Bit needed for the firewall?
+- Does Bit Dust belong in the demo at all?
 - Does a failed Charged Bit produce recoverable Bit Dust or only a visual residue?
-- Does Board conflict advance with completed puzzle runs, explicit player actions, slow real time, or a hybrid?
-- What ends a normal run besides reaching board capacity?
-- Which restored subsystems unlock later mission types and eventual infinite mode?
+- What exactly makes Endless Feed endless while preserving performance and puzzle clarity?
+- Which three or four upgrades ship in the demo, and what are their attainable costs?
+- What limits, if any, keep Gyro Override useful without trivializing placement?
 - Should the first profile support one named player or multiple local profiles?
+- Which desktop wrapper and storefront integrations are appropriate when a PC release is scheduled?
 
 ## Validation Path
 
-- Run `node --check rules.js` and `node --check game.js` when Node is available.
-- Open `tests/smoke.html` and confirm all browser smoke checks pass.
-- Open `index.html` and manually verify title, controls, attachment, twist, pause, restart, harvest, HUD, and responsive layout after behavioral or visual changes.
+- Before slice 5 lands, run `node --check rules.js` and `node --check game.js`, open `tests/smoke.html`, and inspect `index.html` directly.
+- After slice 5, require the documented `dev`, `build`, `test`, and `typecheck` commands while retaining the legacy smoke check until parity coverage is approved.
+- After the Phaser proof, use Playwright for critical browser flows and stable visual checkpoints.
+- Manually verify title, controls, attachment, twist, pause, restart, harvest, HUD, keyboard, touch, and responsive layout after behavioral or visual changes.
+- Target smooth 60 FPS presentation on desktop and modern mobile hardware. Pool repeated objects, cap effects, cull hidden Board entities, and bound rendering resolution.
+- Test visual slices at desktop, mobile-width, high-density, and reduced-effects settings.
 - Keep the working tree free of unintended generated files.
 
 ## Stop Rules
@@ -80,5 +113,12 @@ Persist only approved banked inventory and profile progress. The approved initia
 - Do not implement unresolved resource recipes as permanent save fields.
 - Do not combine a behavior change with a large file move.
 - Do not tie economy awards or persistence to animation timing.
-- Do not add a framework, bundler, backend, or external service without approval.
-- Do not begin tutorial, Bit Battle, or infinite-mode work before the first progression loop is proven.
+- Do not add React, a backend, cloud services, a database, or a second game engine without approval.
+- Do not port the full runtime to Phaser before the bounded proof is accepted.
+- Do not remove the legacy runtime or smoke harness before behavioral parity is demonstrated.
+- Do not let Phaser scenes determine economy, mission, demo-board, repair, or persistence outcomes.
+- Do not call Capacitor, desktop-wrapper, or storefront APIs directly from domain logic.
+- Do not begin PC, Android, or iOS packaging during the browser-game foundation slices.
+- Do not implement the tutorial before the real systems it teaches are proven.
+- Do not add a second Board sector or publish detailed full-game plans as part of the demo.
+- Do not promote an idea from the local private design area without Katherine's explicit approval.

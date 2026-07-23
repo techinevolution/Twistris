@@ -13,6 +13,8 @@ This document records provisional state and persistence guidance. It is not yet 
 - Apply each harvest result exactly once.
 - Do not persist board-derived values or transient animation state.
 - Validate loaded data and fall back safely when a save is missing or malformed.
+- Keep the serialized profile format portable across browser, desktop-wrapper, Android, and iOS storage adapters.
+- Keep platform-specific paths, handles, permissions, and wrapper metadata outside the profile payload.
 
 ## Suggested Top-Level Runtime Shape
 
@@ -40,7 +42,7 @@ The current runtime has a page-session inventory only. It deliberately uses a sm
 
 The sequence and applied-ID list are page-session transaction metadata. Persistence may replace their implementation later, but repeated application of the same result must remain idempotent.
 
-The future `profile` is the long-term local progression record. Pulse charges, Duds, and Bits are approved initial inventory keys. Charged Bits and Bit Dust remain provisional.
+The future `profile` is the demo's local progression record. Pulse charges, Duds, and Bits are approved initial inventory keys. Charged Bits and Bit Dust remain provisional.
 
 ```js
 {
@@ -53,8 +55,13 @@ The future `profile` is the long-term local progression record. Pulse charges, D
   },
   pulse: {
     repairStage: 0,
-    restoredSystems: [],
-    unlockedSystems: []
+    gravityModuleRepaired: false
+  },
+  demo: {
+    firewallSectorSecured: false,
+    endlessFeedUnlocked: false,
+    unlockedUpgrades: [],
+    equippedUpgrades: []
   },
   stats: {
     totalRuns: 0,
@@ -172,8 +179,8 @@ When persisted data changes incompatibly:
 ## Open Data Questions
 
 - Single local profile or multiple named profiles.
-- Charged Bit, Bit Dust, and later fabrication recipes.
+- The demo's Charged Bit source or fabrication recipe.
 - Whether Bit Dust exists in inventory, only during a run, or both.
-- Mission definition and progress shape.
-- Repair-pattern and assembly placement shape.
+- Four-charge mission and first-firewall progress shapes.
+- Endless Feed unlock and demo-upgrade definition shapes.
 - Safe duplicate-harvest protection strategy.

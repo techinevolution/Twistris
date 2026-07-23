@@ -2,16 +2,16 @@
 
 ## Goal
 
-Create a distinctive falling-block game where the player builds around a damaged central Pulse, harvests useful material from each run, and gradually restores a larger networked system.
+Release a polished browser-first Twistris demo that introduces the damaged Pulse, teaches the puzzle and restoration loops, lets the player secure one broken firewall sector, and unlocks a replayable Endless Feed mode with a small set of upgrades.
 
 ## Intended End State
 
-Twistris should have two connected rhythms:
+The demo should have two connected rhythms:
 
 - A focused puzzle run built around attachment, imbalance, quarter-turn twists, and centered-square growth.
-- A slower metagame where harvested materials are refined, fabricated, and placed into damaged Pulse systems.
+- A compact metagame where harvested materials repair the Gravity Module, recover one firewall sector from Bugs, and unlock optional Endless upgrades.
 
-The Pulse is the centerpiece of a larger dormant or overrun network. Repairing it should visibly restore that world, reveal new systems, and unlock additional activities without turning the main puzzle into a conventional upgrade race.
+The demo reveals that the Pulse belongs to a larger dormant or overrun network, but it deliberately stops after the first secured sector. The remaining Board stays obscured so a future full game can expand the world without the public demo repository defining that campaign in detail.
 
 ## Audience
 
@@ -35,10 +35,10 @@ The Pulse is the centerpiece of a larger dormant or overrun network. Repairing i
 
 1. Return to the Pulse network after a run.
 2. Review harvested resources and mission progress.
-3. Refine salvage into useful repair material.
-4. Fabricate assemblies for damaged subsystems.
-5. Place assemblies into repair patterns or system schematics.
-6. Bring repaired systems online and reveal the next restoration goal.
+3. Fabricate the material required by the current demo objective.
+4. Repair the Gravity Module during onboarding.
+5. Recover and secure the first firewall sector.
+6. Unlock Endless Feed and the demo's optional upgrades.
 
 ## Major Features
 
@@ -55,10 +55,12 @@ The Pulse is the centerpiece of a larger dormant or overrun network. Repairing i
 
 - A local persistent player profile.
 - Clear separation between run-earned and banked resources.
-- A visibly damaged Pulse with multiple repair stages.
-- A network of systems that can be restored over many runs.
-- Run missions, beginning with understandable charge and salvage goals.
-- A repair layer based on constructing and placing block-shaped assemblies.
+- A visibly damaged Pulse that improves through the tutorial and first sector recovery.
+- One guided four-charge mission.
+- One firewall-sector reclamation objective.
+- A repair layer based on constructing and placing Bits and a Charged Bit.
+- Endless Feed as the replayable mode unlocked at demo completion.
+- A small set of upgrades that gives Endless players goals and alternate play options.
 - A first-run tutorial built after the systems it teaches are stable in normal play.
 
 ### Damaged Pulse Presentation
@@ -72,19 +74,21 @@ Possible damage and recovery details include:
 - Flicker, sputter, sparks, and visual interference.
 - Repaired layers gradually restoring symmetry and brightness.
 
-The Pulse should have multiple visible repair stages rather than a single broken-or-fixed state. Its condition should be reflected both in gameplay and in the title presentation.
+The demo should show at least the broken baseline, the stabilized Gravity Module, and the secured firewall result. The Pulse's condition should be reflected both in gameplay and in the title presentation.
 
 ### Persistent Player Profile
 
-The restoration loop requires a local-first profile that survives browser sessions. The profile should eventually communicate:
+The demo requires a local-first profile that survives browser sessions. The profile should communicate:
 
 - Player name.
 - Banked Pulse charges and Duds.
 - Repair progress and unlocked parts or systems.
+- Firewall-sector and Endless Feed status.
+- Unlocked and equipped demo upgrades.
 - Best centered square reached.
 - Total runs and harvests.
 
-Run-earned resources remain separate from banked inventory until harvest. Profile data should support reset and, later, export and import without requiring an online account.
+Run-earned resources remain separate from banked inventory until harvest. Profile data should support reset without requiring an online account. Export and import are optional release-polish work, not a requirement for the first demo build.
 
 ### Harvest Presentation
 
@@ -104,18 +108,18 @@ The inventory transaction must not depend on whether these animations finish.
 
 ### Repair And Fabrication
 
-Repair is the first long-term resource sink. The first guided fabrication recipe is established:
+Repair is the demo's progression sink. The first guided fabrication recipe is established:
 
 **8 Duds + 1 Pulse charge = 1 Bit**
 
-The damaged Pulse acts as the fabricator: Duds and a charge enter it, and a reconstructed Bit emerges. Recipes for Charged Bits, Bit Dust, and later assemblies remain open.
+The damaged Pulse acts as the fabricator: Duds and a charge enter it, and a reconstructed Bit emerges. The demo still needs a clear, attainable way to create or obtain the Charged Bit used to secure the firewall. Bit Dust behavior remains optional.
 
-Early repair rewards should prioritize:
+Demo repair rewards should prioritize:
 
 - Visible restoration of the Pulse and motherboard.
-- Reconnection of damaged systems and access to new metagame surfaces.
+- Reconnection of the Gravity Module and first firewall sector.
 - Quality-of-life support.
-- Carefully limited puzzle-affecting mechanics only after the core restoration loop is proven.
+- A small optional upgrade set for Endless Feed.
 
 The first repairs should improve the Pulse before they increase player power. Repair should feel physical: fabricate parts, fit them into damaged locations, and visibly bring systems online.
 
@@ -131,7 +135,7 @@ The current resource language is:
 
 In the established harvest loop, Duds come from influenced gray blocks at harvest end and Pulse charges come from centered-square growth. Both become banked resources through the harvest transaction.
 
-Possible future run behavior includes a missed piece returning in a cracked state, then shattering into Bit Dust after another failed placement. Some falling pieces may eventually contain a naturally Charged Bit. Conversion rates beyond the first Bit recipe, penalties, and Bit Dust storage rules remain open design questions.
+The Charged Bit acquisition rule, whether the failed firewall component leaves recoverable Bit Dust, and whether Bit Dust belongs in the demo remain open design questions.
 
 When Bits or Charged Bits travel outside a tetromino, counter, or installed socket, they use a simple shared animation language: two tiny feet appear, the square walks along surfaces or copper traces, and it makes a small hop into its destination slot. This should remain a compact, readable animation rather than a full character performance.
 
@@ -214,7 +218,7 @@ After onboarding, **FEED THE PULSE** remains the primary action for starting a p
 
 ### Metagame Surfaces
 
-The larger restoration loop will need:
+The demo restoration loop will need:
 
 - A profile surface showing the active player, banked inventory, and repair progress.
 - A harvest summary showing run results, resources earned, and the best centered square reached.
@@ -225,66 +229,62 @@ These should feel like parts of the damaged machine and network rather than conv
 
 ## Examples of Success
 
-- A new player understands that building centered squares feeds the Pulse.
+- A new player completes the full reveal and understands that building centered squares feeds the Pulse.
 - A completed run produces a clear, trustworthy harvest result.
-- The player can see the Pulse and its network improving across sessions.
+- The player repairs the Gravity Module and secures the first firewall sector.
 - Repair placement reuses the player's spatial knowledge without duplicating the pressure of the falling-block run.
-- A mission gives a run purpose while still allowing expressive play.
-- An eventual infinite mode offers long-form mastery without replacing finite campaign runs.
+- The four-charge mission gives the first unrestricted run a clear purpose.
+- Endless Feed unlocks at a satisfying demo endpoint and remains enjoyable without requiring unfinished campaign content.
+- Three or four upgrades give interested players additional demo goals and ways to alter Endless play.
 
-## Future Directions
+## Demo Completion Loop
 
-These fit the world but are not committed implementation work:
+1. Complete the first-run reveal through the Gravity Module repair and firewall breach.
+2. Select **FEED THE PULSE** and complete the first four-charge mission.
+3. Harvest and fabricate the resources required by the firewall objective.
+4. Create or obtain a Charged Bit.
+5. Send the Charged Bit to the broken firewall slot and secure the infested sector.
+6. Display a clear demo completion result and unlock **ENDLESS FEED**.
+7. Let players continue earning and unlocking a small set of optional upgrades.
 
-### Network Reclamation
+The firewall recovery should hint at a larger world without requiring extended grinding. The intended target is a short path of roughly one or two normal runs after onboarding, subject to playtesting.
 
-- The **BOARD** is both a damaged motherboard and a territory map centered on the Pulse.
-- Bugs are an invading or corrupting force occupying connected systems.
-- Most of the Board begins hidden behind dark interference and fog of war.
-- Bits can walk along copper traces to reclaim nodes, repair connections, and push Bugs back.
-- Reclaimed areas remain vulnerable until a Charged Bit powers a firewall at a strategic boundary or gateway.
-- Charged Bits use the same walking and slot-jumping movement language when they travel to firewall sockets.
-- A secured region keeps its restored upgrade online and prevents Bug reinvasion through that boundary.
-- Each reclaimed portion of the Board can reveal a subsystem, upgrade, recipe, or new activity.
-- Restoring one subsystem should reveal or reconnect others, making the Pulse the center of a larger repairable network.
-- Infinite or expanding-board modes may provide long-form mastery after the finite restoration campaign establishes its rules.
+## Demo Upgrades Under Evaluation
 
-### Charged And Unstable Pieces
+The released demo should contain approximately three or four meaningful upgrades, selected through implementation and playtesting rather than committing to every candidate:
 
-- Some falling tetrominoes may contain a naturally Charged Bit.
-- Dud pieces may occasionally appear in the next queue, requiring the player to recognize whether to collect, discard, or integrate them.
-- Dying pieces may lose power if they are not integrated into the Pulse in time, convert into Duds, fall away, and leave holes.
-- A missed piece may return cracked, then shatter into Bit Dust after another failed placement.
+- **Gyro Override:** optional manual quarter-turn control of the Pulse, distinct from the repaired automatic Gravity Module.
+- **Queue Scanner:** shows another upcoming tetromino.
+- **Balance Sensor:** previews the likely twist direction.
+- **Salvage Stabilizer:** gives unstable salvage another chance before it is lost.
+- **Charge Capacitor:** protects or increases limited charge capacity.
+- **Dud Compressor:** improves one defined salvage or crafting transaction.
+- **Firewall Relay:** supports the secured demo sector.
 
-These mechanics should create a salvage-now-or-build-later decision: collect unstable material early for a reliable resource, or risk integrating it for greater structural value.
+The demo may expose no more than two equipped modification slots if equipment choices are included. Gyro Override should remain optional because it significantly changes puzzle control and may require a cooldown, resource constraint, or between-piece restriction.
 
-### Modification Slots
+## Beyond The Demo
 
-The player may eventually equip a small number of fabricated modifications, initially no more than two. Possible effects include:
-
-- Preventing random Dud pieces.
-- Converting incoming Dud pieces into dying pieces.
-- Changing salvage, stability, or repair support rules.
-- Allowing direct Pulse rotation through a second input axis.
-
-Direct Pulse rotation may prove better as an alternate mode than as an equipped modification. It could support faster Dud and charge collection without replacing the automatic-twist identity of the core mode.
-
-### Future Mechanic Test
-
-New mechanics should preferably do at least one of the following:
-
-- Create tension around structural stability.
-- Feed the salvage and repair economy.
-- Make the player read the queue more carefully.
-- Create new reasons to protect, feed, or repair the Pulse.
+The full game may open more of the Board and extend its restoration systems. The tracked repository intentionally leaves that direction broad. Detailed post-demo ideas belong in the gitignored local design area until Katherine explicitly promotes one into the public project scope.
 
 ## Non-Goals
 
 - Conventional line-clearing Tetris progression.
-- A large combat system during the first milestone.
-- A sprawling crafting tree before the first repair loop is proven.
+- More than the first recoverable firewall sector.
+- A detailed public roadmap for the full Board campaign.
+- A large combat system or sprawling crafting tree.
 - Online accounts, competitive services, or cloud infrastructure.
 - Power upgrades that overwhelm the puzzle's readable balance.
+
+## Platform And Performance Direction
+
+- The browser is the primary development and release platform.
+- The same web game should remain packageable for Windows, macOS, and Linux, and later for Android and iOS.
+- Desktop and mobile packages should wrap the web build rather than fork puzzle, economy, progression, or tutorial logic.
+- Keyboard, controller, and touch input should meet through one action layer.
+- Platform capabilities such as storage, haptics, fullscreen, lifecycle, and achievements must sit behind replaceable adapters.
+- The game should target smooth 60 FPS presentation on desktop and modern mobile hardware, with bounded resolution, pooled repeated objects, culled off-screen or fog-hidden entities, and a reduced-effects option.
+- Save data must remain portable and versioned across browser and packaged builds.
 
 ## Non-Negotiable Boundaries
 
@@ -293,4 +293,5 @@ New mechanics should preferably do at least one of the following:
 - Resources earned during a run are not banked until a defined harvest transaction.
 - Repair animation cannot determine whether inventory is awarded.
 - Persistent data must be local-first, versioned, and recoverable from invalid saves.
-- The project remains dependency-light and directly openable in a browser unless a later decision explicitly changes that constraint.
+- Twistris remains browser-first even when optional desktop and mobile packages are added.
+- Platform packaging cannot fork core game rules or progression data.
