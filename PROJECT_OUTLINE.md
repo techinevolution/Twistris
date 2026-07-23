@@ -136,7 +136,7 @@ The first-run tutorial should initially disguise Twistris as a conventional fall
 1. Show the current animated **TWISTRIS** title by itself, without explanation.
 2. After a short pause, display a small machine-like notification: **GAME IN PROGRESS**.
 3. Prompt the player to select **OK** to continue.
-4. Dismiss the title and reveal a conventional falling-block interface. Four horizontal rows are nearly complete, with one vertical four-cell gap and an I tetromino waiting above it.
+4. After the player selects OK, dismiss the title and reveal a conventional falling-block interface. Four horizontal rows are nearly complete, with one vertical four-cell gap and an I tetromino waiting above it.
 5. Without player control, automatically drop the I tetromino into the gap. Its four Bits complete what appears to be a standard four-line clear.
 6. Flash the completed rows and begin a familiar confirmation sound as though the game is about to clear them.
 7. Corrupt or muffle the sound. Make the rows stutter, distort, or remain illuminated instead of clearing, then display **WARNING: STACK DESTABILIZED**.
