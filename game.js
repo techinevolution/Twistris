@@ -218,6 +218,14 @@ const SHAPES = [
 
 const keys = new Set();
 const justPressed = new Set();
+const GAME_PHASES = Object.freeze({
+  TITLE: "title",
+  LAUNCHING: "launching",
+  PLAYING: "playing",
+  PAUSED: "paused",
+  HARVESTING: "harvesting",
+});
+const GAME_PHASE_VALUES = new Set(Object.values(GAME_PHASES));
 let canvasWidth = canvas.clientWidth;
 let canvasHeight = canvas.clientHeight;
 let canvasRatio = Math.min(window.devicePixelRatio || 1, 2);
@@ -226,45 +234,57 @@ let renderTime = 0;
 class BalanceStackGame {
   constructor({ random = Math.random } = {}) {
     this.random = random;
-    this.started = false;
-    this.elapsedTime = 0;
-    this.bankedDuds = 0;
-    this.bankedPulseCharges = 0;
-    this.harvestSequence = null;
-    this.coreParticles = [];
-    this.pulseParticles = [];
+    this.session = {
+      bankedDuds: 0,
+      bankedPulseCharges: 0,
+    };
+    this.lifecycle = {
+      phase: GAME_PHASES.TITLE,
+    };
+    this.presentation = {
+      elapsedTime: 0,
+      harvestSequence: null,
+      coreParticles: [],
+      pulseParticles: [],
+      pulseParticleTimer: 0,
+      rotationDirection: 0,
+      rotationTimer: 0,
+      rotationVisual: 0,
+    };
+    this.run = {};
     this.resetIntroState(true);
     this.resetState();
     this.updateStartScreen();
   }
 
   resetState() {
-    this.board = this.makeGrid();
-    this.current = null;
-    this.nextShape = this.randomShape();
-    this.ghost = [];
-    this.dropTimer = 0;
-    this.moveTimer = 0;
-    this.lastMoveDir = 0;
-    this.lockTimer = 0;
-    this.gameOver = false;
-    this.harvestSequence = null;
-    this.piecesPlaced = 0;
-    this.lockSequence = 0;
-    this.rotationCount = 0;
-    this.orientationTurns = 0;
-    this.lastBalance = 0;
-    this.coreLayers = 0;
-    this.coreChargeCount = 0;
-    this.coreGrowthCount = 0;
-    this.paused = false;
-    this.rotationVisual = 0;
-    this.rotationTimer = 0;
-    this.pendingBoard = null;
-    this.pendingOrientationTurns = 0;
-    this.coreParticles = [];
-    this.pulseParticles = [];
-    this.pulseParticleTimer = 0;
+    this.run = {
+      board: this.makeGrid(),
+      current: null,
+      nextShape: this.randomShape(),
+      ghost: [],
+      dropTimer: 0,
+      moveTimer: 0,
+      lastMoveDir: 0,
+      lockTimer: 0,
+      piecesPlaced: 0,
+      lockSequence: 0,
+      rotationCount: 0,
+      orientationTurns: 0,
+      lastBalance: 0,
+      coreLayers: 0,
+      coreChargeCount: 0,
+      coreGrowthCount: 0,
+      pendingBoard: null,
+      pendingOrientationTurns: 0,
+    };
+    this.presentation.harvestSequence = null;
+    this.presentation.rotationVisual = 0;
+    this.presentation.rotationTimer = 0;
+    this.presentation.rotationDirection = 0;
+    this.presentation.coreParticles = [];
+    this.presentation.pulseParticles = [];
+    this.presentation.pulseParticleTimer = 0;
     this.setHarvestPresentation(false);
 
     this.seedCore();
@@ -278,7 +298,7 @@ class BalanceStackGame {
 
   restart() {
     this.resetIntroState(false);
-    this.started = true;
+    this.setPhase(GAME_PHASES.PLAYING);
     this.setHarvestPresentation(false);
     this.resetState();
     this.spawnPiece();
@@ -287,14 +307,13 @@ class BalanceStackGame {
   }
 
   resetIntroState(showTitle) {
-    this.launching = false;
-    this.launchProgress = 0;
-    this.titleSpinAngle = 0;
-    this.titleSettleAngle = 0;
-    this.titleSpinSpeed = showTitle ? 0.95 : 0;
-    this.titleCameraZoom = showTitle ? INTRO_IDLE_CAMERA_ZOOM : 1;
-    this.titlePulseScale = showTitle ? INTRO_IDLE_PULSE_SCALE : 1;
-    this.titleGridAlpha = showTitle ? INTRO_IDLE_GRID_ALPHA : 1;
+    this.presentation.launchProgress = 0;
+    this.presentation.titleSpinAngle = 0;
+    this.presentation.titleSettleAngle = 0;
+    this.presentation.titleSpinSpeed = showTitle ? 0.95 : 0;
+    this.presentation.titleCameraZoom = showTitle ? INTRO_IDLE_CAMERA_ZOOM : 1;
+    this.presentation.titlePulseScale = showTitle ? INTRO_IDLE_PULSE_SCALE : 1;
+    this.presentation.titleGridAlpha = showTitle ? INTRO_IDLE_GRID_ALPHA : 1;
   }
 
   setHarvestPresentation(active) {
@@ -303,17 +322,43 @@ class BalanceStackGame {
     }
   }
 
+  setPhase(phase) {
+    if (!GAME_PHASE_VALUES.has(phase)) {
+      throw new Error(`Unknown game phase: ${phase}`);
+    }
+    this.lifecycle.phase = phase;
+  }
+
+  isPhase(phase) {
+    return this.lifecycle.phase === phase;
+  }
+
+  isRunScreenActive() {
+    return !this.isPhase(GAME_PHASES.TITLE) && !this.isPhase(GAME_PHASES.LAUNCHING);
+  }
+
+  togglePause() {
+    if (this.isPhase(GAME_PHASES.PLAYING)) {
+      this.setPhase(GAME_PHASES.PAUSED);
+      this.setStatus("Paused");
+    } else if (this.isPhase(GAME_PHASES.PAUSED)) {
+      this.setPhase(GAME_PHASES.PLAYING);
+      this.setStatus("");
+    }
+  }
+
   beginStartSequence() {
-    if (this.started || this.launching) return;
-    this.launching = true;
-    this.launchProgress = 0;
-    this.titleSettleAngle = nearestQuarterTurn(this.titleSpinAngle);
+    if (!this.isPhase(GAME_PHASES.TITLE)) return;
+    this.setPhase(GAME_PHASES.LAUNCHING);
+    this.presentation.launchProgress = 0;
+    this.presentation.titleSettleAngle = nearestQuarterTurn(this.presentation.titleSpinAngle);
     this.updateStartScreen();
   }
 
   finishStartSequence() {
+    if (!this.isPhase(GAME_PHASES.LAUNCHING)) return;
     this.resetIntroState(false);
-    this.started = true;
+    this.setPhase(GAME_PHASES.PLAYING);
     this.setHarvestPresentation(false);
     this.resetState();
     this.spawnPiece();
@@ -326,7 +371,7 @@ class BalanceStackGame {
   }
 
   seedCore() {
-    this.board[CENTER][CENTER] = { color: "cyan", seed: true, age: 999 };
+    this.run.board[CENTER][CENTER] = { color: "cyan", seed: true, age: 999 };
   }
 
   setStatus(text) {
@@ -337,13 +382,14 @@ class BalanceStackGame {
   }
 
   updateStartScreen() {
+    const launching = this.isPhase(GAME_PHASES.LAUNCHING);
     if (startScreen) {
-      startScreen.classList.toggle("is-hidden", this.started);
-      startScreen.classList.toggle("is-launching", this.launching);
-      startScreen.style.setProperty("--launch-progress", this.launching ? this.launchProgress.toFixed(3) : "0");
+      startScreen.classList.toggle("is-hidden", this.isRunScreenActive());
+      startScreen.classList.toggle("is-launching", launching);
+      startScreen.style.setProperty("--launch-progress", launching ? this.presentation.launchProgress.toFixed(3) : "0");
     }
     if (startButton) {
-      startButton.disabled = this.launching;
+      startButton.disabled = launching;
     }
   }
 
@@ -352,16 +398,16 @@ class BalanceStackGame {
   }
 
   spawnPiece(shapeOverride = null) {
-    const shape = shapeOverride || this.nextShape;
+    const shape = shapeOverride || this.run.nextShape;
     if (!shapeOverride) {
-      this.nextShape = this.randomShape();
+      this.run.nextShape = this.randomShape();
     }
     const cells = shape.cells.map((cell) => ({ ...cell }));
     const bounds = this.boundsForCells(cells);
     const spawnX = CENTER - Math.round((bounds.minX + bounds.maxX) / 2);
     const spawnY = -bounds.minY - 3;
 
-    this.current = {
+    this.run.current = {
       shape,
       color: shape.color,
       cells,
@@ -396,7 +442,7 @@ class BalanceStackGame {
       if (cell.x < 0 || cell.x >= GRID_SIZE || cell.y >= GRID_SIZE) {
         return false;
       }
-      if (cell.y >= 0 && this.board[cell.y][cell.x]) {
+      if (cell.y >= 0 && this.run.board[cell.y][cell.x]) {
         return false;
       }
     }
@@ -404,19 +450,19 @@ class BalanceStackGame {
   }
 
   movePiece(dx, dy) {
-    if (!this.current || this.gameOver) return false;
-    if (!this.canPlace(this.current, dx, dy)) return false;
-    this.current.x += dx;
-    this.current.y += dy;
+    if (!this.run.current) return false;
+    if (!this.canPlace(this.run.current, dx, dy)) return false;
+    this.run.current.x += dx;
+    this.run.current.y += dy;
     this.updateGhost();
     return true;
   }
 
   rotatePiece() {
-    if (!this.current || this.gameOver) return;
+    if (!this.run.current) return;
 
     // Piece rotation is still local 90-degree tetromino rotation.
-    const rotated = this.current.cells.map((cell) => ({
+    const rotated = this.run.current.cells.map((cell) => ({
       x: -cell.y,
       y: cell.x,
     }));
@@ -430,10 +476,10 @@ class BalanceStackGame {
     ];
 
     for (const kick of kicks) {
-      if (this.canPlace(this.current, kick.x, kick.y, rotated)) {
-        this.current.cells = rotated;
-        this.current.x += kick.x;
-        this.current.y += kick.y;
+      if (this.canPlace(this.run.current, kick.x, kick.y, rotated)) {
+        this.run.current.cells = rotated;
+        this.run.current.x += kick.x;
+        this.run.current.y += kick.y;
         this.updateGhost();
         return;
       }
@@ -441,20 +487,20 @@ class BalanceStackGame {
   }
 
   updateGhost() {
-    if (!this.current) {
-      this.ghost = [];
+    if (!this.run.current) {
+      this.run.ghost = [];
       return;
     }
 
     let dy = 0;
-    while (this.canPlace(this.current, 0, dy + 1)) {
+    while (this.canPlace(this.run.current, 0, dy + 1)) {
       dy += 1;
     }
-    this.ghost = this.worldCells(this.current, 0, dy);
+    this.run.ghost = this.worldCells(this.run.current, 0, dy);
   }
 
   hardDrop() {
-    if (!this.current || this.gameOver || this.harvestSequence) return;
+    if (!this.run.current || this.isPhase(GAME_PHASES.HARVESTING)) return;
     while (this.movePiece(0, 1)) {
       // Drop until collision.
     }
@@ -462,11 +508,11 @@ class BalanceStackGame {
   }
 
   update(dt) {
-    this.elapsedTime += dt;
+    this.presentation.elapsedTime += dt;
     this.updateCoreParticles(dt);
     this.updatePulseParticles(dt);
 
-    if (!this.started) {
+    if (this.isPhase(GAME_PHASES.TITLE) || this.isPhase(GAME_PHASES.LAUNCHING)) {
       if (justPressed.has("Enter")) {
         this.startGame();
       }
@@ -475,16 +521,15 @@ class BalanceStackGame {
       return;
     }
 
-    if (this.harvestSequence) {
+    if (this.isPhase(GAME_PHASES.HARVESTING)) {
       this.updateHarvestSequence(dt);
       this.updateRotationAnimation(dt);
       this.updateHUD();
       return;
     }
 
-    if (justPressed.has("KeyP") && !this.gameOver) {
-      this.paused = !this.paused;
-      this.setStatus(this.paused ? "Paused" : "");
+    if (justPressed.has("KeyP")) {
+      this.togglePause();
     }
 
     if (justPressed.has("KeyR")) {
@@ -492,12 +537,10 @@ class BalanceStackGame {
       return;
     }
 
-    if (!this.gameOver) {
-      if (!this.paused && !this.isRotating()) {
-        this.handleInput(dt);
-        this.tickFall(dt);
-        this.updateBlockAges(dt);
-      }
+    if (this.isPhase(GAME_PHASES.PLAYING) && !this.isRotating()) {
+      this.handleInput(dt);
+      this.tickFall(dt);
+      this.updateBlockAges(dt);
     }
 
     this.updateRotationAnimation(dt);
@@ -522,61 +565,61 @@ class BalanceStackGame {
     if (leftKey && !rightKey) desired = -1;
     if (rightKey && !leftKey) desired = 1;
 
-    if (desired !== this.lastMoveDir) {
-      this.moveTimer = 0;
-      this.lastMoveDir = desired;
+    if (desired !== this.run.lastMoveDir) {
+      this.run.moveTimer = 0;
+      this.run.lastMoveDir = desired;
       if (desired !== 0) {
         this.movePiece(desired, 0);
       }
     } else if (desired !== 0) {
-      this.moveTimer += dt;
-      if (this.moveTimer >= 0.12) {
-        this.moveTimer = 0.05;
+      this.run.moveTimer += dt;
+      if (this.run.moveTimer >= 0.12) {
+        this.run.moveTimer = 0.05;
         this.movePiece(desired, 0);
       }
     } else {
-      this.moveTimer = 0;
+      this.run.moveTimer = 0;
     }
   }
 
   tickFall(dt) {
-    if (!this.current) return;
+    if (!this.run.current) return;
     const soft = keys.has("ArrowDown") || keys.has("KeyS");
     const tickRate = soft ? TICK_SOFT : TICK_BASE;
 
     // Locking is standard falling-block behavior with constant downward gravity.
-    this.dropTimer += dt;
-    if (this.dropTimer < tickRate) return;
+    this.run.dropTimer += dt;
+    if (this.run.dropTimer < tickRate) return;
 
-    this.dropTimer -= tickRate;
-    this.dropTimer = Math.min(this.dropTimer, tickRate);
+    this.run.dropTimer -= tickRate;
+    this.run.dropTimer = Math.min(this.run.dropTimer, tickRate);
 
     if (!this.movePiece(0, 1)) {
-      this.lockTimer += tickRate;
-      if (this.lockTimer >= LOCK_THRESHOLD) {
+      this.run.lockTimer += tickRate;
+      if (this.run.lockTimer >= LOCK_THRESHOLD) {
         this.lockPiece();
       }
     } else {
-      this.lockTimer = 0;
+      this.run.lockTimer = 0;
     }
   }
 
   lockPiece() {
-    if (!this.current) return;
+    if (!this.run.current) return;
 
-    const landed = this.worldCells(this.current);
+    const landed = this.worldCells(this.run.current);
     if (!this.attachesToStructure(landed)) {
-      const retryShape = this.current.shape;
+      const retryShape = this.run.current.shape;
       this.setStatus("Missed the stack");
-      this.current = null;
-      this.lockTimer = 0;
+      this.run.current = null;
+      this.run.lockTimer = 0;
       this.spawnPiece(retryShape);
       this.updateGhost();
       return;
     }
 
-    this.piecesPlaced += 1;
-    this.lockSequence += 1;
+    this.run.piecesPlaced += 1;
+    this.run.lockSequence += 1;
 
     for (const cell of landed) {
       // Collapse only if a locked structure extends outside the playable field.
@@ -584,33 +627,33 @@ class BalanceStackGame {
         this.startHarvestSequence();
         return;
       }
-      this.board[cell.y][cell.x] = {
-        color: this.current.color,
+      this.run.board[cell.y][cell.x] = {
+        color: this.run.current.color,
         seed: false,
         age: 0,
-        placementId: this.lockSequence,
+        placementId: this.run.lockSequence,
       };
     }
 
     this.recalculateCoreSquare();
     this.evaluateBalance(landed);
-    this.current = null;
-    this.lockTimer = 0;
+    this.run.current = null;
+    this.run.lockTimer = 0;
     this.spawnPiece();
     this.updateGhost();
   }
 
   startHarvestSequence() {
-    if (this.harvestSequence) return;
+    if (!this.isPhase(GAME_PHASES.PLAYING) || this.presentation.harvestSequence) return;
 
     const dudBlocks = [];
     const outerBlocks = [];
     for (let y = 0; y < GRID_SIZE; y += 1) {
       for (let x = 0; x < GRID_SIZE; x += 1) {
-        const block = this.board[y][x];
+        const block = this.run.board[y][x];
         if (!block || block.seed) continue;
 
-        const influenced = this.coreLayers > 0 && Math.max(Math.abs(x - CENTER), Math.abs(y - CENTER)) <= this.coreLayers;
+        const influenced = this.run.coreLayers > 0 && Math.max(Math.abs(x - CENTER), Math.abs(y - CENTER)) <= this.run.coreLayers;
         const descriptor = {
           x,
           y,
@@ -630,20 +673,19 @@ class BalanceStackGame {
       }
     }
 
-    this.current = null;
-    this.ghost = [];
-    this.lockTimer = 0;
-    this.dropTimer = 0;
-    this.moveTimer = 0;
-    this.lastMoveDir = 0;
-    this.paused = false;
-    this.gameOver = false;
+    this.run.current = null;
+    this.run.ghost = [];
+    this.run.lockTimer = 0;
+    this.run.dropTimer = 0;
+    this.run.moveTimer = 0;
+    this.run.lastMoveDir = 0;
+    this.setPhase(GAME_PHASES.HARVESTING);
     this.setStatus("");
     this.setHarvestPresentation(true);
     keys.clear();
     justPressed.clear();
 
-    this.harvestSequence = {
+    this.presentation.harvestSequence = {
       phase: "impact",
       phaseTime: 0,
       outerBlocks,
@@ -653,24 +695,24 @@ class BalanceStackGame {
       emittedDuds: 0,
       emittedCharges: 0,
       visibleDuds: dudBlocks.length,
-      displayDuds: this.bankedDuds,
-      displayCharges: this.bankedPulseCharges,
+      displayDuds: this.session.bankedDuds,
+      displayCharges: this.session.bankedPulseCharges,
       dudCounterPulse: 0,
       chargeCounterPulse: 0,
       harvestedDuds: dudBlocks.length,
-      harvestedCharges: this.coreChargeCount,
+      harvestedCharges: this.run.coreChargeCount,
       impactLabel: "Capacity Reached",
     };
   }
 
   advanceHarvestPhase(nextPhase) {
-    if (!this.harvestSequence) return;
-    this.harvestSequence.phase = nextPhase;
-    this.harvestSequence.phaseTime = 0;
+    if (!this.presentation.harvestSequence) return;
+    this.presentation.harvestSequence.phase = nextPhase;
+    this.presentation.harvestSequence.phaseTime = 0;
   }
 
   updateHarvestSequence(dt) {
-    const harvest = this.harvestSequence;
+    const harvest = this.presentation.harvestSequence;
     if (!harvest) return;
 
     harvest.phaseTime += dt;
@@ -730,8 +772,8 @@ class BalanceStackGame {
       for (const particle of harvest.activeDudParticles) {
         if (!particle.arrived && particle.age >= particle.duration) {
           particle.arrived = true;
-          this.bankedDuds += 1;
-          harvest.displayDuds = this.bankedDuds;
+          this.session.bankedDuds += 1;
+          harvest.displayDuds = this.session.bankedDuds;
           harvest.dudCounterPulse = 1;
         }
         if (!particle.arrived) {
@@ -773,8 +815,8 @@ class BalanceStackGame {
       for (const particle of harvest.activeChargeParticles) {
         if (!particle.arrived && particle.age >= particle.duration) {
           particle.arrived = true;
-          this.bankedPulseCharges += 1;
-          harvest.displayCharges = this.bankedPulseCharges;
+          this.session.bankedPulseCharges += 1;
+          harvest.displayCharges = this.session.bankedPulseCharges;
           harvest.chargeCounterPulse = 1;
         }
         if (!particle.arrived) {
@@ -795,9 +837,10 @@ class BalanceStackGame {
   }
 
   finishHarvestSequence() {
+    if (!this.isPhase(GAME_PHASES.HARVESTING)) return;
     this.setHarvestPresentation(false);
     this.resetIntroState(true);
-    this.started = false;
+    this.setPhase(GAME_PHASES.TITLE);
     this.resetState();
     this.updateStartScreen();
   }
@@ -815,7 +858,7 @@ class BalanceStackGame {
         if (neighbor.x < 0 || neighbor.x >= GRID_SIZE || neighbor.y < 0 || neighbor.y >= GRID_SIZE) {
           continue;
         }
-        if (this.board[neighbor.y][neighbor.x]) {
+        if (this.run.board[neighbor.y][neighbor.x]) {
           return true;
         }
       }
@@ -825,8 +868,8 @@ class BalanceStackGame {
 
   evaluateBalance(landedCells) {
     const landedLookup = new Set(landedCells.map((cell) => cellKey(cell.x, cell.y)));
-    const previousProfile = analyzeBalanceProfile(this.board, this.coreLayers, landedLookup);
-    const totalProfile = analyzeBalanceProfile(this.board, this.coreLayers);
+    const previousProfile = analyzeBalanceProfile(this.run.board, this.run.coreLayers, landedLookup);
+    const totalProfile = analyzeBalanceProfile(this.run.board, this.run.coreLayers);
     const offsetDelta = totalProfile.weightedOffset - previousProfile.weightedOffset;
     // Use a normalized center-of-mass offset so large stacks stay readable instead of accumulating arbitrary torque.
     const tipPressure =
@@ -836,10 +879,10 @@ class BalanceStackGame {
     const centeredPlacement = averageCenterDistance(landedCells) <= 2.3;
     const stabilityThreshold =
       BALANCE_BASE_THRESHOLD +
-      this.coreLayers * BALANCE_CORE_THRESHOLD_STEP +
+      this.run.coreLayers * BALANCE_CORE_THRESHOLD_STEP +
       totalProfile.braceRatio * BALANCE_CENTER_BRACE_BONUS;
 
-    this.lastBalance = tipPressure;
+    this.run.lastBalance = tipPressure;
 
     if (centeredPlacement && Math.abs(tipPressure) < stabilityThreshold + BALANCE_CENTERED_BUFFER) {
       return;
@@ -858,7 +901,7 @@ class BalanceStackGame {
     // The stack rotates around the fixed center, while the field and falling lane stay still.
     for (let y = 0; y < GRID_SIZE; y += 1) {
       for (let x = 0; x < GRID_SIZE; x += 1) {
-        const block = this.board[y][x];
+        const block = this.run.board[y][x];
         if (!block) continue;
 
         const relX = x - CENTER;
@@ -883,111 +926,111 @@ class BalanceStackGame {
       }
     }
 
-    this.pendingBoard = nextBoard;
-    this.pendingOrientationTurns = (this.orientationTurns + direction + 4) % 4;
-    this.rotationCount += 1;
+    this.run.pendingBoard = nextBoard;
+    this.run.pendingOrientationTurns = (this.run.orientationTurns + direction + 4) % 4;
+    this.run.rotationCount += 1;
     this.startRotationAnimation(direction);
   }
 
   startRotationAnimation(direction) {
     // Animate the visible mass through the full quarter-turn, then commit the rotated board state.
-    this.rotationVisual = 0;
-    this.rotationTimer = ROTATION_ANIM_TIME;
-    this.rotationDirection = direction;
+    this.presentation.rotationVisual = 0;
+    this.presentation.rotationTimer = ROTATION_ANIM_TIME;
+    this.presentation.rotationDirection = direction;
   }
 
   updateRotationAnimation(dt) {
-    if (this.rotationTimer <= 0) {
-      this.rotationVisual = 0;
+    if (this.presentation.rotationTimer <= 0) {
+      this.presentation.rotationVisual = 0;
       return;
     }
 
-    this.rotationTimer = Math.max(0, this.rotationTimer - dt);
-    const progress = 1 - this.rotationTimer / ROTATION_ANIM_TIME;
+    this.presentation.rotationTimer = Math.max(0, this.presentation.rotationTimer - dt);
+    const progress = 1 - this.presentation.rotationTimer / ROTATION_ANIM_TIME;
     const overshoot = 1.08;
     const eased = 1 + (overshoot + 1) * Math.pow(progress - 1, 3) + overshoot * Math.pow(progress - 1, 2);
-    this.rotationVisual = this.rotationDirection * ROTATION_STEP * eased;
+    this.presentation.rotationVisual = this.presentation.rotationDirection * ROTATION_STEP * eased;
 
-    if (this.rotationTimer <= 0 && this.pendingBoard) {
-      this.board = this.pendingBoard;
-      this.pendingBoard = null;
-      this.orientationTurns = this.pendingOrientationTurns;
-      this.rotationVisual = 0;
+    if (this.presentation.rotationTimer <= 0 && this.run.pendingBoard) {
+      this.run.board = this.run.pendingBoard;
+      this.run.pendingBoard = null;
+      this.run.orientationTurns = this.run.pendingOrientationTurns;
+      this.presentation.rotationVisual = 0;
     }
   }
 
   isRotating() {
-    return this.rotationTimer > 0;
+    return this.presentation.rotationTimer > 0;
   }
 
   updateBlockAges(dt) {
     for (let y = 0; y < GRID_SIZE; y += 1) {
       for (let x = 0; x < GRID_SIZE; x += 1) {
-        const block = this.board[y][x];
+        const block = this.run.board[y][x];
         if (!block || block.seed) continue;
-        if (block.placementId === this.lockSequence) continue;
+        if (block.placementId === this.run.lockSequence) continue;
         block.age = Math.min(12, (block.age || 0) + dt);
       }
     }
   }
 
   updateIntroAnimation(dt) {
-    if (!this.launching) {
-      this.titleSpinSpeed = lerp(this.titleSpinSpeed, 0.82, clamp(dt * 1.8, 0, 1));
-      this.titleCameraZoom = lerp(this.titleCameraZoom, INTRO_IDLE_CAMERA_ZOOM, clamp(dt * 1.5, 0, 1));
-      this.titlePulseScale = lerp(this.titlePulseScale, INTRO_IDLE_PULSE_SCALE, clamp(dt * 1.6, 0, 1));
-      this.titleGridAlpha = lerp(this.titleGridAlpha, INTRO_IDLE_GRID_ALPHA, clamp(dt * 1.6, 0, 1));
-      this.titleSpinAngle += this.titleSpinSpeed * dt;
+    if (!this.isPhase(GAME_PHASES.LAUNCHING)) {
+      this.presentation.titleSpinSpeed = lerp(this.presentation.titleSpinSpeed, 0.82, clamp(dt * 1.8, 0, 1));
+      this.presentation.titleCameraZoom = lerp(this.presentation.titleCameraZoom, INTRO_IDLE_CAMERA_ZOOM, clamp(dt * 1.5, 0, 1));
+      this.presentation.titlePulseScale = lerp(this.presentation.titlePulseScale, INTRO_IDLE_PULSE_SCALE, clamp(dt * 1.6, 0, 1));
+      this.presentation.titleGridAlpha = lerp(this.presentation.titleGridAlpha, INTRO_IDLE_GRID_ALPHA, clamp(dt * 1.6, 0, 1));
+      this.presentation.titleSpinAngle += this.presentation.titleSpinSpeed * dt;
       return;
     }
 
-    this.launchProgress = clamp(this.launchProgress + dt / INTRO_LAUNCH_TIME, 0, 1);
-    const eased = easeInOutCubic(this.launchProgress);
-    this.titleSpinSpeed = lerp(this.titleSpinSpeed, 0, clamp(dt * 2.6, 0, 1));
-    this.titleSpinAngle += this.titleSpinSpeed * dt;
-    this.titleSpinAngle = lerpAngle(
-      this.titleSpinAngle,
-      this.titleSettleAngle,
+    this.presentation.launchProgress = clamp(this.presentation.launchProgress + dt / INTRO_LAUNCH_TIME, 0, 1);
+    const eased = easeInOutCubic(this.presentation.launchProgress);
+    this.presentation.titleSpinSpeed = lerp(this.presentation.titleSpinSpeed, 0, clamp(dt * 2.6, 0, 1));
+    this.presentation.titleSpinAngle += this.presentation.titleSpinSpeed * dt;
+    this.presentation.titleSpinAngle = lerpAngle(
+      this.presentation.titleSpinAngle,
+      this.presentation.titleSettleAngle,
       clamp(dt * (1.2 + eased * 4.2), 0, 1)
     );
-    this.titleCameraZoom = lerp(INTRO_IDLE_CAMERA_ZOOM, 1, eased);
-    this.titlePulseScale = lerp(INTRO_IDLE_PULSE_SCALE, 1, eased);
-    this.titleGridAlpha = lerp(INTRO_IDLE_GRID_ALPHA, 1, eased);
+    this.presentation.titleCameraZoom = lerp(INTRO_IDLE_CAMERA_ZOOM, 1, eased);
+    this.presentation.titlePulseScale = lerp(INTRO_IDLE_PULSE_SCALE, 1, eased);
+    this.presentation.titleGridAlpha = lerp(INTRO_IDLE_GRID_ALPHA, 1, eased);
     this.updateStartScreen();
 
-    if (this.launchProgress >= 1) {
+    if (this.presentation.launchProgress >= 1) {
       this.finishStartSequence();
     }
   }
 
   updateCoreParticles(dt) {
-    if (this.coreParticles.length === 0) return;
+    if (this.presentation.coreParticles.length === 0) return;
 
-    for (const particle of this.coreParticles) {
+    for (const particle of this.presentation.coreParticles) {
       particle.age += dt;
     }
 
-    this.coreParticles = this.coreParticles.filter((particle) => particle.age < particle.life);
+    this.presentation.coreParticles = this.presentation.coreParticles.filter((particle) => particle.age < particle.life);
   }
 
   updatePulseParticles(dt) {
-    if (this.started) {
-      this.pulseParticleTimer = 0;
-      this.pulseParticles = [];
+    if (this.isRunScreenActive()) {
+      this.presentation.pulseParticleTimer = 0;
+      this.presentation.pulseParticles = [];
       return;
     }
 
-    this.pulseParticleTimer = (this.pulseParticleTimer + dt) % PULSE_HEARTBEAT_CYCLE;
+    this.presentation.pulseParticleTimer = (this.presentation.pulseParticleTimer + dt) % PULSE_HEARTBEAT_CYCLE;
 
-    if (this.pulseParticleTimer > PULSE_HEARTBEAT_WINDOW) {
-      this.pulseParticles = [];
+    if (this.presentation.pulseParticleTimer > PULSE_HEARTBEAT_WINDOW) {
+      this.presentation.pulseParticles = [];
       return;
     }
 
-    const beatProgress = clamp(this.pulseParticleTimer / PULSE_HEARTBEAT_WINDOW, 0, 1);
+    const beatProgress = clamp(this.presentation.pulseParticleTimer / PULSE_HEARTBEAT_WINDOW, 0, 1);
     const beat = Math.pow(Math.sin(beatProgress * Math.PI), 1.15);
     if (beat <= 0.001) {
-      this.pulseParticles = [];
+      this.presentation.pulseParticles = [];
       return;
     }
     const baseRadius = CELL_SIZE * 0.36;
@@ -1016,12 +1059,12 @@ class BalanceStackGame {
       },
     ];
 
-    this.pulseParticles = [];
+    this.presentation.pulseParticles = [];
     for (const config of configs) {
       for (let index = 0; index < particlesPerSet; index += 1) {
         const angle = -Math.PI / 2 + config.angleOffset + (index * Math.PI * 2) / particlesPerSet;
         const isMajor = index % 2 === 0;
-        this.pulseParticles.push({
+        this.presentation.pulseParticles.push({
           angle,
           alpha: beat * (isMajor ? config.alphaMajor : config.alphaMinor),
           colorKey: config.colorKey,
@@ -1035,7 +1078,7 @@ class BalanceStackGame {
 
   spawnCoreGrowthParticles(gainedLayers) {
     const burstCount = 14 + gainedLayers * 10;
-    const ringHalf = ((this.coreLayers * 2 + 1) * CELL_SIZE) / 2 + CELL_SIZE * 1.25;
+    const ringHalf = ((this.run.coreLayers * 2 + 1) * CELL_SIZE) / 2 + CELL_SIZE * 1.25;
 
     for (let i = 0; i < burstCount; i += 1) {
       const side = Math.floor(Math.random() * 4);
@@ -1057,7 +1100,7 @@ class BalanceStackGame {
         startY = ringHalf;
       }
 
-      this.coreParticles.push({
+      this.presentation.coreParticles.push({
         age: 0,
         life: 0.75 + Math.random() * 0.35,
         size: 2 + Math.random() * 2.4,
@@ -1069,7 +1112,7 @@ class BalanceStackGame {
 
   recalculateCoreSquare() {
     // The core only grows when the stack contains a larger complete square centered on the pivot.
-    const previousLayers = this.coreLayers;
+    const previousLayers = this.run.coreLayers;
     let layers = 0;
     const maxLayers = Math.min(CENTER, 8);
 
@@ -1077,7 +1120,7 @@ class BalanceStackGame {
       let full = true;
       for (let y = CENTER - r; y <= CENTER + r && full; y += 1) {
         for (let x = CENTER - r; x <= CENTER + r; x += 1) {
-          if (!this.board[y][x]) {
+          if (!this.run.board[y][x]) {
             full = false;
             break;
           }
@@ -1087,31 +1130,32 @@ class BalanceStackGame {
       layers = r;
     }
 
-    this.coreLayers = layers;
+    this.run.coreLayers = layers;
 
     const gainedLayers = Math.max(0, layers - previousLayers);
     if (gainedLayers > 0) {
-      this.coreGrowthCount += gainedLayers;
-      this.coreChargeCount += gainedLayers;
+      this.run.coreGrowthCount += gainedLayers;
+      this.run.coreChargeCount += gainedLayers;
       this.spawnCoreGrowthParticles(gainedLayers);
     }
   }
 
   getCoreVisualState() {
-    const pulse = 0.5 + 0.5 * Math.sin(this.elapsedTime * 2.2);
-    const blockSpin = this.started ? 0 : this.titleSpinAngle;
+    const pulse = 0.5 + 0.5 * Math.sin(this.presentation.elapsedTime * 2.2);
+    const runScreenActive = this.isRunScreenActive();
+    const blockSpin = runScreenActive ? 0 : this.presentation.titleSpinAngle;
 
     return {
       blockSpin,
-      cameraZoom: this.started ? 1 : this.titleCameraZoom,
-      gridAlpha: this.started ? 1 : this.titleGridAlpha,
+      cameraZoom: runScreenActive ? 1 : this.presentation.titleCameraZoom,
+      gridAlpha: runScreenActive ? 1 : this.presentation.titleGridAlpha,
       pulse,
-      pulseScale: this.started ? 1 : this.titlePulseScale,
+      pulseScale: runScreenActive ? 1 : this.presentation.titlePulseScale,
     };
   }
 
   getHarvestViewState() {
-    const harvest = this.harvestSequence;
+    const harvest = this.presentation.harvestSequence;
     if (!harvest) return null;
 
     let cameraZoom = 1;
@@ -1126,14 +1170,14 @@ class BalanceStackGame {
       const slam = clamp((progress - 0.6) / 0.28, 0, 1);
       cameraZoom = 1 + swell * (HARVEST_MAX_ZOOM - 1);
       const shakeStrength = (1 - slam) * Math.sin(slam * Math.PI * 4) * 7.5;
-      shakeX = Math.sin(this.elapsedTime * 62) * shakeStrength;
-      shakeY = Math.cos(this.elapsedTime * 54) * shakeStrength * 0.72;
+      shakeX = Math.sin(this.presentation.elapsedTime * 62) * shakeStrength;
+      shakeY = Math.cos(this.presentation.elapsedTime * 54) * shakeStrength * 0.72;
       messageAlpha = clamp(progress * 1.4, 0, 1);
     } else if (harvest.phase === "fall") {
       const progress = clamp(harvest.phaseTime / HARVEST_FALL_TIME, 0, 1);
       const shakeStrength = (1 - progress) * 4.2;
-      shakeX = Math.sin(this.elapsedTime * 48) * shakeStrength;
-      shakeY = Math.cos(this.elapsedTime * 44) * shakeStrength * 0.68;
+      shakeX = Math.sin(this.presentation.elapsedTime * 48) * shakeStrength;
+      shakeY = Math.cos(this.presentation.elapsedTime * 44) * shakeStrength * 0.68;
       messageAlpha = 1 - progress;
     } else if (harvest.phase === "duds") {
       const totalSpan = Math.max(HARVEST_DUD_EMIT_INTERVAL * Math.max(1, harvest.dudBlocks.length), HARVEST_DUD_TRAVEL_TIME);
@@ -1150,7 +1194,7 @@ class BalanceStackGame {
 
   draw() {
     ctx.setTransform(canvasRatio, 0, 0, canvasRatio, 0, 0);
-    renderTime = this.elapsedTime;
+    renderTime = this.presentation.elapsedTime;
 
     const frameWidth = canvasWidth;
     const frameHeight = canvasHeight;
@@ -1164,12 +1208,14 @@ class BalanceStackGame {
 
     const coreVisual = this.getCoreVisualState();
     const harvestView = this.getHarvestViewState();
+    const runScreenActive = this.isRunScreenActive();
     ctx.save();
     ctx.translate(stage.offsetX, stage.offsetY);
     ctx.scale(stage.scale, stage.scale);
     roundRect(ctx, 0, 0, width, height, 22, true);
-    if (!this.started) {
-      drawStartLogo(ctx, width, this.launching ? this.launchProgress : 0);
+    if (!runScreenActive) {
+      const launchProgress = this.isPhase(GAME_PHASES.LAUNCHING) ? this.presentation.launchProgress : 0;
+      drawStartLogo(ctx, width, launchProgress);
     }
     const boardZoom = harvestView ? harvestView.cameraZoom : coreVisual.cameraZoom;
     const boardGridAlpha = harvestView ? 1 : coreVisual.gridAlpha;
@@ -1184,22 +1230,22 @@ class BalanceStackGame {
     } else {
       this.drawStructure();
     }
-    drawCoreField(ctx, this.coreLayers, this.rotationVisual, coreVisual, this.started && this.coreLayers > 0, influenceAlpha);
-    drawCoreParticles(ctx, this.coreParticles);
-    drawPulseParticles(ctx, this.pulseParticles, coreVisual, "back");
-    drawCoreSquare(ctx, this.coreLayers, this.rotationVisual, coreVisual, this.started && this.coreLayers > 0);
-    drawPulseParticles(ctx, this.pulseParticles, coreVisual, "front");
-    if (this.started && !harvestView) {
+    drawCoreField(ctx, this.run.coreLayers, this.presentation.rotationVisual, coreVisual, runScreenActive && this.run.coreLayers > 0, influenceAlpha);
+    drawCoreParticles(ctx, this.presentation.coreParticles);
+    drawPulseParticles(ctx, this.presentation.pulseParticles, coreVisual, "back");
+    drawCoreSquare(ctx, this.run.coreLayers, this.presentation.rotationVisual, coreVisual, runScreenActive && this.run.coreLayers > 0);
+    drawPulseParticles(ctx, this.presentation.pulseParticles, coreVisual, "front");
+    if (runScreenActive && !harvestView) {
       this.drawGhostPiece();
       this.drawCurrentPiece();
     }
     ctx.restore();
 
-    if (this.started && !harvestView) {
+    if (runScreenActive && !harvestView) {
       ctx.save();
       ctx.translate(stage.offsetX, stage.offsetY);
       ctx.scale(stage.scale, stage.scale);
-      drawSpawnPreview(ctx, this.nextShape, width, height);
+      drawSpawnPreview(ctx, this.run.nextShape, width, height);
       ctx.restore();
     }
 
@@ -1209,13 +1255,7 @@ class BalanceStackGame {
       ctx.scale(stage.scale, stage.scale);
       this.drawHarvestOverlay(harvestView, width, height);
       ctx.restore();
-    } else if (this.gameOver) {
-      ctx.save();
-      ctx.translate(stage.offsetX, stage.offsetY);
-      ctx.scale(stage.scale, stage.scale);
-      drawOverlay(ctx, width, height, "Stack collapsed", "Press R to restart");
-      ctx.restore();
-    } else if (this.paused) {
+    } else if (this.isPhase(GAME_PHASES.PAUSED)) {
       ctx.save();
       ctx.translate(stage.offsetX, stage.offsetY);
       ctx.scale(stage.scale, stage.scale);
@@ -1226,13 +1266,13 @@ class BalanceStackGame {
 
   drawStructure() {
     ctx.save();
-    ctx.rotate(this.rotationVisual);
+    ctx.rotate(this.presentation.rotationVisual);
     for (let y = 0; y < GRID_SIZE; y += 1) {
       for (let x = 0; x < GRID_SIZE; x += 1) {
-        const block = this.board[y][x];
+        const block = this.run.board[y][x];
         if (!block || block.seed) continue;
-        const influenced = this.coreLayers > 0 && Math.max(Math.abs(x - CENTER), Math.abs(y - CENTER)) <= this.coreLayers;
-        const shake = influenced ? getInfluenceShakeOffset(x, y, this.elapsedTime) : { x: 0, y: 0 };
+        const influenced = this.run.coreLayers > 0 && Math.max(Math.abs(x - CENTER), Math.abs(y - CENTER)) <= this.run.coreLayers;
+        const shake = influenced ? getInfluenceShakeOffset(x, y, this.presentation.elapsedTime) : { x: 0, y: 0 };
         const alpha = influenced ? Math.max(0.68, this.blockFade(x, y) * 0.82) : this.blockFade(x, y);
         if (influenced) {
           drawInfluencedCellFill(ctx, x, y, block.color, alpha, shake.x, shake.y);
@@ -1244,16 +1284,16 @@ class BalanceStackGame {
         }
       }
     }
-    drawMassOutline(ctx, this.board);
+    drawMassOutline(ctx, this.run.board);
     ctx.restore();
   }
 
   drawHarvestStructure() {
-    const harvest = this.harvestSequence;
+    const harvest = this.presentation.harvestSequence;
     if (!harvest) return;
 
     ctx.save();
-    ctx.rotate(this.rotationVisual);
+    ctx.rotate(this.presentation.rotationVisual);
 
     const fallProgress = harvest.phase === "fall" ? clamp(harvest.phaseTime / HARVEST_FALL_TIME, 0, 1) : 0;
     const showOuter = harvest.phase === "impact" || harvest.phase === "fall";
@@ -1299,7 +1339,7 @@ class BalanceStackGame {
   }
 
   drawHarvestOverlay(harvestView, width, height) {
-    const harvest = this.harvestSequence;
+    const harvest = this.presentation.harvestSequence;
     if (!harvest) return;
 
     const chargeCounter = { x: HARVEST_COUNTER_X_INSET, y: HARVEST_COUNTER_Y };
@@ -1403,31 +1443,31 @@ class BalanceStackGame {
   }
 
   drawCurrentPiece() {
-    if (!this.current || this.gameOver) return;
-    for (const cell of this.worldCells(this.current)) {
-      drawActiveCell(ctx, cell.x, cell.y, this.current.color);
+    if (!this.run.current) return;
+    for (const cell of this.worldCells(this.run.current)) {
+      drawActiveCell(ctx, cell.x, cell.y, this.run.current.color);
     }
   }
 
   drawGhostPiece() {
-    for (const cell of this.ghost) {
+    for (const cell of this.run.ghost) {
       drawGhostCell(ctx, cell.x, cell.y);
     }
   }
 
   blockFade(x, y) {
-    const block = this.board[y] && this.board[y][x];
+    const block = this.run.board[y] && this.run.board[y][x];
     const age = block && typeof block.age === "number" ? block.age : 1;
     const dist = Math.max(Math.abs(x - CENTER), Math.abs(y - CENTER));
-    if (dist <= this.coreLayers) return 1;
-    const target = dist <= this.coreLayers + 2 ? 0.42 : 0.14;
+    if (dist <= this.run.coreLayers) return 1;
+    const target = dist <= this.run.coreLayers + 2 ? 0.42 : 0.14;
     const fadeProgress = clamp(age / FADE_DURATION, 0, 1);
     return 1 - (1 - target) * fadeProgress;
   }
 
   updateHUD() {
     if (currencyValue) {
-      currencyValue.textContent = `Pulse charges ${this.coreChargeCount}`;
+      currencyValue.textContent = `Pulse charges ${this.run.coreChargeCount}`;
     }
   }
 }
@@ -2174,6 +2214,7 @@ const game = new BalanceStackGame();
 if (typeof window !== "undefined") {
   window.__TWISTRIS_TEST_API__ = {
     BalanceStackGame,
+    GAME_PHASES,
     GRID_SIZE,
     CENTER,
     SHAPES,

@@ -39,3 +39,11 @@ Decision: Duds, Bits, Charged Bits, Bit Dust, and Pulse charges are the current 
 Reason: The resource ladder is promising, while conversion rates and the role of Bit Dust still need play-oriented design decisions.
 
 Consequences: Do not create a permanent persistence schema around unresolved recipes.
+
+## 2026-07-22: Separate Runtime Ownership Before File Extraction
+
+Decision: Keep `BalanceStackGame` in one production file for now, but divide its mutable state into `session`, `run`, `lifecycle`, and `presentation` buckets. Represent lifecycle with one validated phase.
+
+Reason: Clear reset and transition boundaries reduce progression risk without combining the behavioral refactor with a large code move.
+
+Consequences: Run restart replaces run state, session inventory survives within the page load, and later slices can extract pure rules or persistence one boundary at a time.
