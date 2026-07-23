@@ -32,9 +32,13 @@ The current runtime has a page-session inventory only. It deliberately uses a sm
 ```js
 {
   bankedPulseCharges: 0,
-  bankedDuds: 0
+  bankedDuds: 0,
+  nextHarvestSequence: 1,
+  appliedHarvestResultIds: []
 }
 ```
+
+The sequence and applied-ID list are page-session transaction metadata. Persistence may replace their implementation later, but repeated application of the same result must remain idempotent.
 
 The future `profile` is the long-term local progression record. Inventory keys remain provisional until resource recipes are approved.
 
@@ -129,7 +133,7 @@ The core rule layer should produce one immutable result before presentation begi
 }
 ```
 
-The profile transaction records that the result was applied, updates banked inventory, and saves before or independently of the animation.
+The current session transaction records that the result was applied and updates banked inventory before the animation. A future profile transaction must preserve that ordering and save independently of presentation.
 
 ## Repair Definitions
 

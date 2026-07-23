@@ -23,7 +23,11 @@ The harness loads the production runtime into a hidden test DOM and currently ch
 - charge awards across multiple growth layers
 - harvest phase startup
 - exact Dud, charge, and outer-block harvest totals
-- final harvest banking and run-value reset
+- immutable harvest results and exact atomic banking
+- duplicate-result protection
+- completed and skipped harvest-presentation banking
+- presentation counter animation without inventory mutation
+- final harvest run-value reset
 - restart preservation of session bank values
 - session, run, lifecycle, and presentation state ownership
 - title, launch, play, pause, harvest, and return phase behavior
@@ -52,8 +56,7 @@ Open [index.html](index.html) and verify:
 
 Add focused coverage as the corresponding state boundaries are introduced:
 
-- exact immutable harvest-result calculation
-- skipped or interrupted harvest presentation
+- direct DOM-free coverage for extracted puzzle and harvest rules
 - malformed and older-version profile data after persistence exists
 
 ## Validation Expectations

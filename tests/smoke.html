@@ -262,13 +262,38 @@
         harvestGame.run.board[api.CENTER][api.CENTER + 3] = { color: "magenta", seed: false, age: 0 };
         harvestGame.recalculateCoreSquare();
         harvestGame.startHarvestSequence();
+        const harvestResult = harvestGame.presentation.harvestSequence.result;
         assert(harvestGame.presentation.harvestSequence.phase === "impact", "harvest begins with the impact phase");
-        assert(harvestGame.presentation.harvestSequence.harvestedDuds === 8, "harvest counts influenced blocks as duds");
+        assert(harvestResult.earned.duds === 8, "harvest result counts influenced blocks as duds");
         assert(harvestGame.presentation.harvestSequence.outerBlocks.length === 1, "harvest keeps non-dud outer blocks separate");
-        assert(harvestGame.presentation.harvestSequence.harvestedCharges === 1, "harvest captures run-earned Pulse charges");
+        assert(harvestResult.earned.pulseCharges === 1, "harvest result captures run-earned Pulse charges");
         assert(
-          harvestGame.session.bankedDuds === 3 && harvestGame.session.bankedPulseCharges === 4,
-          "harvest starts with run-earned and banked resources still separate"
+          Object.isFrozen(harvestResult) && Object.isFrozen(harvestResult.earned) && Object.isFrozen(harvestResult.runStats),
+          "harvest result and its nested values are immutable"
+        );
+        assert(
+          harvestResult.runStats.coreLayersReached === 1 &&
+            harvestResult.runStats.bestSquareSide === 3 &&
+            harvestResult.endReason === "capacity_reached",
+          "harvest result records the run summary and end reason"
+        );
+        assert(
+          harvestGame.session.bankedDuds === 11 && harvestGame.session.bankedPulseCharges === 5,
+          "harvest banks the complete immutable result before animation"
+        );
+        assert(
+          !harvestGame.applyHarvestResult(harvestResult) &&
+            harvestGame.session.bankedDuds === 11 &&
+            harvestGame.session.bankedPulseCharges === 5,
+          "applying the same harvest result twice does not duplicate its award"
+        );
+
+        harvestGame.updateHarvestSequence(2);
+        harvestGame.updateHarvestSequence(2);
+        harvestGame.updateHarvestSequence(2);
+        assert(
+          harvestGame.session.bankedDuds === 11 && harvestGame.session.bankedPulseCharges === 5,
+          "particle arrival changes presentation counters without changing banked inventory"
         );
 
         assert(completeHarvest(harvestGame), "harvest sequence reaches its return state and completes");
@@ -281,6 +306,23 @@
           "completed harvest returns the game to the title phase"
         );
         assert(harvestGame.run.coreChargeCount === 0, "completed harvest clears run-earned Pulse charges");
+
+        const skippedHarvestGame = new api.BalanceStackGame({ random: () => 0 });
+        skippedHarvestGame.restart();
+        skippedHarvestGame.session.bankedDuds = 2;
+        skippedHarvestGame.session.bankedPulseCharges = 3;
+        fillCenteredSquare(skippedHarvestGame, 1);
+        skippedHarvestGame.recalculateCoreSquare();
+        skippedHarvestGame.startHarvestSequence();
+        skippedHarvestGame.finishHarvestSequence();
+        assert(
+          skippedHarvestGame.session.bankedDuds === 10 && skippedHarvestGame.session.bankedPulseCharges === 4,
+          "skipping harvest presentation preserves the already-banked award"
+        );
+        assert(
+          skippedHarvestGame.lifecycle.phase === api.GAME_PHASES.TITLE,
+          "skipped harvest presentation returns to the title phase"
+        );
 
         const preservedSession = harvestGame.session;
         const completedRun = harvestGame.run;

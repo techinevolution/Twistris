@@ -47,3 +47,11 @@ Decision: Keep `BalanceStackGame` in one production file for now, but divide its
 Reason: Clear reset and transition boundaries reduce progression risk without combining the behavioral refactor with a large code move.
 
 Consequences: Run restart replaces run state, session inventory survives within the page load, and later slices can extract pure rules or persistence one boundary at a time.
+
+## 2026-07-22: Bank Harvest Results Before Presentation
+
+Decision: Represent each harvest as an immutable result with a session-unique ID, apply it through an idempotent transaction, and let animation modify display counters only.
+
+Reason: Earned inventory must survive skipped, interrupted, shortened, or changed animation timing without being duplicated.
+
+Consequences: Harvest presentation can evolve independently, while future profile persistence must retain result identity and exactly-once application semantics.
