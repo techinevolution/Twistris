@@ -25,7 +25,9 @@ The harness loads the production runtime into a hidden test DOM and currently ch
 - exact Dud, charge, and outer-block harvest totals
 - final harvest banking and run-value reset
 - restart preservation of session bank values
-- title, launch, play, harvest, and return lifecycle behavior
+- session, run, lifecycle, and presentation state ownership
+- title, launch, play, pause, harvest, and return phase behavior
+- repeated-action and invalid-phase guards
 
 The harness is a characterization safety net, not complete unit coverage.
 
@@ -51,8 +53,6 @@ Open [index.html](index.html) and verify:
 Add focused coverage as the corresponding state boundaries are introduced:
 
 - exact immutable harvest-result calculation
-- explicit lifecycle phases and invalid-transition prevention
-- profile/session, run, and presentation reset boundaries
 - skipped or interrupted harvest presentation
 - malformed and older-version profile data after persistence exists
 

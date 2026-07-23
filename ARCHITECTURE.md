@@ -26,7 +26,7 @@ The intended refactor is incremental. Preserve the working game, extract testabl
 
 ## Current Major Pieces
 
-- **Game controller:** `BalanceStackGame` owns both durable run data and transient presentation state.
+- **Game controller:** `BalanceStackGame` currently owns four explicit state buckets: page-session inventory, the current run, lifecycle phase, and transient presentation.
 - **Puzzle rules:** attachment, rotation, balance, and centered-square growth live as class methods and global helpers.
 - **Canvas renderer:** drawing helpers share the global canvas context and constants.
 - **Input:** global keyboard sets are read directly by the game update loop.
@@ -36,7 +36,8 @@ The intended refactor is incremental. Preserve the working game, extract testabl
 ## Intended Boundaries
 
 - **Core rules:** pure board and economy calculations with no DOM or canvas access.
-- **Run state:** temporary board, piece, score/resource, and run-summary values.
+- **Session state:** banked inventory that survives run resets for the current page load. This becomes part of the profile boundary when persistence is added.
+- **Run state:** temporary board, piece, resource, and run-summary values.
 - **Profile state:** versioned banked inventory, repair progress, unlocks, and statistics.
 - **Lifecycle:** one explicit screen or game phase such as title, playing, paused, harvesting, or repairing.
 - **Presentation:** canvas animation, particles, camera effects, and DOM updates that never decide economy outcomes.
@@ -65,7 +66,7 @@ These boundaries do not require a framework. They may begin as separate sections
 
 ## Persistence and State
 
-There is no persistent save yet. `bankedDuds` and `bankedPulseCharges` survive run resets within the current page session only.
+There is no persistent save yet. `session.bankedDuds` and `session.bankedPulseCharges` survive run resets within the current page session only. Restart replaces the `run` state while preserving the `session` state.
 
 Future persistence should use browser local storage, a versioned root object, safe defaults, and explicit migrations. Run state and animation state must not be persisted as profile inventory.
 
@@ -96,6 +97,6 @@ None currently. The project has no package manager, backend, account system, ana
 - `game.js` currently has a large change surface because it owns most systems.
 - Browser tests require the full runtime and a simulated DOM shell.
 - Random piece selection now accepts an optional injected source for deterministic browser tests.
-- Lifecycle booleans can represent unclear combinations.
+- Harvest presentation still decides when earned resources enter the session bank.
 - Canvas rendering and game mutation share global state.
 - Product resource names and conversion recipes are still provisional.

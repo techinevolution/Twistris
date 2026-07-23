@@ -19,8 +19,8 @@ Twistris is a dependency-free browser project with one HTML entry point, one sty
 1. **Characterize current behavior - Complete**
    The browser harness now covers deterministic piece selection, locking, detached-piece retry, both rotation directions, multi-layer centered-square growth, harvest totals, restart behavior, lifecycle transitions, and run-versus-banked values.
 
-2. **Clarify runtime state**
-   Separate profile, run, lifecycle, and presentation state inside the existing runtime. Replace overlapping lifecycle booleans with an explicit phase while preserving behavior.
+2. **Clarify runtime state - Complete**
+   The existing runtime now separates session, run, lifecycle, and presentation state. One explicit phase replaces the overlapping title, launch, play, pause, and harvest booleans.
 
 3. **Make harvest atomic**
    Calculate one immutable harvest result, bank it once, and animate a visual copy. Resource awards must not depend on particle arrival timing.
@@ -42,9 +42,9 @@ Twistris is a dependency-free browser project with one HTML entry point, one sty
 
 ## Recommended Next Slice
 
-Implement slice 2 only: separate profile/session, run, lifecycle, and presentation state inside the existing runtime, then replace overlapping lifecycle booleans with one explicit phase while preserving behavior.
+Implement slice 3 only: calculate one immutable harvest result, apply its resources to the session bank exactly once, and animate a presentation copy of that result.
 
-Keep this as an internal state-boundary change. Do not split production files, add persistence, or change puzzle behavior in the same slice.
+Keep persistence, production file extraction, and new progression mechanics out of this slice. Add coverage proving that skipping or completing the animation cannot change the award.
 
 ## Deferred Work
 

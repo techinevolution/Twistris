@@ -8,7 +8,7 @@ This document records provisional state and persistence guidance. It is not yet 
 
 - Use `camelCase` for JavaScript keys.
 - Keep the root save object versioned.
-- Separate profile, run, lifecycle, and presentation state.
+- Separate session/profile, run, lifecycle, and presentation state.
 - Keep run-earned resources separate from banked inventory.
 - Apply each harvest result exactly once.
 - Do not persist board-derived values or transient animation state.
@@ -18,16 +18,25 @@ This document records provisional state and persistence guidance. It is not yet 
 
 ```js
 {
-  profile: {},
+  session: {},
   run: {},
   lifecycle: {},
   presentation: {}
 }
 ```
 
-### `profile`
+### `session` and future `profile`
 
-Long-term local progression. Inventory keys remain provisional until resource recipes are approved.
+The current runtime has a page-session inventory only. It deliberately uses a small `session` bucket until profile persistence is implemented.
+
+```js
+{
+  bankedPulseCharges: 0,
+  bankedDuds: 0
+}
+```
+
+The future `profile` is the long-term local progression record. Inventory keys remain provisional until resource recipes are approved.
 
 ```js
 {
