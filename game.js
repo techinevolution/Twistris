@@ -1,5 +1,6 @@
 "use strict";
 
+const RULES = window.TwistrisRules;
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const isEmbedded = window.self !== window.top;
@@ -261,7 +262,7 @@ class BalanceStackGame {
 
   resetState() {
     this.run = {
-      board: this.makeGrid(),
+      board: RULES.createBoard(GRID_SIZE),
       current: null,
       nextShape: this.randomShape(),
       ghost: [],
@@ -366,10 +367,6 @@ class BalanceStackGame {
     this.spawnPiece();
     this.updateGhost();
     this.updateStartScreen();
-  }
-
-  makeGrid() {
-    return Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(null));
   }
 
   seedCore() {
@@ -648,34 +645,25 @@ class BalanceStackGame {
   startHarvestSequence() {
     if (!this.isPhase(GAME_PHASES.PLAYING) || this.presentation.harvestSequence) return;
 
-    const dudBlocks = [];
-    const outerBlocks = [];
-    for (let y = 0; y < GRID_SIZE; y += 1) {
-      for (let x = 0; x < GRID_SIZE; x += 1) {
-        const block = this.run.board[y][x];
-        if (!block || block.seed) continue;
-
-        const influenced = this.run.coreLayers > 0 && Math.max(Math.abs(x - CENTER), Math.abs(y - CENTER)) <= this.run.coreLayers;
-        const descriptor = {
-          x,
-          y,
-          color: block.color,
-          seed: x * 0.73 + y * 1.17 + (block.color === "cyan" ? 0.18 : 0.48),
-          driftX: (hashUnit(x * 17.13 + y * 11.7) - 0.5) * 46,
-          fallDistance: 220 + hashUnit(x * 8.9 + y * 3.7) * 170,
-          fallDelay: hashUnit(x * 2.7 + y * 5.1) * 0.34,
-          fallSpin: (hashUnit(x * 13.2 + y * 9.4) - 0.5) * 0.34,
-        };
-
-        if (influenced) {
-          dudBlocks.push(descriptor);
-        } else {
-          outerBlocks.push(descriptor);
-        }
-      }
-    }
-
-    const result = this.createHarvestResult(dudBlocks.length);
+    const sequence = this.session.nextHarvestSequence;
+    this.session.nextHarvestSequence += 1;
+    const harvest = RULES.calculateHarvest(this.run.board, {
+      center: CENTER,
+      coreLayers: this.run.coreLayers,
+      resultId: `harvest-${sequence}`,
+      pulseCharges: this.run.coreChargeCount,
+    });
+    const describeCell = (cell) => ({
+      ...cell,
+      seed: cell.x * 0.73 + cell.y * 1.17 + (cell.color === "cyan" ? 0.18 : 0.48),
+      driftX: (hashUnit(cell.x * 17.13 + cell.y * 11.7) - 0.5) * 46,
+      fallDistance: 220 + hashUnit(cell.x * 8.9 + cell.y * 3.7) * 170,
+      fallDelay: hashUnit(cell.x * 2.7 + cell.y * 5.1) * 0.34,
+      fallSpin: (hashUnit(cell.x * 13.2 + cell.y * 9.4) - 0.5) * 0.34,
+    });
+    const dudBlocks = harvest.dudCells.map(describeCell);
+    const outerBlocks = harvest.outerCells.map(describeCell);
+    const result = harvest.result;
     const displayDuds = this.session.bankedDuds;
     const displayCharges = this.session.bankedPulseCharges;
     this.applyHarvestResult(result);
@@ -709,23 +697,6 @@ class BalanceStackGame {
       result,
       impactLabel: "Capacity Reached",
     };
-  }
-
-  createHarvestResult(dudCount) {
-    const sequence = this.session.nextHarvestSequence;
-    this.session.nextHarvestSequence += 1;
-    return Object.freeze({
-      id: `harvest-${sequence}`,
-      earned: Object.freeze({
-        duds: dudCount,
-        pulseCharges: this.run.coreChargeCount,
-      }),
-      runStats: Object.freeze({
-        coreLayersReached: this.run.coreLayers,
-        bestSquareSide: this.run.coreLayers * 2 + 1,
-      }),
-      endReason: "capacity_reached",
-    });
   }
 
   applyHarvestResult(result) {
@@ -878,84 +849,31 @@ class BalanceStackGame {
   }
 
   attachesToStructure(landed) {
-    for (const cell of landed) {
-      const neighbors = [
-        { x: cell.x - 1, y: cell.y },
-        { x: cell.x + 1, y: cell.y },
-        { x: cell.x, y: cell.y - 1 },
-        { x: cell.x, y: cell.y + 1 },
-      ];
-
-      for (const neighbor of neighbors) {
-        if (neighbor.x < 0 || neighbor.x >= GRID_SIZE || neighbor.y < 0 || neighbor.y >= GRID_SIZE) {
-          continue;
-        }
-        if (this.run.board[neighbor.y][neighbor.x]) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return RULES.attachesToStructure(this.run.board, landed);
   }
 
   evaluateBalance(landedCells) {
-    const landedLookup = new Set(landedCells.map((cell) => cellKey(cell.x, cell.y)));
-    const previousProfile = analyzeBalanceProfile(this.run.board, this.run.coreLayers, landedLookup);
-    const totalProfile = analyzeBalanceProfile(this.run.board, this.run.coreLayers);
-    const offsetDelta = totalProfile.weightedOffset - previousProfile.weightedOffset;
-    // Use a normalized center-of-mass offset so large stacks stay readable instead of accumulating arbitrary torque.
-    const tipPressure =
-      totalProfile.weightedOffset +
-      offsetDelta * BALANCE_SHIFT_MULTIPLIER +
-      averageHorizontalOffset(landedCells) * BALANCE_PLACEMENT_IMPULSE;
-    const centeredPlacement = averageCenterDistance(landedCells) <= 2.3;
-    const stabilityThreshold =
-      BALANCE_BASE_THRESHOLD +
-      this.run.coreLayers * BALANCE_CORE_THRESHOLD_STEP +
-      totalProfile.braceRatio * BALANCE_CENTER_BRACE_BONUS;
+    const analysis = RULES.analyzeBalance(this.run.board, this.run.coreLayers, landedCells, {
+      center: CENTER,
+      outerRingWeight: BALANCE_OUTER_RING_WEIGHT,
+      shiftMultiplier: BALANCE_SHIFT_MULTIPLIER,
+      placementImpulse: BALANCE_PLACEMENT_IMPULSE,
+      baseThreshold: BALANCE_BASE_THRESHOLD,
+      coreThresholdStep: BALANCE_CORE_THRESHOLD_STEP,
+      centerBraceBonus: BALANCE_CENTER_BRACE_BONUS,
+      centeredBuffer: BALANCE_CENTERED_BUFFER,
+      centeredDistance: 2.3,
+    });
 
-    this.run.lastBalance = tipPressure;
-
-    if (centeredPlacement && Math.abs(tipPressure) < stabilityThreshold + BALANCE_CENTERED_BUFFER) {
-      return;
-    }
-
-    if (tipPressure > stabilityThreshold) {
-      this.rotateStructure(1);
-    } else if (tipPressure < -stabilityThreshold) {
-      this.rotateStructure(-1);
-    }
+    this.run.lastBalance = analysis.tipPressure;
+    if (analysis.direction !== 0) this.rotateStructure(analysis.direction);
   }
 
   rotateStructure(direction) {
-    const nextBoard = this.makeGrid();
-
-    // The stack rotates around the fixed center, while the field and falling lane stay still.
-    for (let y = 0; y < GRID_SIZE; y += 1) {
-      for (let x = 0; x < GRID_SIZE; x += 1) {
-        const block = this.run.board[y][x];
-        if (!block) continue;
-
-        const relX = x - CENTER;
-        const relY = y - CENTER;
-        let nextX;
-        let nextY;
-
-        if (direction > 0) {
-          nextX = CENTER - relY;
-          nextY = CENTER + relX;
-        } else {
-          nextX = CENTER + relY;
-          nextY = CENTER - relX;
-        }
-
-        if (nextX < 0 || nextX >= GRID_SIZE || nextY < 0 || nextY >= GRID_SIZE) {
-          this.setStatus("Rotation blocked");
-          return;
-        }
-
-        nextBoard[nextY][nextX] = { ...block };
-      }
+    const nextBoard = RULES.rotateBoard(this.run.board, direction, CENTER);
+    if (!nextBoard) {
+      this.setStatus("Rotation blocked");
+      return;
     }
 
     this.run.pendingBoard = nextBoard;
@@ -1145,22 +1063,7 @@ class BalanceStackGame {
   recalculateCoreSquare() {
     // The core only grows when the stack contains a larger complete square centered on the pivot.
     const previousLayers = this.run.coreLayers;
-    let layers = 0;
-    const maxLayers = Math.min(CENTER, 8);
-
-    for (let r = 0; r <= maxLayers; r += 1) {
-      let full = true;
-      for (let y = CENTER - r; y <= CENTER + r && full; y += 1) {
-        for (let x = CENTER - r; x <= CENTER + r; x += 1) {
-          if (!this.run.board[y][x]) {
-            full = false;
-            break;
-          }
-        }
-      }
-      if (!full) break;
-      layers = r;
-    }
+    const layers = RULES.findCenteredSquareLayers(this.run.board, CENTER, 8);
 
     this.run.coreLayers = layers;
 
@@ -1502,58 +1405,6 @@ class BalanceStackGame {
       currencyValue.textContent = `Pulse charges ${this.run.coreChargeCount}`;
     }
   }
-}
-
-function averageCenterDistance(cells) {
-  let total = 0;
-  for (const cell of cells) {
-    total += Math.hypot(cell.x - CENTER, cell.y - CENTER);
-  }
-  return total / Math.max(1, cells.length);
-}
-
-function averageHorizontalOffset(cells) {
-  let total = 0;
-  for (const cell of cells) {
-    total += cell.x - CENTER;
-  }
-  return total / Math.max(1, cells.length);
-}
-
-function analyzeBalanceProfile(board, coreLayers, excludedCells = null) {
-  let totalWeight = 0;
-  let totalTorque = 0;
-  let braceWeight = 0;
-  const braceRadius = Math.max(1, coreLayers + 1);
-
-  for (let y = 0; y < GRID_SIZE; y += 1) {
-    for (let x = 0; x < GRID_SIZE; x += 1) {
-      const block = board[y][x];
-      if (!block) continue;
-      if (excludedCells && excludedCells.has(cellKey(x, y))) continue;
-
-      const relX = x - CENTER;
-      const ring = Math.max(Math.abs(relX), Math.abs(y - CENTER));
-      const outerRing = Math.max(0, ring - braceRadius);
-      const weight = 1 + outerRing * BALANCE_OUTER_RING_WEIGHT;
-
-      totalWeight += weight;
-      totalTorque += relX * weight;
-
-      if (ring <= braceRadius) {
-        braceWeight += weight;
-      }
-    }
-  }
-
-  return {
-    braceRatio: totalWeight > 0 ? braceWeight / totalWeight : 0,
-    weightedOffset: totalWeight > 0 ? totalTorque / totalWeight : 0,
-  };
-}
-
-function cellKey(x, y) {
-  return `${x},${y}`;
 }
 
 function lerp(a, b, t) {
@@ -2250,9 +2101,6 @@ if (typeof window !== "undefined") {
     GRID_SIZE,
     CENTER,
     SHAPES,
-    analyzeBalanceProfile,
-    averageCenterDistance,
-    averageHorizontalOffset,
     clamp,
     nearestQuarterTurn,
   };

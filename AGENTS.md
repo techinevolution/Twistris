@@ -49,7 +49,8 @@ When unsure, choose the smallest clean implementation that can be understood, re
 
 - `index.html`: browser shell, overlays, HUD mounts, and canvas
 - `style.css`: layout and DOM presentation
-- `game.js`: current gameplay, state, animation, rendering, and input runtime
+- `rules.js`: pure board, balance, centered-square, and harvest calculations
+- `game.js`: controller state, animation, rendering, input, and runtime effects
 - `tests/smoke.html`: browser smoke-test harness
 
 The current refactor direction is incremental. Do not rewrite the game or add a framework. Preserve direct browser opening and extract testable boundaries one slice at a time.
@@ -59,7 +60,7 @@ The current refactor direction is incremental. Do not rewrite the game or add a 
 - Setup: none
 - Run: open `index.html` in a browser
 - Test: open `tests/smoke.html` in a browser
-- Syntax check: `node --check game.js` when Node is available
+- Syntax check: `node --check rules.js && node --check game.js` when Node is available
 - Build/lint/typecheck: none currently
 
 ## Coding Conventions

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Twistris is currently a small browser-native game. The browser loads a minimal HTML shell, CSS lays out the canvas and overlays, and `game.js` owns nearly all runtime behavior. This is appropriate for the prototype, but the next progression systems need clearer state and ownership boundaries before they are added.
+Twistris is a small browser-native game. The browser loads a minimal HTML shell, CSS lays out the canvas and overlays, `rules.js` owns pure puzzle and harvest calculations, and `game.js` owns runtime orchestration and presentation.
 
 The intended refactor is incremental. Preserve the working game, extract testable rules first, and keep the project directly openable without a build step.
 
@@ -10,7 +10,8 @@ The intended refactor is incremental. Preserve the working game, extract testabl
 
 - `index.html`: game shell, canvas, title overlay, HUD mounts, and keyboard focus helper
 - `style.css`: responsive page layout and DOM overlay presentation
-- `game.js`: constants, shapes, game state, input, puzzle rules, harvest sequence, rendering, and startup
+- `rules.js`: DOM-free board, balance, centered-square, and harvest calculations
+- `game.js`: constants, shapes, game state, input, controller effects, harvest presentation, rendering, and startup
 - `tests/smoke.html`: browser smoke harness that loads the production runtime
 - `PROJECT_OUTLINE.md`: intended product destination
 - `PLAN.md`: current implementation order
@@ -20,14 +21,15 @@ The intended refactor is incremental. Preserve the working game, extract testabl
 
 ## Main Entry Points
 
-- `index.html`: starts the playable game by loading `style.css` and `game.js`
+- `index.html`: starts the playable game by loading `style.css`, `rules.js`, and `game.js`
+- `rules.js`: exposes the frozen `TwistrisRules` API without reading browser UI state
 - `game.js`: creates the game instance, binds browser input, sizes the canvas, and starts the animation loop
-- `tests/smoke.html`: creates a hidden test DOM, loads `game.js`, and exercises the exposed test API
+- `tests/smoke.html`: loads production scripts, tests rules directly, and exercises controller integration through a hidden test DOM
 
 ## Current Major Pieces
 
 - **Game controller:** `BalanceStackGame` currently owns four explicit state buckets: page-session inventory, the current run, lifecycle phase, and transient presentation.
-- **Puzzle rules:** attachment, rotation, balance, and centered-square growth live as class methods and global helpers.
+- **Puzzle rules:** `rules.js` owns pure board creation, attachment, rotation, balance, centered-square, and harvest calculations.
 - **Canvas renderer:** drawing helpers share the global canvas context and constants.
 - **Input:** global keyboard sets are read directly by the game update loop.
 - **Harvest:** the controller creates an immutable result, applies it once to session inventory, and gives the animation a presentation copy.
@@ -44,7 +46,7 @@ The intended refactor is incremental. Preserve the working game, extract testabl
 - **Storage:** a small browser-storage adapter that validates and migrates profile data.
 - **Metagame UI:** DOM-based profile, mission, fabrication, and repair surfaces around the canvas game.
 
-These boundaries do not require a framework. They may begin as separate sections or browser scripts and should only become additional files when the extraction is behaviorally proven.
+These boundaries do not require a framework. `rules.js` is the first extracted production boundary; later files should be added only when ownership and behavior are similarly proven.
 
 ## Current Data Flow
 
@@ -79,7 +81,7 @@ None currently. The project has no package manager, backend, account system, ana
 - No build step is required.
 - Browser logic checks live in `tests/smoke.html`.
 - Visual and interaction checks use `index.html` directly.
-- `node --check game.js` is an optional syntax check when Node is available.
+- `node --check rules.js` and `node --check game.js` are optional syntax checks when Node is available.
 
 ## Important Invariants
 
@@ -94,9 +96,10 @@ None currently. The project has no package manager, backend, account system, ana
 
 ## Known Constraints and Risks
 
-- `game.js` currently has a large change surface because it owns most systems.
-- Browser tests require the full runtime and a simulated DOM shell.
+- `game.js` still has a large change surface because controller, input, presentation, and rendering remain together.
+- Controller tests require the full runtime and a simulated DOM shell; pure rules can run without either.
 - Random piece selection now accepts an optional injected source for deterministic browser tests.
-- Harvest calculation and its session transaction still live inside the game controller.
+- The session transaction still lives inside the game controller.
+- Production startup depends on loading `rules.js` before `game.js`.
 - Canvas rendering and game mutation share global state.
 - Product resource names and conversion recipes are still provisional.

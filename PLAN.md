@@ -4,7 +4,7 @@
 
 The prototype currently supports the title flow, falling and rotating pieces, central attachment, imbalance-driven stack rotation, centered-square growth, Pulse charge counting, and an animated capacity harvest. Duds and charges can accumulate as session-only counters, but there is no saved profile, metagame, crafting screen, repair system, mission layer, or tutorial yet.
 
-The current runtime is concentrated in `game.js`. Gameplay rules, lifecycle state, input, rendering, animation, HUD updates, and harvest transactions share one class and several global helpers, though their state and economy boundaries are now explicit.
+The browser runtime remains centered on `game.js`, but board and economy calculations now live in the DOM-free `rules.js` boundary. Lifecycle, input, rendering, animation, HUD updates, and session transactions remain controller responsibilities.
 
 ## Current Product Goal
 
@@ -25,8 +25,8 @@ Twistris is a dependency-free browser project with one HTML entry point, one sty
 3. **Make harvest atomic - Complete**
    Harvest now creates one immutable result, applies it to the session bank exactly once, and animates presentation-only counters. Resource awards no longer depend on particle arrival or animation completion.
 
-4. **Extract pure puzzle rules**
-   Move board creation, attachment, rotation, balance analysis, centered-square detection, and harvest calculation behind a DOM-free boundary that the smoke harness can test directly.
+4. **Extract pure puzzle rules - Complete**
+   `rules.js` now owns board creation, attachment, rotation, balance analysis, centered-square detection, and harvest calculation without DOM or canvas access. The controller consumes those results and retains effects.
 
 5. **Add local profile persistence**
    Introduce a small versioned save shape with safe load, create, reset, and migration behavior. Keep transient animation state out of the save.
@@ -42,9 +42,9 @@ Twistris is a dependency-free browser project with one HTML entry point, one sty
 
 ## Recommended Next Slice
 
-Implement slice 4 only: extract board creation, attachment, rotation, balance analysis, centered-square detection, and harvest calculation behind a DOM-free pure-rule boundary.
+Implement slice 5 only: add a small versioned local profile with safe create, load, reset, and migration behavior.
 
-Preserve current behavior and the browser-native project shape. Keep persistence, metagame UI, and new progression mechanics out of this extraction.
+Persist only approved banked inventory and profile progress. Keep run state and presentation state out of storage, and do not lock unresolved Bits or Bit Dust recipes into the schema.
 
 ## Deferred Work
 
@@ -68,7 +68,7 @@ Preserve current behavior and the browser-native project shape. Keep persistence
 
 ## Validation Path
 
-- Run `node --check game.js` when Node is available.
+- Run `node --check rules.js` and `node --check game.js` when Node is available.
 - Open `tests/smoke.html` and confirm all browser smoke checks pass.
 - Open `index.html` and manually verify title, controls, attachment, twist, pause, restart, harvest, HUD, and responsive layout after behavioral or visual changes.
 - Keep the working tree free of unintended generated files.
