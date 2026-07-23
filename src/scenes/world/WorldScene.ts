@@ -17,6 +17,7 @@ const IDLE_ZOOM = 6.35;
 const IDLE_PULSE_SCALE = 1.06;
 const IDLE_GRID_ALPHA = 0.36;
 const LAUNCH_DURATION = 2050;
+const ROTATION_DURATION = 340;
 const HEARTBEAT_CYCLE = 1740;
 const HEARTBEAT_WINDOW = 820;
 
@@ -31,6 +32,12 @@ const COLORS = {
 };
 
 type WorldPhase = "title" | "launching" | "playing";
+export type PuzzleAction =
+  | "left"
+  | "right"
+  | "rotate"
+  | "softDrop"
+  | "hardDrop";
 
 interface LogoCell {
   color: "cyan" | "magenta";
@@ -175,8 +182,10 @@ export class WorldScene extends Phaser.Scene {
   private readonly mountedSectors = new Set<string>();
   private world!: Phaser.GameObjects.Container;
   private pulseSector!: Phaser.GameObjects.Container;
+  private structureContainer!: Phaser.GameObjects.Container;
   private grid!: Phaser.GameObjects.Graphics;
-  private puzzleGraphics!: Phaser.GameObjects.Graphics;
+  private structureGraphics!: Phaser.GameObjects.Graphics;
+  private pieceGraphics!: Phaser.GameObjects.Graphics;
   private previewGraphics!: Phaser.GameObjects.Graphics;
   private previewLabel!: Phaser.GameObjects.Text;
   private pulse!: Phaser.GameObjects.Container;
@@ -194,6 +203,7 @@ export class WorldScene extends Phaser.Scene {
   private letterKeys!: Record<"left" | "right" | "rotateW" | "rotateX" | "softDrop", Phaser.Input.Keyboard.Key>;
   private horizontalDirection = 0;
   private horizontalRepeatElapsed = 0;
+  private rotationElapsed = 0;
 
   constructor() {
     super("World");
@@ -206,7 +216,10 @@ export class WorldScene extends Phaser.Scene {
     this.pulseSector = this.add.container(0, 0);
     this.pulseSector.setName("sector:pulse");
     this.grid = this.createGrid();
-    this.puzzleGraphics = this.add.graphics();
+    this.structureContainer = this.add.container(0, 0);
+    this.structureContainer.setName("pulse-structure");
+    this.structureGraphics = this.add.graphics();
+    this.pieceGraphics = this.add.graphics();
     this.previewGraphics = this.add.graphics();
     this.previewLabel = this.add.text(250, -347, "Next piece", {
       color: "#eef7ff",
@@ -216,14 +229,15 @@ export class WorldScene extends Phaser.Scene {
     });
     this.previewLabel.setVisible(false);
     this.pulse = createPulse(this);
+    this.structureContainer.add([this.structureGraphics, this.pulse]);
     this.createParticles();
     this.pulseSector.add([
       this.grid,
-      this.puzzleGraphics,
+      this.structureContainer,
+      this.pieceGraphics,
       this.previewGraphics,
       this.previewLabel,
       ...this.particles,
-      this.pulse,
     ]);
     this.world.add(this.pulseSector);
     this.mountSector("pulse");
@@ -268,6 +282,20 @@ export class WorldScene extends Phaser.Scene {
     this.settleDegrees = Math.round(this.titleSpinDegrees / 90) * 90;
     this.publishDiagnostics();
     return true;
+  }
+
+  act(action: PuzzleAction): boolean {
+    if (this.phase !== "playing" || this.puzzle.pendingRotation) return false;
+
+    let changed = false;
+    if (action === "left") changed = this.puzzle.move(-1, 0);
+    if (action === "right") changed = this.puzzle.move(1, 0);
+    if (action === "rotate") changed = this.puzzle.rotate();
+    if (action === "softDrop") changed = this.puzzle.move(0, 1);
+    if (action === "hardDrop") changed = this.puzzle.hardDrop() !== null;
+    this.renderPuzzle();
+    this.publishDiagnostics();
+    return changed;
   }
 
   private updateLaunch(delta: number) {
@@ -342,6 +370,12 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private updatePuzzle(delta: number) {
+    if (this.puzzle.pendingRotation) {
+      this.updateStructureRotation(delta);
+      this.renderPuzzle();
+      return;
+    }
+
     if (!this.puzzle.current || !this.cursors || !this.letterKeys) {
       this.renderPuzzle();
       return;
@@ -384,15 +418,22 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private renderPuzzle() {
-    if (!this.puzzleGraphics || !this.previewGraphics) return;
+    if (
+      !this.structureGraphics ||
+      !this.pieceGraphics ||
+      !this.previewGraphics
+    ) {
+      return;
+    }
 
-    this.puzzleGraphics.clear();
+    this.structureGraphics.clear();
+    this.pieceGraphics.clear();
     this.previewGraphics.clear();
     if (this.phase !== "playing") return;
 
     for (const cell of this.puzzle.ghostCells()) {
       this.drawPuzzleCell(
-        this.puzzleGraphics,
+        this.pieceGraphics,
         cell.x,
         cell.y,
         "cyan",
@@ -406,7 +447,7 @@ export class WorldScene extends Phaser.Scene {
         const block = this.puzzle.board[y][x];
         if (!block || block.seed) continue;
         this.drawPuzzleCell(
-          this.puzzleGraphics,
+          this.structureGraphics,
           x,
           y,
           block.color === "magenta" ? "magenta" : "cyan",
@@ -417,7 +458,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.puzzle.current) {
       for (const cell of this.puzzle.worldCells()) {
         this.drawPuzzleCell(
-          this.puzzleGraphics,
+          this.pieceGraphics,
           cell.x,
           cell.y,
           this.puzzle.current.color,
@@ -426,6 +467,32 @@ export class WorldScene extends Phaser.Scene {
     }
 
     this.drawPreview(this.puzzle.nextShape);
+  }
+
+  private updateStructureRotation(delta: number) {
+    const pending = this.puzzle.pendingRotation;
+    if (!pending) return;
+
+    this.rotationElapsed = Math.min(
+      ROTATION_DURATION,
+      this.rotationElapsed + delta,
+    );
+    const progress = this.rotationElapsed / ROTATION_DURATION;
+    const overshoot = 1.08;
+    const offset = progress - 1;
+    const eased =
+      1 +
+      (overshoot + 1) * Math.pow(offset, 3) +
+      overshoot * Math.pow(offset, 2);
+    this.structureContainer.setAngle(pending.direction * 90 * eased);
+    this.publishDiagnostics();
+
+    if (progress < 1) return;
+
+    this.puzzle.commitPendingRotation();
+    this.structureContainer.setAngle(0);
+    this.rotationElapsed = 0;
+    this.publishDiagnostics();
   }
 
   private drawPuzzleCell(
@@ -564,6 +631,13 @@ export class WorldScene extends Phaser.Scene {
     root.dataset.worldPuzzleY = String(this.puzzle.current?.y ?? "");
     root.dataset.worldPuzzleNext = this.puzzle.nextShape.name;
     root.dataset.worldPuzzleOutcome = this.puzzle.lastOutcome ?? "";
+    root.dataset.worldPuzzleRotating = String(Boolean(this.puzzle.pendingRotation));
+    root.dataset.worldPuzzleRotationCount = String(this.puzzle.rotationCount);
+    root.dataset.worldPuzzleOrientation = String(this.puzzle.orientationTurns);
+    root.dataset.worldPuzzleBalance = this.puzzle.lastBalance.toFixed(3);
+    root.dataset.worldPuzzleStructureAngle = this.structureContainer
+      ? this.structureContainer.angle.toFixed(1)
+      : "0";
     root.dataset.titlePhase = this.phase;
     root.dataset.titleFps = String(this.fps);
     root.dataset.titleRenderer =

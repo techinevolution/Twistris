@@ -1,6 +1,9 @@
 import Phaser from "phaser";
 
-import { WorldScene } from "../scenes/world/WorldScene";
+import {
+  WorldScene,
+  type PuzzleAction,
+} from "../scenes/world/WorldScene";
 
 const worldScene = new WorldScene();
 const stage = document.querySelector<HTMLElement>("#phaserTitle");
@@ -8,6 +11,13 @@ const startScreen = document.querySelector<HTMLElement>("#startScreen");
 const startButton = document.querySelector<HTMLButtonElement>("#startButton");
 const gameKeySink = document.querySelector<HTMLInputElement>("#gameKeySink");
 const useKeySinkFocus = /Mac/.test(navigator.platform || navigator.userAgent);
+const testActions = new Set<PuzzleAction>([
+  "left",
+  "right",
+  "rotate",
+  "softDrop",
+  "hardDrop",
+]);
 
 function focusGameSurface() {
   const target = useKeySinkFocus && gameKeySink ? gameKeySink : stage;
@@ -32,6 +42,10 @@ startButton?.addEventListener("click", () => {
 
 stage?.addEventListener("pointerdown", focusGameSurface);
 gameKeySink?.addEventListener("input", () => {
+  if (import.meta.env.DEV && gameKeySink.value.startsWith("test:")) {
+    const action = gameKeySink.value.split(":")[1] as PuzzleAction;
+    if (testActions.has(action)) worldScene.act(action);
+  }
   gameKeySink.value = "";
 });
 

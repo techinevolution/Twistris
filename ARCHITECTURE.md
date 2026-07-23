@@ -13,7 +13,7 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - `index.html`: game shell, canvas, title overlay, HUD mounts, and keyboard focus helper
 - `style.css`: responsive page layout and DOM overlay presentation
 - `src/domain/rules.ts`: typed DOM-free board, balance, centered-square, and harvest calculations
-- `src/domain/puzzle/PuzzleRun.ts`: typed DOM-free active-piece, gravity, ghost, attachment, retry, and lock state for the Phaser port
+- `src/domain/puzzle/PuzzleRun.ts`: typed DOM-free active-piece, gravity, ghost, attachment, retry, lock, balance, and pending-rotation state for the Phaser port
 - `game.js`: constants, shapes, game state, input, controller effects, harvest presentation, rendering, and startup
 - `next/index.html`: in-progress Phaser runtime shell
 - `src/next/`: Phaser runtime bootstrap and DOM overlay behavior
@@ -53,7 +53,8 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - **DOM shell:** the title button and small HUD surround the canvas.
 - **Phaser proof:** a separate page proves Twistris-styled rendering, camera shake, tweens, keyboard/touch input, FIT scaling, walking Bits, and lightweight runtime diagnostics.
 - **World scene scaffold:** the first parity port now keeps the logo, close Pulse view, orbiting particles, responsive framing, focus handoff, and 2.05-second Start pullback inside one persistent World scene. Its camera controller distinguishes title close-up, guided pullback, Pulse home, puzzle, and free Board modes. Only the Pulse sector is currently mounted.
-- **Typed puzzle run:** `/next/` renders its active piece, ghost, settled cells, and next-piece preview from a DOM-free model that consumes the existing attachment and board rules. Twist, core growth, harvest, and progression still remain on the legacy route.
+- **Typed puzzle run:** `/next/` renders its active piece, ghost, settled cells, and next-piece preview from a DOM-free model that consumes the existing attachment, balance, and board-rotation rules.
+- **Twist presentation:** a successful off-balance lock stages a separate rotated board, freezes puzzle input, turns the settled mass and Pulse through the characterized 340 ms overshoot, then commits the staged board. Core growth, harvest, and progression still remain on the legacy route.
 
 ## Approved Target Stack
 

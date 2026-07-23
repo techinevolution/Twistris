@@ -118,6 +118,10 @@ Current `/next/` puzzle checks:
 - normal and soft gravity retain the characterized legacy timing
 - next-piece state advances only after a successful lock
 - puzzle input does not scroll the browser page
+- an off-balance lock stages the same direction chosen by the pure balance rule
+- the settled mass and Pulse rotate while the active piece, ghost, grid, and preview stay upright
+- puzzle input and gravity pause throughout the 340 ms rotation
+- the rotated board commits only when the visual quarter-turn completes
 
 The route is not a replacement for `/` until all gameplay and presentation parity checks pass.
 

@@ -1,6 +1,8 @@
 import {
+  analyzeBalance,
   attachesToStructure,
   createBoard,
+  rotateBoard,
   type Board,
   type GridCell,
 } from "../rules";
@@ -22,6 +24,13 @@ export interface ActivePiece {
 }
 
 export type LockOutcome = "locked" | "retried" | "capacity";
+
+export interface PendingRotation {
+  readonly direction: -1 | 1;
+  readonly nextBoard: Board;
+  readonly nextOrientationTurns: number;
+  readonly tipPressure: number;
+}
 
 export const PUZZLE_SHAPES: ReadonlyArray<PieceShape> = Object.freeze([
   {
@@ -108,15 +117,30 @@ interface AdvanceOptions {
 const NORMAL_DROP_MS = 520;
 const SOFT_DROP_MS = 120;
 const LOCK_THRESHOLD_MS = 160;
+const BALANCE_OPTIONS = {
+  outerRingWeight: 0.35,
+  shiftMultiplier: 1.65,
+  placementImpulse: 0.12,
+  baseThreshold: 0.82,
+  coreThresholdStep: 0.14,
+  centerBraceBonus: 0.36,
+  centeredBuffer: 0.2,
+  centeredDistance: 2.3,
+};
 
 export class PuzzleRun {
   readonly size: number;
   readonly center: number;
-  readonly board: Board;
+  board: Board;
   current: ActivePiece | null = null;
   nextShape: PieceShape;
   piecesPlaced = 0;
+  rotationCount = 0;
+  orientationTurns = 0;
+  coreLayers = 0;
+  lastBalance = 0;
   lastOutcome: LockOutcome | null = null;
+  pendingRotation: PendingRotation | null = null;
 
   private readonly random: () => number;
   private dropElapsed = 0;
@@ -139,6 +163,7 @@ export class PuzzleRun {
   }
 
   move(dx: number, dy: number): boolean {
+    if (this.pendingRotation) return false;
     if (!this.current || !this.canPlace(this.current, dx, dy)) return false;
     this.current.x += dx;
     this.current.y += dy;
@@ -147,6 +172,7 @@ export class PuzzleRun {
   }
 
   rotate(): boolean {
+    if (this.pendingRotation) return false;
     if (!this.current) return false;
 
     const rotated = this.current.cells.map((cell) => ({
@@ -173,6 +199,7 @@ export class PuzzleRun {
   }
 
   hardDrop(): LockOutcome | null {
+    if (this.pendingRotation) return null;
     if (!this.current) return null;
     while (this.move(0, 1)) {
       // Move to the first collision.
@@ -181,6 +208,7 @@ export class PuzzleRun {
   }
 
   advance(deltaMs: number, { softDrop = false }: AdvanceOptions = {}): LockOutcome | null {
+    if (this.pendingRotation) return null;
     if (!this.current) return null;
 
     const interval = softDrop ? SOFT_DROP_MS : NORMAL_DROP_MS;
@@ -216,6 +244,14 @@ export class PuzzleRun {
     let dy = 0;
     while (this.canPlace(this.current, 0, dy + 1)) dy += 1;
     return this.worldCells(this.current, 0, dy);
+  }
+
+  commitPendingRotation(): boolean {
+    if (!this.pendingRotation) return false;
+    this.board = this.pendingRotation.nextBoard;
+    this.orientationTurns = this.pendingRotation.nextOrientationTurns;
+    this.pendingRotation = null;
+    return true;
   }
 
   private randomShape(): PieceShape {
@@ -292,9 +328,32 @@ export class PuzzleRun {
     }
 
     this.piecesPlaced += 1;
+    this.stageBalanceRotation(landed);
     this.current = null;
     this.spawnPiece();
     this.lastOutcome = "locked";
     return this.lastOutcome;
+  }
+
+  private stageBalanceRotation(landed: GridCell[]) {
+    const analysis = analyzeBalance(this.board, this.coreLayers, landed, {
+      center: this.center,
+      ...BALANCE_OPTIONS,
+    });
+    this.lastBalance = analysis.tipPressure;
+    if (analysis.direction === 0) return;
+
+    const direction = analysis.direction as -1 | 1;
+    const nextBoard = rotateBoard(this.board, direction, this.center);
+    if (!nextBoard) return;
+
+    this.pendingRotation = Object.freeze({
+      direction,
+      nextBoard,
+      nextOrientationTurns:
+        (this.orientationTurns + direction + 4) % 4,
+      tipPressure: analysis.tipPressure,
+    });
+    this.rotationCount += 1;
   }
 }

@@ -52,6 +52,7 @@ describe("PuzzleRun", () => {
 
     const occupied = run.board.flat().filter(Boolean);
     expect(occupied).toHaveLength(5);
+    expect(run.pendingRotation?.direction).toBe(-1);
   });
 
   it("retries the same shape after a detached drop", () => {
@@ -76,5 +77,26 @@ describe("PuzzleRun", () => {
     expect(ghost).toHaveLength(4);
     expect(run.current?.y).toBe(activeY);
     expect(Math.max(...ghost.map((cell) => cell.y))).toBeLessThan(run.size);
+  });
+
+  it("stages and commits a balance-driven quarter turn", () => {
+    const run = new PuzzleRun({ random: () => 0 });
+    for (let offset = 1; offset <= 6; offset += 1) {
+      run.board[run.center][run.center + offset] = { color: "cyan" };
+    }
+    run.start();
+    if (!run.current) throw new Error("Expected an active piece");
+    run.current.x = run.center + 4;
+
+    expect(run.hardDrop()).toBe("locked");
+    expect(run.pendingRotation?.direction).toBe(1);
+    expect(run.rotationCount).toBe(1);
+    expect(run.move(-1, 0)).toBe(false);
+    expect(run.orientationTurns).toBe(0);
+
+    expect(run.commitPendingRotation()).toBe(true);
+    expect(run.pendingRotation).toBeNull();
+    expect(run.orientationTurns).toBe(1);
+    expect(run.board[run.center + 6][run.center]).toBeTruthy();
   });
 });
