@@ -161,7 +161,7 @@ The first-run tutorial should initially disguise Twistris as a conventional fall
 22. Leave only the broken Pulse. Deblur and zoom out to reveal the sparking, damaged motherboard.
 23. Hold on the full reveal long enough for the player to absorb it, currently estimated at five to ten seconds.
 24. Zoom back toward the Pulse, following copper traces to a damaged location shaped to receive a Bit.
-25. Pull back into the first metagame view with the Pulse on the left. Copper traces lead toward the options on the right. Unavailable options are blacked or scratched out; **MAP**, **CRAFT**, and a disabled gray **QUIT** are the only visible choices.
+25. Pull back into the first metagame view with the Pulse on the left. Copper traces lead toward the options on the right. Unavailable options are blacked or scratched out; **BOARD**, **CRAFT**, and a disabled gray **QUIT** are the only visible choices.
 26. Begin a guided sequence with an arrow pointing toward the flashing **CRAFT** option.
 27. Make **CRAFT** the only available interaction.
 28. When the player selects it, blur the Pulse slightly and open an interface headed **CRAFTING**. Its only recipe is **CRAFT BIT**.
