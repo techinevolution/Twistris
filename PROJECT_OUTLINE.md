@@ -104,7 +104,11 @@ The inventory transaction must not depend on whether these animations finish.
 
 ### Repair And Fabrication
 
-Repair is the first long-term resource sink. Duds, refined salvage, Bits, Charged Bits, and Pulse charges may contribute to different repair recipes, but exact recipes remain open.
+Repair is the first long-term resource sink. The first guided fabrication recipe is established:
+
+**8 Duds + 1 Pulse charge = 1 Bit**
+
+The damaged Pulse acts as the fabricator: Duds and a charge enter it, and a reconstructed Bit emerges. Recipes for Charged Bits, Bit Dust, and later assemblies remain open.
 
 Early repair rewards should prioritize:
 
@@ -115,9 +119,9 @@ Early repair rewards should prioritize:
 
 The first repairs should improve the Pulse before they increase player power. Repair should feel physical: fabricate parts, fit them into damaged locations, and visibly bring systems online.
 
-### Resource Direction Under Evaluation
+### Resource Direction
 
-The current design language is promising but not yet a locked recipe system:
+The current resource language is:
 
 - **Duds:** inert or damaged salvage.
 - **Bits:** reconstructed building material made from salvage.
@@ -127,7 +131,7 @@ The current design language is promising but not yet a locked recipe system:
 
 In the established harvest loop, Duds come from influenced gray blocks at harvest end and Pulse charges come from centered-square growth. Both become banked resources through the harvest transaction.
 
-Possible future run behavior includes a missed piece returning in a cracked state, then shattering into Bit Dust after another failed placement. Some falling pieces may eventually contain a naturally Charged Bit. Exact conversion rates, penalties, and storage rules remain open design questions.
+Possible future run behavior includes a missed piece returning in a cracked state, then shattering into Bit Dust after another failed placement. Some falling pieces may eventually contain a naturally Charged Bit. Conversion rates beyond the first Bit recipe, penalties, and Bit Dust storage rules remain open design questions.
 
 ### First-Run Reveal Sequence
 
@@ -157,9 +161,21 @@ The first-run tutorial should initially disguise Twistris as a conventional fall
 22. Leave only the broken Pulse. Deblur and zoom out to reveal the sparking, damaged motherboard.
 23. Hold on the full reveal long enough for the player to absorb it, currently estimated at five to ten seconds.
 24. Zoom back toward the Pulse, following copper traces to a damaged location shaped to receive a Bit.
-25. Introduce crafting by having the player make the Bit needed for that repair. The recipe, interaction, and exact crafting presentation remain unresolved.
+25. Pull back into the first metagame view with the Pulse on the left. Copper traces lead toward the options on the right. Unavailable options are blacked or scratched out; **MAP**, **CRAFT**, and a disabled gray **QUIT** are the only visible choices.
+26. Begin a guided sequence with an arrow pointing toward the flashing **CRAFT** option.
+27. Make **CRAFT** the only available interaction.
+28. When the player selects it, blur the Pulse slightly and open an interface headed **CRAFTING**. Its only recipe is **CRAFT BIT**.
+29. Have the player select **CRAFT BIT**.
+30. Fade the crafting interface and drift the view back until the Pulse is centered.
+31. Stream eight Duds from the lower-right Dud counter, reducing it from eight to zero, and circle them around the Pulse twice.
+32. Feed the eight circling Duds into the cracked side of the Pulse.
+33. Make the Pulse pulse as one Pulse charge is consumed, reducing its counter from one to zero.
+34. Emit one newly fabricated Bit from the same side of the Pulse.
+35. Move the Bit to the bottom of the screen and introduce its inventory counter at one. The Dud and Pulse charge counters remain visible at zero.
 
 The title confirmation and **FEED THE PULSE** confirmation are the player's only inputs before crafting begins. The staged I tetromino and loose Bit position themselves automatically.
+
+This full fabrication animation teaches that the Pulse converts harvested material into useful parts. Later crafts should use a faster version of the same visual language so repeated fabrication remains satisfying without becoming tedious.
 
 ## UX Expectations
 

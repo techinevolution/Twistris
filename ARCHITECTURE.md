@@ -102,4 +102,4 @@ None currently. The project has no package manager, backend, account system, ana
 - The session transaction still lives inside the game controller.
 - Production startup depends on loading `rules.js` before `game.js`.
 - Canvas rendering and game mutation share global state.
-- Product resource names and conversion recipes are still provisional.
+- The first Bit recipe is approved, but Charged Bit, Bit Dust, and later conversion rules remain provisional.

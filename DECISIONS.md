@@ -1,5 +1,13 @@
 # Twistris Decisions
 
+## 2026-07-22: Fabricate The First Bit Through The Pulse
+
+Decision: Establish the first recipe as `8 Duds + 1 Pulse charge = 1 Bit`. During the first-run sequence, the Pulse visibly consumes the resources and emits the fabricated Bit.
+
+Reason: This teaches the resource relationship without presenting crafting as an abstract shop transaction, while reinforcing that the damaged Pulse is both the game's center and a machine the player is learning to restore.
+
+Consequences: The profile may treat Bits as approved inventory. Charged Bit and Bit Dust recipes remain unresolved. The tutorial uses the full fabrication animation, while repeat crafting should use a faster version of the same visual language.
+
 ## 2026-07-22: Use Project Compass Documents
 
 Decision: Use README.md for orientation, PROJECT_OUTLINE.md for product direction, PLAN.md for execution order, ARCHITECTURE.md for technical boundaries, DECISIONS.md for durable choices, and TODO.md only for small loose cleanup.

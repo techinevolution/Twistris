@@ -44,11 +44,11 @@ Twistris is a dependency-free browser project with one HTML entry point, one sty
 
 Implement slice 5 only: add a small versioned local profile with safe create, load, reset, and migration behavior.
 
-Persist only approved banked inventory and profile progress. Keep run state and presentation state out of storage, and do not lock unresolved Bits or Bit Dust recipes into the schema.
+Persist only approved banked inventory and profile progress. The approved initial inventory is Pulse charges, Duds, and Bits. Keep run state and presentation state out of storage, and do not add Charged Bits or Bit Dust until their rules are resolved. Crafting behavior itself remains outside slice 5.
 
 ## Deferred Work
 
-- Final Dud-to-Bit-to-Charged-Bit recipes.
+- Fabrication recipes beyond the established first Bit recipe.
 - Cracked-piece return and Bit Dust pressure.
 - Repair-pattern placement gameplay.
 - Random Charged Bits inside falling pieces.
@@ -59,7 +59,7 @@ Persist only approved banked inventory and profile progress. Keep run state and 
 
 ## Open Questions
 
-- What exact recipes convert Duds into Bits and Bits into Charged Bits?
+- What recipes create Charged Bits and later repair materials?
 - Is Bit Dust a banked resource, an in-run pressure system, or both?
 - Does the first Pulse repair restore the gyro as one puzzle-affecting exception, or should early repairs remain entirely metagame-facing?
 - What ends a normal run besides reaching board capacity?

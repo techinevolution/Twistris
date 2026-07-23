@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document records provisional state and persistence guidance. It is not yet a code-level contract. [PLAN.md](PLAN.md) controls when these shapes are implemented, and unresolved resource recipes must not be treated as permanent schema.
+This document records provisional state and persistence guidance. It is not yet a code-level contract. [PLAN.md](PLAN.md) controls when these shapes are implemented, and unresolved resources must not be treated as permanent schema.
 
 ## Stable Rules
 
@@ -40,7 +40,7 @@ The current runtime has a page-session inventory only. It deliberately uses a sm
 
 The sequence and applied-ID list are page-session transaction metadata. Persistence may replace their implementation later, but repeated application of the same result must remain idempotent.
 
-The future `profile` is the long-term local progression record. Inventory keys remain provisional until resource recipes are approved.
+The future `profile` is the long-term local progression record. Pulse charges, Duds, and Bits are approved initial inventory keys. Charged Bits and Bit Dust remain provisional.
 
 ```js
 {
@@ -49,9 +49,7 @@ The future `profile` is the long-term local progression record. Inventory keys r
   inventory: {
     pulseCharges: 0,
     duds: 0,
-    bits: 0,
-    chargedBits: 0,
-    bitDust: 0
+    bits: 0
   },
   pulse: {
     repairStage: 0,
@@ -79,8 +77,7 @@ Temporary state for one puzzle run.
   phase: "playing",
   earned: {
     pulseCharges: 0,
-    duds: 0,
-    bitDust: 0
+    duds: 0
   },
   summary: {
     coreLayersReached: 0,
@@ -175,7 +172,7 @@ When persisted data changes incompatibly:
 ## Open Data Questions
 
 - Single local profile or multiple named profiles.
-- Exact Dud, Bit, Charged Bit, Bit Dust, and Pulse charge recipes.
+- Charged Bit, Bit Dust, and later fabrication recipes.
 - Whether Bit Dust exists in inventory, only during a run, or both.
 - Mission definition and progress shape.
 - Repair-pattern and assembly placement shape.
