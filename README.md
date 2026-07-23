@@ -6,15 +6,32 @@ This repository is focused on a public demo: reveal the damaged Pulse, teach the
 
 ## Status
 
-Active demo prototype. The core falling, attachment, twisting, centered-square growth, Pulse charge, and animated harvest loops are playable. The stack migration, persistent profile, crafting, Gravity repair, first firewall sector, Endless Feed, demo upgrades, and first-run tutorial are planned but not implemented.
+Active demo prototype. The core falling, attachment, twisting, centered-square growth, Pulse charge, and animated harvest loops are playable. Vite, TypeScript, and Vitest now provide the development foundation, with the pure puzzle rules migrated first. Phaser, persistent profiles, crafting, Gravity repair, the first firewall sector, Endless Feed, demo upgrades, and the first-run tutorial are planned but not implemented.
 
 ## Quick Start
 
-Open [index.html](index.html) directly in a browser. No installation or build step is required.
+Install the development dependencies once:
 
-To run the browser smoke checks, open [tests/smoke.html](tests/smoke.html).
+```sh
+npm install
+```
 
-These are the current prototype commands. The next approved refactor slice introduces Vite, TypeScript, and automated package scripts; update this section when that slice lands.
+Start the local development server:
+
+```sh
+npm run dev
+```
+
+Open the URL printed by Vite. The game now uses browser modules and must be served rather than opened through `file://`.
+
+## Development Commands
+
+- `npm run dev`: start the Vite development server
+- `npm run build`: create the production build in `dist/`
+- `npm test`: run the Vitest unit suite
+- `npm run typecheck`: check the TypeScript source
+
+While the legacy controller remains, open `/tests/smoke.html` through the Vite development server for the full browser characterization harness.
 
 ## Controls
 
@@ -44,7 +61,7 @@ Broader ideas may be developed locally under `notes/private/`, which is ignored 
 
 The browser is the primary target. The approved architecture keeps one portable web game codebase that can later be packaged for PC, Android, and iOS without forking core gameplay or progression logic.
 
-The planned foundation uses TypeScript, Vite, Phaser, Vitest, Playwright, and HTML/CSS overlays. None of those dependencies are installed yet.
+The current foundation uses TypeScript, Vite, and Vitest. Phaser and Playwright remain planned for the next presentation and browser-automation slices.
 
 ## Project Docs
 

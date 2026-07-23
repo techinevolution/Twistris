@@ -1,6 +1,7 @@
 "use strict";
 
-const RULES = window.TwistrisRules;
+import { TwistrisRules as RULES } from "./src/domain/rules";
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const isEmbedded = window.self !== window.top;

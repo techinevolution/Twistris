@@ -2,15 +2,15 @@
 
 ## Current Approach
 
-Twistris has no Node-based test runner or build pipeline. Verification currently uses a browser smoke harness plus manual gameplay checks.
+Twistris uses Vitest for typed pure-rule tests, TypeScript for compile-time checks, Vite for development and production builds, and the retained browser smoke harness for controller characterization.
 
-This remains the required approach until the stack-foundation slice lands. Do not remove the smoke harness merely because a new runner exists.
+Do not remove the smoke harness merely because the new runner exists. Its controller coverage remains required until equivalent automated coverage and runtime parity are approved.
 
 ## Browser Smoke Harness
 
-Open [tests/smoke.html](tests/smoke.html) in a browser.
+Run `npm run dev`, then open `/tests/smoke.html` from the URL printed by Vite.
 
-The harness loads the production runtime into a hidden test DOM and currently checks:
+The harness loads the production runtime into a hidden test DOM and currently runs 62 checks covering:
 
 - test API availability
 - DOM-free rules API availability and independent board creation
@@ -64,14 +64,12 @@ Add focused coverage as the corresponding state boundaries are introduced:
 - tutorial event ordering without waiting for real animation durations
 - platform-adapter contracts using browser-safe fakes
 
-## Planned Automated Stack
+## Automated Stack
 
-After the approved migration:
-
-- **Vitest:** pure puzzle, economy, profile, mission, demo-board, migration, and transaction rules.
-- **Playwright:** title-to-run flow, keyboard and touch input, scene transitions, responsive layouts, tutorial checkpoints, and selected visual comparisons.
-- **TypeScript:** compile-time checks for state, events, save data, scene contracts, and platform adapters.
-- **Vite build:** production asset and module validation.
+- **Vitest, active:** pure puzzle rules now; economy, profile, mission, demo-board, migration, and transaction rules as those modules arrive.
+- **TypeScript, active:** compile-time checks for migrated source, tests, and future typed contracts.
+- **Vite, active:** development server and production asset/module validation.
+- **Playwright, planned:** title-to-run flow, keyboard and touch input, scene transitions, responsive layouts, tutorial checkpoints, and selected visual comparisons.
 
 The browser smoke harness may be retired only after its characterization cases have equivalent coverage and the Phaser runtime has demonstrated parity.
 
@@ -103,9 +101,9 @@ The release candidate must verify the complete public demo:
 ## Validation Expectations
 
 - Logic changes: run the browser smoke harness.
-- Pure-rule changes: also run `node --check rules.js` and a DOM-free direct sanity call when practical.
+- Pure-rule changes: also run `npm test` and `npm run typecheck`.
 - Visual or interaction changes: run the smoke harness and inspect the playable page.
 - Balance changes: perform repeated left-heavy, right-heavy, early-run, and late-run manual scenarios.
 - Persistence changes: test missing, valid, malformed, and older-version saves.
 - Harvest changes: verify inventory awards remain correct if animation is skipped, interrupted, or reduced.
-- Stack migration changes: run both legacy characterization and new automated checks until parity is approved.
+- Stack migration changes: run `npm run build`, `npm test`, `npm run typecheck`, the 62-check browser harness, and a manual playable-page check until parity is approved.

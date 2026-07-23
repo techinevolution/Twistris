@@ -1,4 +1,6 @@
 .DS_Store
+dist/
+node_modules/
 
 # Local design incubation that is intentionally not published.
 notes/private/

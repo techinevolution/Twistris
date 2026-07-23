@@ -144,4 +144,6 @@ Decision: Load a dependency-free `rules.js` before `game.js` and place board cre
 
 Reason: Puzzle behavior needs direct deterministic testing and should not depend on canvas, DOM mounts, animation state, or controller side effects.
 
-Consequences: `game.js` consumes rule results and retains orchestration and effects. New puzzle calculations should enter through `rules.js` unless their ownership clearly belongs elsewhere.
+Consequences: `game.js` consumes rule results and retains orchestration and effects. New puzzle calculations should enter through this pure boundary unless their ownership clearly belongs elsewhere.
+
+Status: The boundary remains active, but slice 5 migrated its implementation to the typed `src/domain/rules.ts` module and Vite now resolves the import.

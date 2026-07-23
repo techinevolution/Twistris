@@ -68,9 +68,9 @@
     <input id="gameKeySink" type="password" />
     <canvas id="game" width="800" height="800"></canvas>
 
-    <script src="../rules.js"></script>
-    <script src="../game.js"></script>
-    <script>
+    <script type="module">
+      import "../game.js";
+
       const resultsNode = document.getElementById("results");
       const rules = window.TwistrisRules;
       const api = window.__TWISTRIS_TEST_API__;

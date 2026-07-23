@@ -49,8 +49,9 @@ When unsure, choose the smallest clean implementation that can be understood, re
 
 - `index.html`: browser shell, overlays, HUD mounts, and canvas
 - `style.css`: layout and DOM presentation
-- `rules.js`: pure board, balance, centered-square, and harvest calculations
+- `src/domain/rules.ts`: pure board, balance, centered-square, and harvest calculations
 - `game.js`: controller state, animation, rendering, input, and runtime effects
+- `tests/rules.test.ts`: Vitest coverage for the typed rules boundary
 - `tests/smoke.html`: browser smoke-test harness
 
 The approved refactor direction is incremental migration to TypeScript, Vite, and Phaser. Do not rewrite the game in one pass. Follow the slice order in PLAN.md, preserve the legacy runtime until parity is proven, and add only the tooling or boundary owned by the current slice.
@@ -70,13 +71,13 @@ Do not add further Board sectors, a detailed full-game campaign, or speculative 
 
 ## Commands
 
-- Setup: none
-- Run: open `index.html` in a browser
-- Test: open `tests/smoke.html` in a browser
-- Syntax check: `node --check rules.js && node --check game.js` when Node is available
-- Build/lint/typecheck: none currently
-
-Slice 5 will replace these with package scripts for development, build, tests, and type checking. Once those scripts exist, use the commands documented in README.md and package metadata instead of these prototype commands.
+- Setup: `npm install`
+- Run: `npm run dev`
+- Unit tests: `npm test`
+- Type check: `npm run typecheck`
+- Production build: `npm run build`
+- Browser characterization: open `/tests/smoke.html` through the Vite development server
+- Legacy controller syntax check: `node --check game.js`
 
 ## Coding Conventions
 

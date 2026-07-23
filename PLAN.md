@@ -4,17 +4,17 @@
 
 The prototype currently supports the title flow, falling and rotating pieces, central attachment, imbalance-driven stack rotation, centered-square growth, Pulse charge counting, and an animated capacity harvest. Duds and charges can accumulate as session-only counters, but there is no saved profile, metagame, crafting screen, repair system, mission layer, or tutorial yet.
 
-The browser runtime remains centered on `game.js`, but board and economy calculations now live in the DOM-free `rules.js` boundary. Lifecycle, input, rendering, animation, HUD updates, and session transactions remain controller responsibilities.
+The browser runtime remains centered on `game.js`, but board and economy calculations now live in the typed, DOM-free `src/domain/rules.ts` boundary. Lifecycle, input, rendering, animation, HUD updates, and session transactions remain controller responsibilities.
 
 ## Current Product Goal
 
 Release a polished browser-first demo that carries players through the complete onboarding sequence, the first mission and progression loop, one firewall-sector recovery, and an Endless Feed mode with a small upgrade set.
 
-The immediate work remains a behavior-preserving toolchain migration and a bounded Phaser proof. Demo persistence and metagame implementation follow only after the new presentation stack proves that it can reproduce the current game smoothly.
+The modern toolchain migration is complete. The immediate work is a bounded Phaser proof. Demo persistence and metagame implementation follow only after the new presentation stack proves that it can reproduce the current game smoothly.
 
 ## Current Architecture Shape
 
-Twistris is currently a dependency-free browser project with one HTML entry point, one stylesheet, one JavaScript runtime, and a browser smoke harness.
+Twistris is currently a Vite browser project with one HTML entry point, one stylesheet, one legacy JavaScript controller, a typed pure-rules module, Vitest unit coverage, and the retained browser smoke harness.
 
 The approved target is a TypeScript and Vite browser game using Phaser for scenes and animated presentation, Vitest for pure logic, Playwright for browser and visual flows, and HTML/CSS overlays for accessible interface surfaces. See [ARCHITECTURE.md](ARCHITECTURE.md) for the current and target maps.
 
@@ -30,10 +30,10 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
    Harvest now creates one immutable result, applies it to the session bank exactly once, and animates presentation-only counters. Resource awards no longer depend on particle arrival or animation completion.
 
 4. **Extract pure puzzle rules - Complete**
-   `rules.js` now owns board creation, attachment, rotation, balance analysis, centered-square detection, and harvest calculation without DOM or canvas access. The controller consumes those results and retains effects.
+   The original `rules.js` boundary established board creation, attachment, rotation, balance analysis, centered-square detection, and harvest calculation without DOM or canvas access. The controller consumes those results and retains effects.
 
-5. **Introduce the modern toolchain without changing behavior**
-   Add the package manifest and lockfile, Vite, TypeScript, and Vitest. Establish `dev`, `build`, `test`, and `typecheck` commands. Move pure rules first and keep the current browser smoke harness until equivalent automated coverage passes.
+5. **Introduce the modern toolchain without changing behavior - Complete**
+   The package manifest and lockfile now provide Vite, TypeScript, and Vitest plus `dev`, `build`, `test`, and `typecheck` commands. Pure rules moved first to `src/domain/rules.ts`; focused unit tests supplement the retained 62-check browser harness. The title, puzzle, controls, harvest, and visible presentation remain unchanged.
 
 6. **Prove Phaser with one bounded visual slice**
    Reproduce the Pulse, one falling piece, camera shake or zoom, and one walking Bit with its slot jump. Verify keyboard and touch input, responsive scaling, and stable frame pacing on desktop and at least one mobile-class viewport. Stop and reassess if the proof cannot preserve the current visual identity and feel.
@@ -70,9 +70,9 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 
 ## Recommended Next Slice
 
-Implement slice 5 only: introduce Vite, TypeScript, and Vitest while preserving the current title, puzzle, harvest, controls, and visible presentation.
+Implement slice 6 only: prove Phaser with the Pulse, one falling piece, one camera effect, and one walking Bit that hops into a slot.
 
-This slice must not add Phaser, change gameplay, redesign the UI, add persistence, or delete the browser smoke harness. It is complete only when the development build, production build, typecheck, new unit-test command, existing smoke harness, and manual browser checks all pass.
+This proof must remain isolated from the playable controller and must not begin the full runtime port. It is complete only when the proof preserves Twistris's visual identity, accepts keyboard and touch input through a clear boundary, scales responsively, and maintains stable frame pacing on desktop and a mobile-class viewport.
 
 ## Deferred Work
 
@@ -99,8 +99,8 @@ Detailed post-demo design belongs in the gitignored local ideation area and is n
 
 ## Validation Path
 
-- Before slice 5 lands, run `node --check rules.js` and `node --check game.js`, open `tests/smoke.html`, and inspect `index.html` directly.
-- After slice 5, require the documented `dev`, `build`, `test`, and `typecheck` commands while retaining the legacy smoke check until parity coverage is approved.
+- Run the documented `dev`, `build`, `test`, and `typecheck` commands for every stack slice.
+- Open `/tests/smoke.html` through Vite and retain all 62 legacy characterization checks until parity coverage is approved.
 - After the Phaser proof, use Playwright for critical browser flows and stable visual checkpoints.
 - Manually verify title, controls, attachment, twist, pause, restart, harvest, HUD, keyboard, touch, and responsive layout after behavioral or visual changes.
 - Target smooth 60 FPS presentation on desktop and modern mobile hardware. Pool repeated objects, cap effects, cull hidden Board entities, and bound rendering resolution.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Twistris is currently a small browser-native game. The browser loads a minimal HTML shell, CSS lays out the canvas and overlays, `rules.js` owns pure puzzle and harvest calculations, and `game.js` owns runtime orchestration and presentation.
+Twistris is currently a small Vite-served browser game. The browser loads a minimal HTML shell, CSS lays out the canvas and overlays, `src/domain/rules.ts` owns typed pure puzzle and harvest calculations, and `game.js` owns runtime orchestration and presentation.
 
 The approved target remains browser-first but adds TypeScript, Vite, Phaser, Vitest, and Playwright. The migration must be incremental: preserve the working game, prove the engine with one bounded visual slice, and port only after behavioral and visual parity can be demonstrated.
 
@@ -12,9 +12,12 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 
 - `index.html`: game shell, canvas, title overlay, HUD mounts, and keyboard focus helper
 - `style.css`: responsive page layout and DOM overlay presentation
-- `rules.js`: DOM-free board, balance, centered-square, and harvest calculations
+- `src/domain/rules.ts`: typed DOM-free board, balance, centered-square, and harvest calculations
 - `game.js`: constants, shapes, game state, input, controller effects, harvest presentation, rendering, and startup
+- `tests/rules.test.ts`: Vitest unit coverage for the pure rules module
 - `tests/smoke.html`: browser smoke harness that loads the production runtime
+- `package.json` and `package-lock.json`: development commands and pinned dependency graph
+- `tsconfig.json`: strict TypeScript settings for typed source and tests
 - `PROJECT_OUTLINE.md`: intended product destination
 - `PLAN.md`: current implementation order
 - `DATA_FORMATS.md`: provisional state and persistence guidance
@@ -23,15 +26,15 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 
 ## Main Entry Points
 
-- `index.html`: starts the playable game by loading `style.css`, `rules.js`, and `game.js`
-- `rules.js`: exposes the frozen `TwistrisRules` API without reading browser UI state
-- `game.js`: creates the game instance, binds browser input, sizes the canvas, and starts the animation loop
+- `index.html`: starts the playable game by loading `style.css` and the module-based `game.js`
+- `src/domain/rules.ts`: exports the frozen `TwistrisRules` API without reading browser UI state
+- `game.js`: imports the rules API, creates the game instance, binds browser input, sizes the canvas, and starts the animation loop
 - `tests/smoke.html`: loads production scripts, tests rules directly, and exercises controller integration through a hidden test DOM
 
 ## Current Major Pieces
 
 - **Game controller:** `BalanceStackGame` currently owns four explicit state buckets: page-session inventory, the current run, lifecycle phase, and transient presentation.
-- **Puzzle rules:** `rules.js` owns pure board creation, attachment, rotation, balance, centered-square, and harvest calculations.
+- **Puzzle rules:** `src/domain/rules.ts` owns pure board creation, attachment, rotation, balance, centered-square, and harvest calculations.
 - **Canvas renderer:** drawing helpers share the global canvas context and constants.
 - **Input:** global keyboard sets are read directly by the game update loop.
 - **Harvest:** the controller creates an immutable result, applies it once to session inventory, and gives the animation a presentation copy.
@@ -90,7 +93,7 @@ This is an ownership map, not permission to create every directory at once. Each
 - **Platform adapters:** storage, audio, haptics, fullscreen, lifecycle, achievements, and later storefront integration.
 - **Metagame UI:** HTML/CSS overlays for accessible text and commands, with Phaser rendering the Pulse region and first firewall sector.
 
-`rules.js` is the first extracted production boundary. It should migrate into the typed domain without acquiring Phaser, DOM, storage, or platform dependencies.
+`src/domain/rules.ts` is the first migrated production boundary. It must remain free of Phaser, DOM, storage, and platform dependencies.
 
 ## Current Data Flow
 
@@ -119,25 +122,25 @@ Future persistence should use a versioned root object, safe defaults, and explic
 
 ## External Services and Integrations
 
-None currently. The project has no package manager, backend, account system, analytics service, or cloud dependency.
+The project now uses npm for local development dependencies. It still has no backend, account system, analytics service, or cloud dependency.
 
-The approved foundation adds local development dependencies and Phaser only. PWA packaging, Capacitor mobile shells, desktop wrappers, storefront SDKs, and platform achievements remain deferred.
+The current foundation includes Vite, TypeScript, and Vitest. Phaser is approved for the next bounded proof. PWA packaging, Capacitor mobile shells, desktop wrappers, storefront SDKs, and platform achievements remain deferred.
 
 ## Validation and Build Shape
 
 Current:
 
-- No build step is required.
-- Browser logic checks live in `tests/smoke.html`.
-- Visual and interaction checks use `index.html` directly.
-- `node --check rules.js` and `node --check game.js` provide syntax checks.
-
-Target:
-
 - Vite supplies development and production builds.
-- TypeScript supplies type checking.
-- Vitest owns pure domain and transaction tests.
-- Playwright owns critical browser flows, responsive checks, and selected visual comparisons.
+- TypeScript checks the migrated source boundary.
+- Vitest owns pure-rule unit tests.
+- The 62-check browser harness remains at `/tests/smoke.html` through the Vite server.
+- Manual visual and interaction checks use the Vite-served game.
+- `node --check game.js` remains available for the legacy controller.
+
+Next:
+
+- Phaser receives one bounded visual proof before any controller port.
+- Playwright will own critical browser flows, responsive checks, and selected visual comparisons after it is introduced.
 - The legacy smoke harness remains until equivalent coverage and runtime parity are approved.
 
 ## Important Invariants
@@ -159,7 +162,7 @@ Target:
 - Controller tests require the full runtime and a simulated DOM shell; pure rules can run without either.
 - Random piece selection now accepts an optional injected source for deterministic browser tests.
 - The session transaction still lives inside the game controller.
-- Production startup depends on loading `rules.js` before `game.js`.
+- The legacy controller remains JavaScript and is not yet covered by TypeScript.
 - Canvas rendering and game mutation share global state.
 - The first Bit recipe and Charged Bits' firewall role are approved, but Charged Bit recipes, exact firewall rules, Bit Dust, and later conversions remain provisional.
 - Migrating rendering can subtly change input feel, timing, scaling, and the current visual identity.
