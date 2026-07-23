@@ -1,5 +1,13 @@
 # Twistris Decisions
 
+## 2026-07-23: Keep The Entire Game On One Continuous Board
+
+Decision: Present puzzle play, the Pulse hub, crafting, repair, harvest, and Board activity as modes and camera framings of one persistent motherboard world.
+
+Reason: The first-run reveal already establishes spatial continuity: the false Tetris interface breaks away to expose the Pulse and motherboard underneath. Keeping that language makes the Pulse feel like the central processor of a real connected system rather than a menu selection.
+
+Consequences: The recurring title/home view is the Pulse hub with **FEED THE PULSE**, **BOARD**, and **CRAFT**. Phaser should use one long-lived World scene for the visible machine, with camera movement, presentation layers, and accessible overlays handling mode changes. Full-screen scene replacement may be used internally only when it does not break the player's sense of one physical Board. The current isolated Boot/Title parity route is migration scaffolding, not the final world structure.
+
 ## 2026-07-23: Accept Phaser For The Incremental Presentation Port
 
 Decision: Accept the bounded Phaser motion proof and proceed with an incremental playable-runtime port. Keep the proof isolated until each real scene reaches behavioral and visual parity.

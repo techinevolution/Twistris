@@ -4,6 +4,8 @@ Twistris is a browser-based falling-block puzzle game built around the Pulse, a 
 
 This repository is focused on a public demo: reveal the damaged Pulse, teach the puzzle and crafting loops, repair the Gravity Module, recover one firewall sector from Bugs, and unlock a replayable Endless Feed mode with a small upgrade set.
 
+The intended game is one continuous motherboard world. Puzzle play, the Pulse hub, Craft, Board, harvest, and repair are connected camera views and interaction modes centered on the Pulse rather than separate screens.
+
 ## Status
 
 Active demo prototype. The core falling, attachment, twisting, centered-square growth, Pulse charge, and animated harvest loops are playable. Vite, TypeScript, and Vitest provide the development foundation, and the isolated Phaser motion proof has passed. The incremental Phaser port has begun with Boot/Title parity at `/next/`; the current playable game remains at `/`. Persistent profiles, crafting, Gravity repair, the first firewall sector, Endless Feed, demo upgrades, and the first-run tutorial are planned but not implemented.

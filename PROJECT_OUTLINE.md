@@ -13,6 +13,19 @@ The demo should have two connected rhythms:
 
 The demo reveals that the Pulse belongs to a larger dormant or overrun network, but it deliberately stops after the first secured sector. The remaining Board stays obscured so a future full game can expand the world without the public demo repository defining that campaign in detail.
 
+## Continuous Board Flow
+
+The whole game takes place on one continuous motherboard centered on the Pulse. Puzzle play, the Pulse hub, crafting, repair, harvest, and the visible Board are different camera framings and interaction modes of that same physical space, not separate disconnected screens.
+
+- The first-run false Tetris interface is a staged layer that physically fails and reveals the Pulse underneath it.
+- The recurring title/home view is the Pulse hub with **FEED THE PULSE**, **BOARD**, and **CRAFT** connected to the same machine.
+- **FEED THE PULSE** reframes the camera and activates puzzle play around the Pulse.
+- **BOARD** pulls the camera outward to the visible network and first firewall sector.
+- **CRAFT** keeps the Pulse spatially present while an accessible interface appears over or beside it.
+- Harvest, repair, and Bit travel happen in the same world rather than cutting to reward or upgrade screens.
+
+Transitions should preserve spatial continuity whenever possible. HTML overlays may provide accessible text and commands, but they should feel attached to the persistent world rather than replacing it.
+
 ## Audience
 
 - Players who enjoy spatial puzzle games and improving through understanding rather than reflex alone.
@@ -215,19 +228,19 @@ After onboarding, **FEED THE PULSE** remains the primary action for starting a p
 - The Pulse should be the strongest visual and narrative anchor.
 - Harvesting should clearly communicate what was earned and what was banked.
 - Repair should feel physical and constructive, not like clicking a generic upgrade button.
-- The puzzle run may remain canvas-based; menus and metagame surfaces should prioritize clarity and accessibility.
+- The persistent motherboard world should remain spatially continuous; HTML overlays should provide accessible commands and text without replacing that world.
 - New systems should be introduced gradually through visible restoration.
 
-### Metagame Surfaces
+### Metagame Views
 
-The demo restoration loop will need:
+The demo restoration loop will need these views within the same continuous Board:
 
 - A profile surface showing the active player, banked inventory, and repair progress.
 - A harvest summary showing run results, resources earned, and the best centered square reached.
 - A fabrication and repair surface showing damaged systems, material costs, assembly patterns, and the visible effect of each repair.
 - An in-run HUD that clearly distinguishes run-earned resources from banked inventory.
 
-These should feel like parts of the damaged machine and network rather than conventional shop or upgrade menus.
+These should remain visibly anchored to the damaged machine and network rather than behaving like conventional disconnected shop or upgrade screens.
 
 ## Examples of Success
 

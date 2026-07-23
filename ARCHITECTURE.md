@@ -4,7 +4,7 @@
 
 Twistris is currently a small Vite-served browser game. The browser loads a minimal HTML shell, CSS lays out the canvas and overlays, `src/domain/rules.ts` owns typed pure puzzle and harvest calculations, and `game.js` owns runtime orchestration and presentation.
 
-The approved target remains browser-first and uses TypeScript, Vite, Phaser, Vitest, and Playwright. The Phaser proof is accepted, but the migration remains incremental: preserve the working game and port only after behavioral and visual parity can be demonstrated.
+The approved target remains browser-first and uses TypeScript, Vite, Phaser, Vitest, and Playwright. The Phaser proof is accepted, but the migration remains incremental: preserve the working game and port only after behavioral and visual parity can be demonstrated. The final presentation uses one long-lived motherboard World scene rather than separate player-visible title, puzzle, crafting, and Board scenes.
 
 The tracked architecture is sized for the demo: onboarding, one mission loop, Gravity repair, one firewall sector, Endless Feed, and a small upgrade set. It should keep clean expansion boundaries without building the full campaign in advance.
 
@@ -16,7 +16,7 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - `game.js`: constants, shapes, game state, input, controller effects, harvest presentation, rendering, and startup
 - `next/index.html`: in-progress Phaser runtime shell
 - `src/next/`: Phaser runtime bootstrap and DOM overlay behavior
-- `src/scenes/boot-title/`: Boot/Title scene with responsive Start-transition parity
+- `src/scenes/boot-title/`: temporary Boot/Title parity scaffold
 - `proofs/phaser.html`: isolated Phaser proof page
 - `src/proof/phaser-proof.ts`: bounded scene, input, tween, camera, and diagnostics proof
 - `src/proof/phaser-proof.css`: proof-only page layout and touch controls
@@ -49,7 +49,7 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - **Harvest:** the controller creates an immutable result, applies it once to session inventory, and gives the animation a presentation copy.
 - **DOM shell:** the title button and small HUD surround the canvas.
 - **Phaser proof:** a separate page proves Twistris-styled rendering, camera shake, tweens, keyboard/touch input, FIT scaling, walking Bits, and lightweight runtime diagnostics.
-- **Boot/Title scene:** the first real Phaser port reproduces the logo, close Pulse view, orbiting particles, responsive framing, focus handoff, and 2.05-second Start pullback without gameplay ownership.
+- **Boot/Title scaffold:** the first parity port reproduces the logo, close Pulse view, orbiting particles, responsive framing, focus handoff, and 2.05-second Start pullback. It is temporary migration scaffolding, not the final scene boundary.
 
 ## Approved Target Stack
 
@@ -78,10 +78,12 @@ src/
     tutorial/
     platform/
   scenes/
-    boot-title/
-    puzzle/
-    board/
+    world/
+  presentation/
+    camera/
+    layers/
   ui/
+    scene/
     dialogs/
     crafting/
     missions/
@@ -96,13 +98,14 @@ This is an ownership map, not permission to create every directory at once. Each
 - **Session state:** banked inventory that survives run resets for the current page load. This becomes part of the profile boundary when persistence is added.
 - **Run state:** temporary board, piece, resource, and run-summary values.
 - **Profile state:** versioned banked inventory, demo repair progress, first-sector status, Endless unlock, selected upgrades, and statistics.
-- **Application state:** typed events and explicit transitions between title, tutorial, menu, puzzle, harvest, crafting, repair, Board, and pause.
-- **Scenes:** Phaser owns presentation lifecycle, cameras, input routing, tweens, audio, and visible game objects.
+- **Application state:** typed events and explicit mode changes between first-run prelude, Pulse hub, puzzle, harvest, crafting, repair, Board, and pause.
+- **World scene:** one long-lived Phaser scene owns the visible Pulse, motherboard, puzzle space, modules, traces, Bits, Bugs, and camera.
+- **Presentation layers:** staged title/Tetris elements, fog, particles, camera effects, walking Bits, Bugs, HUD anchors, and interaction layers appear or transform without replacing the World scene or deciding outcomes.
+- **UI scene and DOM overlays:** accessible dialogs and commands may sit above the World scene without owning game outcomes.
 - **Tutorial director:** coordinates documented beats through real application events without owning economy or demo-board rules.
-- **Presentation:** animation, particles, camera effects, walking Bits, Bugs, fog, and DOM updates that never decide outcomes.
 - **Storage:** a platform-neutral adapter that validates and migrates the same serialized profile in browser or packaged builds.
 - **Platform adapters:** storage, audio, haptics, fullscreen, lifecycle, achievements, and later storefront integration.
-- **Metagame UI:** HTML/CSS overlays for accessible text and commands, with Phaser rendering the Pulse region and first firewall sector.
+- **World-anchored UI:** HTML/CSS overlays provide accessible text and commands while Phaser keeps the Pulse, motherboard, and first firewall sector visibly present.
 
 `src/domain/rules.ts` is the first migrated production boundary. It must remain free of Phaser, DOM, storage, and platform dependencies.
 
@@ -152,7 +155,7 @@ Current:
 
 Next:
 
-- Slice 7 continues with puzzle rendering and input after Boot/Title parity.
+- Slice 7 must first establish the persistent World scene, then continue with puzzle rendering and input inside it.
 - Playwright will own critical browser flows, responsive checks, and selected visual comparisons after it is introduced.
 - The legacy smoke harness remains until equivalent coverage and runtime parity are approved.
 

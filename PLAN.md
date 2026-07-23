@@ -39,8 +39,8 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
    The isolated `/proofs/phaser.html` entry reproduces the Pulse, one falling piece, camera shake, and a two-footed Bit that emerges from the Pulse, walks a connected copper trace, and hops into a socket. Keyboard and touch input, WebGL rendering, FIT scaling, and 60 FPS presentation passed on desktop and a `390x844` mobile viewport. The existing playable controller remains untouched. Phaser adds a roughly 1.39 MB minified proof chunk, so loading boundaries remain a slice 7 concern.
 
 7. **Port the existing playable runtime incrementally**
-   Create Boot/Title, Puzzle, and UI scene boundaries. Port current rendering, input, rotation, harvest, and title behavior in reviewable pieces while retaining the pure rules and characterization tests. Remove the legacy runtime only after parity is demonstrated.
-   **In progress:** the isolated `/next/` route now reproduces the animated logo, spinning close-up Pulse, orbiting particles, Start control, 2.05-second pullback, quarter-turn settling, HUD reveal, responsive framing, and focus handoff. Desktop and `390x844` mobile checks hold 60 FPS. The current `/` game remains unchanged.
+   Establish one long-lived motherboard World scene plus UI and presentation layers. Port current rendering, input, rotation, harvest, and title behavior into that continuous space in reviewable pieces while retaining the pure rules and characterization tests. Remove the legacy runtime only after parity is demonstrated.
+   **In progress:** the isolated `/next/` route reproduces the animated logo, spinning close-up Pulse, orbiting particles, Start control, 2.05-second pullback, quarter-turn settling, HUD reveal, responsive framing, and focus handoff. Desktop and `390x844` mobile checks hold 60 FPS. This Boot/Title scene is migration scaffolding; it must be folded into the persistent World scene rather than becoming a player-visible screen boundary. The current `/` game remains unchanged.
 
 8. **Establish application, domain, and platform boundaries**
    Separate puzzle, economy, profile, mission, and demo-board logic from Phaser scenes. Add a typed application event boundary and adapters for storage, audio, haptics, fullscreen, lifecycle, and later platform achievements. Do not call wrapper-specific APIs from domain logic.
@@ -71,9 +71,9 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 
 ## Recommended Next Slice
 
-Continue slice 7 with puzzle rendering and input parity on `/next/` while keeping `/` available for comparison.
+Continue slice 7 by establishing the persistent motherboard World scene on `/next/` and moving the accepted title presentation into one of its layers.
 
-This increment should render the board, settled Pulse seed, falling piece, ghost, and next-piece preview through Phaser while consuming the existing typed rules. Match movement, rotation, drop timing, focus, and responsive behavior before porting twist and harvest presentation. Do not add progression or remove the legacy controller.
+Once that continuous world boundary is proven, render the board, settled Pulse seed, falling piece, ghost, and next-piece preview inside it while consuming the existing typed rules. Match movement, rotation, drop timing, focus, and responsive behavior before porting twist and harvest presentation. Do not create player-visible page swaps between title, puzzle, Pulse hub, Craft, or Board; do not add progression or remove the legacy controller.
 
 ## Deferred Work
 
@@ -121,5 +121,6 @@ Detailed post-demo design belongs in the gitignored local ideation area and is n
 - Do not call Capacitor, desktop-wrapper, or storefront APIs directly from domain logic.
 - Do not begin PC, Android, or iOS packaging during the browser-game foundation slices.
 - Do not implement the tutorial before the real systems it teaches are proven.
+- Do not model title, puzzle, Pulse hub, Craft, and Board as disconnected player-visible screens.
 - Do not add a second Board sector or publish detailed full-game plans as part of the demo.
 - Do not promote an idea from the local private design area without Katherine's explicit approval.

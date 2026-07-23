@@ -52,7 +52,7 @@ When unsure, choose the smallest clean implementation that can be understood, re
 - `src/domain/rules.ts`: pure board, balance, centered-square, and harvest calculations
 - `game.js`: controller state, animation, rendering, input, and runtime effects
 - `next/index.html` and `src/next/`: in-progress Phaser runtime entry and shell
-- `src/scenes/boot-title/`: accepted Boot/Title parity scene
+- `src/scenes/boot-title/`: temporary Boot/Title parity scaffold
 - `proofs/phaser.html`: isolated Phaser proof entry point
 - `src/proof/`: Phaser proof scene and proof-only presentation
 - `tests/rules.test.ts`: Vitest coverage for the typed rules boundary
@@ -102,6 +102,7 @@ Do not add further Board sectors, a detailed full-game campaign, or speculative 
 - Do not mix deferred mechanics into the current slice.
 - Do not import proof-only scene code into the playable runtime.
 - Keep `/` available as the trusted legacy comparison until the `/next/` runtime reaches approved parity.
+- Preserve one continuous motherboard World scene; use camera states, presentation layers, and overlays instead of disconnected player-visible screens.
 - Do not let local private design notes override PROJECT_OUTLINE.md or PLAN.md.
 - Do not store transient animation state in a profile.
 - Do not commit personal data; use synthetic profile examples.
