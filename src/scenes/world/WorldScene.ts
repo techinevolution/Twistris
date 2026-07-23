@@ -1,6 +1,11 @@
 import Phaser from "phaser";
 
 import {
+  PuzzleRun,
+  type PieceColor,
+  type PieceShape,
+} from "../../domain/puzzle/PuzzleRun";
+import {
   WorldCameraController,
   type WorldCameraMode,
 } from "../../presentation/camera/WorldCameraController";
@@ -25,7 +30,7 @@ const COLORS = {
   white: 0xf8fdff,
 };
 
-type TitlePhase = "title" | "launching" | "playing-preview";
+type WorldPhase = "title" | "launching" | "playing";
 
 interface LogoCell {
   color: "cyan" | "magenta";
@@ -165,12 +170,15 @@ export class WorldScene extends Phaser.Scene {
   onLaunchComplete: (() => void) | null = null;
   onLaunchProgress: ((progress: number) => void) | null = null;
 
-  private phase: TitlePhase = "title";
+  private phase: WorldPhase = "title";
   private readonly cameraController = new WorldCameraController("title-closeup");
   private readonly mountedSectors = new Set<string>();
   private world!: Phaser.GameObjects.Container;
   private pulseSector!: Phaser.GameObjects.Container;
   private grid!: Phaser.GameObjects.Graphics;
+  private puzzleGraphics!: Phaser.GameObjects.Graphics;
+  private previewGraphics!: Phaser.GameObjects.Graphics;
+  private previewLabel!: Phaser.GameObjects.Text;
   private pulse!: Phaser.GameObjects.Container;
   private logo!: Phaser.GameObjects.Container;
   private particles: Phaser.GameObjects.Arc[] = [];
@@ -181,6 +189,11 @@ export class WorldScene extends Phaser.Scene {
   private fpsElapsed = 0;
   private fps = 60;
   private ready = false;
+  private puzzle = new PuzzleRun();
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private letterKeys!: Record<"left" | "right" | "rotateW" | "rotateX" | "softDrop", Phaser.Input.Keyboard.Key>;
+  private horizontalDirection = 0;
+  private horizontalRepeatElapsed = 0;
 
   constructor() {
     super("World");
@@ -193,15 +206,32 @@ export class WorldScene extends Phaser.Scene {
     this.pulseSector = this.add.container(0, 0);
     this.pulseSector.setName("sector:pulse");
     this.grid = this.createGrid();
+    this.puzzleGraphics = this.add.graphics();
+    this.previewGraphics = this.add.graphics();
+    this.previewLabel = this.add.text(250, -347, "Next piece", {
+      color: "#eef7ff",
+      fontFamily: '"Segoe UI", Helvetica, Arial, sans-serif',
+      fontSize: "14px",
+      fontStyle: "bold",
+    });
+    this.previewLabel.setVisible(false);
     this.pulse = createPulse(this);
     this.createParticles();
-    this.pulseSector.add([this.grid, ...this.particles, this.pulse]);
+    this.pulseSector.add([
+      this.grid,
+      this.puzzleGraphics,
+      this.previewGraphics,
+      this.previewLabel,
+      ...this.particles,
+      this.pulse,
+    ]);
     this.world.add(this.pulseSector);
     this.mountSector("pulse");
     this.world.setScale(IDLE_ZOOM);
     this.grid.setAlpha(IDLE_GRID_ALPHA);
     this.pulse.setScale(IDLE_PULSE_SCALE);
     this.logo = this.createLogo();
+    this.bindPuzzleInput();
     this.ready = true;
     this.publishDiagnostics();
   }
@@ -219,6 +249,7 @@ export class WorldScene extends Phaser.Scene {
       this.updateParticles();
     } else {
       for (const particle of this.particles) particle.setVisible(false);
+      this.updatePuzzle(delta);
     }
 
     if (this.fpsElapsed >= 300) {
@@ -255,13 +286,16 @@ export class WorldScene extends Phaser.Scene {
 
     if (progress < 1) return;
 
-    this.phase = "playing-preview";
-    this.setCameraMode("pulse-home");
+    this.phase = "playing";
+    this.setCameraMode("puzzle");
     this.world.setScale(1);
     this.grid.setAlpha(1);
     this.pulse.setScale(1);
     this.pulse.setAngle(0);
     this.logo.setVisible(false);
+    this.puzzle.start();
+    this.previewLabel.setVisible(true);
+    this.renderPuzzle();
     this.onLaunchComplete?.();
     this.publishDiagnostics();
   }
@@ -279,6 +313,187 @@ export class WorldScene extends Phaser.Scene {
     }
 
     return grid;
+  }
+
+  private bindPuzzleInput() {
+    const keyboard = this.input.keyboard;
+    if (!keyboard) return;
+
+    this.cursors = keyboard.createCursorKeys();
+    this.letterKeys = keyboard.addKeys({
+      left: Phaser.Input.Keyboard.KeyCodes.A,
+      right: Phaser.Input.Keyboard.KeyCodes.D,
+      rotateW: Phaser.Input.Keyboard.KeyCodes.W,
+      rotateX: Phaser.Input.Keyboard.KeyCodes.X,
+      softDrop: Phaser.Input.Keyboard.KeyCodes.S,
+    }) as typeof this.letterKeys;
+    keyboard.addCapture([
+      Phaser.Input.Keyboard.KeyCodes.LEFT,
+      Phaser.Input.Keyboard.KeyCodes.RIGHT,
+      Phaser.Input.Keyboard.KeyCodes.UP,
+      Phaser.Input.Keyboard.KeyCodes.DOWN,
+      Phaser.Input.Keyboard.KeyCodes.SPACE,
+      Phaser.Input.Keyboard.KeyCodes.A,
+      Phaser.Input.Keyboard.KeyCodes.D,
+      Phaser.Input.Keyboard.KeyCodes.S,
+      Phaser.Input.Keyboard.KeyCodes.W,
+      Phaser.Input.Keyboard.KeyCodes.X,
+    ]);
+  }
+
+  private updatePuzzle(delta: number) {
+    if (!this.puzzle.current || !this.cursors || !this.letterKeys) {
+      this.renderPuzzle();
+      return;
+    }
+
+    const leftDown = this.cursors.left.isDown || this.letterKeys.left.isDown;
+    const rightDown = this.cursors.right.isDown || this.letterKeys.right.isDown;
+    const direction = leftDown === rightDown ? 0 : leftDown ? -1 : 1;
+
+    if (direction !== this.horizontalDirection) {
+      this.horizontalDirection = direction;
+      this.horizontalRepeatElapsed = 0;
+      if (direction !== 0) this.puzzle.move(direction, 0);
+    } else if (direction !== 0) {
+      this.horizontalRepeatElapsed += delta;
+      if (this.horizontalRepeatElapsed >= 120) {
+        this.horizontalRepeatElapsed = 50;
+        this.puzzle.move(direction, 0);
+      }
+    }
+
+    if (
+      Phaser.Input.Keyboard.JustDown(this.cursors.up) ||
+      Phaser.Input.Keyboard.JustDown(this.letterKeys.rotateW) ||
+      Phaser.Input.Keyboard.JustDown(this.letterKeys.rotateX)
+    ) {
+      this.puzzle.rotate();
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.cursors.space)) {
+      this.puzzle.hardDrop();
+    } else {
+      this.puzzle.advance(delta, {
+        softDrop:
+          this.cursors.down.isDown || this.letterKeys.softDrop.isDown,
+      });
+    }
+
+    this.renderPuzzle();
+  }
+
+  private renderPuzzle() {
+    if (!this.puzzleGraphics || !this.previewGraphics) return;
+
+    this.puzzleGraphics.clear();
+    this.previewGraphics.clear();
+    if (this.phase !== "playing") return;
+
+    for (const cell of this.puzzle.ghostCells()) {
+      this.drawPuzzleCell(
+        this.puzzleGraphics,
+        cell.x,
+        cell.y,
+        "cyan",
+        0.2,
+        true,
+      );
+    }
+
+    for (let y = 0; y < this.puzzle.size; y += 1) {
+      for (let x = 0; x < this.puzzle.size; x += 1) {
+        const block = this.puzzle.board[y][x];
+        if (!block || block.seed) continue;
+        this.drawPuzzleCell(
+          this.puzzleGraphics,
+          x,
+          y,
+          block.color === "magenta" ? "magenta" : "cyan",
+        );
+      }
+    }
+
+    if (this.puzzle.current) {
+      for (const cell of this.puzzle.worldCells()) {
+        this.drawPuzzleCell(
+          this.puzzleGraphics,
+          cell.x,
+          cell.y,
+          this.puzzle.current.color,
+        );
+      }
+    }
+
+    this.drawPreview(this.puzzle.nextShape);
+  }
+
+  private drawPuzzleCell(
+    graphics: Phaser.GameObjects.Graphics,
+    gridX: number,
+    gridY: number,
+    color: PieceColor,
+    alpha = 1,
+    ghost = false,
+    size = CELL_SIZE,
+  ) {
+    const x = (gridX - this.puzzle.center) * CELL_SIZE;
+    const y = (gridY - this.puzzle.center) * CELL_SIZE;
+    const half = size / 2;
+    const edge = color === "cyan" ? COLORS.cyanEdge : COLORS.magentaEdge;
+    const panel = color === "cyan" ? COLORS.cyan : COLORS.magenta;
+
+    if (ghost) {
+      graphics.fillStyle(COLORS.white, alpha * 0.38);
+      graphics.fillRoundedRect(x - half + 2, y - half + 2, size - 4, size - 4, 3);
+      graphics.lineStyle(2, COLORS.white, alpha * 0.8);
+      graphics.strokeRoundedRect(x - half + 2, y - half + 2, size - 4, size - 4, 3);
+      return;
+    }
+
+    graphics.fillStyle(0x10293e, alpha);
+    graphics.fillRoundedRect(x - half, y - half, size, size, 3);
+    graphics.fillStyle(panel, alpha);
+    graphics.fillRoundedRect(x - half + 1.7, y - half + 1.7, size - 3.4, size - 3.4, 2.5);
+    graphics.lineStyle(1.6, edge, alpha * 0.92);
+    graphics.strokeRoundedRect(x - half + 1.7, y - half + 1.7, size - 3.4, size - 3.4, 2.5);
+    graphics.fillStyle(COLORS.white, alpha * 0.28);
+    graphics.fillRoundedRect(x - half + 6, y - half + 6, size - 12, size - 12, 2);
+  }
+
+  private drawPreview(shape: PieceShape) {
+    const graphics = this.previewGraphics;
+    const boxX = 232;
+    const boxY = -364;
+    const boxSize = 132;
+    graphics.fillStyle(COLORS.white, 0.02);
+    graphics.fillRoundedRect(boxX, boxY, boxSize, boxSize, 18);
+    graphics.lineStyle(1, COLORS.grid, 0.16);
+    graphics.strokeRoundedRect(boxX, boxY, boxSize, boxSize, 18);
+
+    const previewSize = 26;
+    const xs = shape.cells.map((cell) => cell.x);
+    const ys = shape.cells.map((cell) => cell.y);
+    const centerX = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const centerY = (Math.min(...ys) + Math.max(...ys)) / 2;
+
+    for (const cell of shape.cells) {
+      const gridX =
+        this.puzzle.center +
+        (298 + (cell.x - centerX) * previewSize) / CELL_SIZE;
+      const gridY =
+        this.puzzle.center +
+        (-286 + (cell.y - centerY) * previewSize) / CELL_SIZE;
+      this.drawPuzzleCell(
+        graphics,
+        gridX,
+        gridY,
+        shape.color,
+        0.96,
+        false,
+        previewSize - 4,
+      );
+    }
   }
 
   private createLogo(): Phaser.GameObjects.Container {
@@ -342,6 +557,13 @@ export class WorldScene extends Phaser.Scene {
     root.dataset.worldScene = "active";
     root.dataset.worldCameraMode = this.cameraController.mode;
     root.dataset.worldMountedSectors = [...this.mountedSectors].sort().join(",");
+    root.dataset.worldPuzzleActive = String(this.phase === "playing");
+    root.dataset.worldPuzzlePiecesPlaced = String(this.puzzle.piecesPlaced);
+    root.dataset.worldPuzzleCurrent = this.puzzle.current?.shape.name ?? "";
+    root.dataset.worldPuzzleX = String(this.puzzle.current?.x ?? "");
+    root.dataset.worldPuzzleY = String(this.puzzle.current?.y ?? "");
+    root.dataset.worldPuzzleNext = this.puzzle.nextShape.name;
+    root.dataset.worldPuzzleOutcome = this.puzzle.lastOutcome ?? "";
     root.dataset.titlePhase = this.phase;
     root.dataset.titleFps = String(this.fps);
     root.dataset.titleRenderer =

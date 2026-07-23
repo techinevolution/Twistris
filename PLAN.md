@@ -40,7 +40,7 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 
 7. **Port the existing playable runtime incrementally**
    Establish one long-lived motherboard World scene plus UI and presentation layers. Port current rendering, input, rotation, harvest, and title behavior into that continuous space in reviewable pieces while retaining the pure rules and characterization tests. Remove the legacy runtime only after parity is demonstrated.
-   **In progress:** the isolated `/next/` route reproduces the animated logo, spinning close-up Pulse, orbiting particles, Start control, 2.05-second pullback, quarter-turn settling, HUD reveal, responsive framing, and focus handoff. That presentation now lives inside the persistent World scene with typed title-closeup, guided-pullback, Pulse-home, puzzle, and Board-free camera modes. The scene currently mounts only the Pulse sector, establishing the future loading boundary without adding hidden Board content. Desktop and `390x844` mobile checks hold 60 FPS. The current `/` game remains unchanged.
+   **In progress:** the isolated `/next/` route reproduces the animated logo, spinning close-up Pulse, orbiting particles, Start control, 2.05-second pullback, quarter-turn settling, HUD reveal, responsive framing, and focus handoff. That presentation now lives inside the persistent World scene with typed title-closeup, guided-pullback, Pulse-home, puzzle, and Board-free camera modes. A DOM-free puzzle-run model now drives the visible board, Pulse seed, falling piece, ghost, next-piece preview, normal and soft gravity, movement, rotation, hard drop, attachment locks, and detached-piece retries. The scene currently mounts only the Pulse sector, establishing the future loading boundary without adding hidden Board content. Twist, core growth, harvest, and progression remain on `/` until their own parity increments. The current `/` game remains unchanged.
 
 8. **Establish application, domain, and platform boundaries**
    Separate puzzle, economy, profile, mission, and demo-board logic from Phaser scenes. Add a typed application event boundary and adapters for storage, audio, haptics, fullscreen, lifecycle, and later platform achievements. Do not call wrapper-specific APIs from domain logic.
@@ -71,9 +71,9 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 
 ## Recommended Next Slice
 
-Continue slice 7 by establishing the persistent motherboard World scene on `/next/`, moving the accepted title presentation into one of its layers, and defining the camera-mode boundary that will later support Pulse-home, puzzle, and free Board exploration. Keep durable world state separate from mounted Phaser objects so a fog-hidden sector can eventually sleep or unload without breaking the continuous coordinate space.
+Compare the first playable `/next/` puzzle increment against `/` and correct any movement, rotation, gravity, ghost, attachment, retry, preview, focus, or responsive parity differences.
 
-Once that continuous world boundary is proven, render the board, settled Pulse seed, falling piece, ghost, and next-piece preview inside it while consuming the existing typed rules. Match movement, rotation, drop timing, focus, and responsive behavior before porting twist and harvest presentation. Do not create player-visible page swaps between title, puzzle, Pulse hub, Craft, or Board; do not add progression or remove the legacy controller.
+Once that checkpoint is accepted, continue slice 7 by porting stack balance, physical quarter-turn presentation, centered-square growth, charge feedback, and harvest in reviewable increments. Do not create player-visible page swaps between title, puzzle, Pulse hub, Craft, or Board; do not add progression or remove the legacy controller.
 
 ## Deferred Work
 

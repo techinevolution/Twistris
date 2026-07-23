@@ -108,6 +108,17 @@ Current World-scene title parity checks:
 - the scene holds stable frame pacing without browser warnings
 - diagnostics report one active World scene, the expected camera mode, and only the Pulse sector mounted
 
+Current `/next/` puzzle checks:
+
+- Start finishes in the `puzzle` camera mode without replacing the World scene
+- the Pulse seed, falling piece, ghost, and next-piece preview share the mounted Pulse sector
+- Arrow keys or WASD move, rotate, and soft-drop the active piece
+- Space hard-drops and locks an attached piece
+- a detached piece retries with the same shape and does not alter settled cells
+- normal and soft gravity retain the characterized legacy timing
+- next-piece state advances only after a successful lock
+- puzzle input does not scroll the browser page
+
 The route is not a replacement for `/` until all gameplay and presentation parity checks pass.
 
 Future continuous-Board camera checks:
