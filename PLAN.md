@@ -35,8 +35,8 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 5. **Introduce the modern toolchain without changing behavior - Complete**
    The package manifest and lockfile now provide Vite, TypeScript, and Vitest plus `dev`, `build`, `test`, and `typecheck` commands. Pure rules moved first to `src/domain/rules.ts`; focused unit tests supplement the retained 62-check browser harness. The title, puzzle, controls, harvest, and visible presentation remain unchanged.
 
-6. **Prove Phaser with one bounded visual slice**
-   Reproduce the Pulse, one falling piece, camera shake or zoom, and one walking Bit with its slot jump. Verify keyboard and touch input, responsive scaling, and stable frame pacing on desktop and at least one mobile-class viewport. Stop and reassess if the proof cannot preserve the current visual identity and feel.
+6. **Prove Phaser with one bounded visual slice - Complete**
+   The isolated `/proofs/phaser.html` entry reproduces the Pulse, one falling piece, camera shake, and a two-footed Bit that emerges from the Pulse, walks a connected copper trace, and hops into a socket. Keyboard and touch input, WebGL rendering, FIT scaling, and 60 FPS presentation passed on desktop and a `390x844` mobile viewport. The existing playable controller remains untouched. Phaser adds a roughly 1.39 MB minified proof chunk, so loading boundaries remain a slice 7 concern.
 
 7. **Port the existing playable runtime incrementally**
    Create Boot/Title, Puzzle, and UI scene boundaries. Port current rendering, input, rotation, harvest, and title behavior in reviewable pieces while retaining the pure rules and characterization tests. Remove the legacy runtime only after parity is demonstrated.
@@ -70,9 +70,9 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 
 ## Recommended Next Slice
 
-Implement slice 6 only: prove Phaser with the Pulse, one falling piece, one camera effect, and one walking Bit that hops into a slot.
+Begin slice 7 with one parity-focused port: create the Phaser Boot/Title scene while keeping the existing playable route and controller available for comparison.
 
-This proof must remain isolated from the playable controller and must not begin the full runtime port. It is complete only when the proof preserves Twistris's visual identity, accepts keyboard and touch input through a clear boundary, scales responsively, and maintains stable frame pacing on desktop and a mobile-class viewport.
+This first slice 7 increment must reproduce the current animated title, Pulse presentation, Start transition, responsive framing, and focus behavior before moving puzzle rendering. It must not port gameplay rules, harvest, or progression, and it must keep the existing route available until title parity is approved.
 
 ## Deferred Work
 

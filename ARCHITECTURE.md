@@ -4,7 +4,7 @@
 
 Twistris is currently a small Vite-served browser game. The browser loads a minimal HTML shell, CSS lays out the canvas and overlays, `src/domain/rules.ts` owns typed pure puzzle and harvest calculations, and `game.js` owns runtime orchestration and presentation.
 
-The approved target remains browser-first but adds TypeScript, Vite, Phaser, Vitest, and Playwright. The migration must be incremental: preserve the working game, prove the engine with one bounded visual slice, and port only after behavioral and visual parity can be demonstrated.
+The approved target remains browser-first and uses TypeScript, Vite, Phaser, Vitest, and Playwright. The Phaser proof is accepted, but the migration remains incremental: preserve the working game and port only after behavioral and visual parity can be demonstrated.
 
 The tracked architecture is sized for the demo: onboarding, one mission loop, Gravity repair, one firewall sector, Endless Feed, and a small upgrade set. It should keep clean expansion boundaries without building the full campaign in advance.
 
@@ -14,10 +14,14 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - `style.css`: responsive page layout and DOM overlay presentation
 - `src/domain/rules.ts`: typed DOM-free board, balance, centered-square, and harvest calculations
 - `game.js`: constants, shapes, game state, input, controller effects, harvest presentation, rendering, and startup
+- `proofs/phaser.html`: isolated Phaser proof page
+- `src/proof/phaser-proof.ts`: bounded scene, input, tween, camera, and diagnostics proof
+- `src/proof/phaser-proof.css`: proof-only page layout and touch controls
 - `tests/rules.test.ts`: Vitest unit coverage for the pure rules module
 - `tests/smoke.html`: browser smoke harness that loads the production runtime
 - `package.json` and `package-lock.json`: development commands and pinned dependency graph
 - `tsconfig.json`: strict TypeScript settings for typed source and tests
+- `vite.config.ts`: production entries for the playable game and isolated proof
 - `PROJECT_OUTLINE.md`: intended product destination
 - `PLAN.md`: current implementation order
 - `DATA_FORMATS.md`: provisional state and persistence guidance
@@ -29,6 +33,7 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - `index.html`: starts the playable game by loading `style.css` and the module-based `game.js`
 - `src/domain/rules.ts`: exports the frozen `TwistrisRules` API without reading browser UI state
 - `game.js`: imports the rules API, creates the game instance, binds browser input, sizes the canvas, and starts the animation loop
+- `proofs/phaser.html`: loads the isolated Phaser motion proof without importing the playable controller
 - `tests/smoke.html`: loads production scripts, tests rules directly, and exercises controller integration through a hidden test DOM
 
 ## Current Major Pieces
@@ -39,6 +44,7 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - **Input:** global keyboard sets are read directly by the game update loop.
 - **Harvest:** the controller creates an immutable result, applies it once to session inventory, and gives the animation a presentation copy.
 - **DOM shell:** the title button and small HUD surround the canvas.
+- **Phaser proof:** a separate page proves Twistris-styled rendering, camera shake, tweens, keyboard/touch input, FIT scaling, walking Bits, and lightweight runtime diagnostics.
 
 ## Approved Target Stack
 
@@ -124,7 +130,7 @@ Future persistence should use a versioned root object, safe defaults, and explic
 
 The project now uses npm for local development dependencies. It still has no backend, account system, analytics service, or cloud dependency.
 
-The current foundation includes Vite, TypeScript, and Vitest. Phaser is approved for the next bounded proof. PWA packaging, Capacitor mobile shells, desktop wrappers, storefront SDKs, and platform achievements remain deferred.
+The current foundation includes Vite, TypeScript, Vitest, and Phaser. Phaser remains isolated to the proof until slice 7 ports the playable runtime incrementally. PWA packaging, Capacitor mobile shells, desktop wrappers, storefront SDKs, and platform achievements remain deferred.
 
 ## Validation and Build Shape
 
@@ -134,12 +140,13 @@ Current:
 - TypeScript checks the migrated source boundary.
 - Vitest owns pure-rule unit tests.
 - The 62-check browser harness remains at `/tests/smoke.html` through the Vite server.
+- The accepted Phaser proof remains at `/proofs/phaser.html` for visual, input, responsive, and frame-pacing checks.
 - Manual visual and interaction checks use the Vite-served game.
 - `node --check game.js` remains available for the legacy controller.
 
 Next:
 
-- Phaser receives one bounded visual proof before any controller port.
+- Slice 7 ports the playable runtime in parity-focused scene increments.
 - Playwright will own critical browser flows, responsive checks, and selected visual comparisons after it is introduced.
 - The legacy smoke harness remains until equivalent coverage and runtime parity are approved.
 
@@ -167,6 +174,7 @@ Next:
 - The first Bit recipe and Charged Bits' firewall role are approved, but Charged Bit recipes, exact firewall rules, Bit Dust, and later conversions remain provisional.
 - Migrating rendering can subtly change input feel, timing, scaling, and the current visual identity.
 - Running legacy and Phaser paths in parallel for too long would create duplicate behavior and maintenance cost.
+- The isolated Phaser proof builds to roughly 1.39 MB minified before gzip; the playable port should use deliberate loading and chunk boundaries rather than putting the engine on unrelated pages.
 - Fog, blur, particles, Bugs, and walking Bits can pressure mobile rendering if objects are not pooled, culled, and bounded.
 - Vite ends the permanent direct-`file://` workflow after migration; development uses a local server and releases use production builds.
 - Clean expansion boundaries must not become speculative full-game infrastructure during demo development.

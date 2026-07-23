@@ -76,6 +76,8 @@ Possible damage and recovery details include:
 
 The demo should show at least the broken baseline, the stabilized Gravity Module, and the secured firewall result. The Pulse's condition should be reflected both in gameplay and in the title presentation.
 
+The Pulse is the network's central processor. Every visible copper trace should connect physically back to the Pulse, then radiate outward toward modules, sockets, and obscured Board regions.
+
 ### Persistent Player Profile
 
 The demo requires a local-first profile that survives browser sessions. The profile should communicate:

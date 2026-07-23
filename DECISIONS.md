@@ -1,5 +1,13 @@
 # Twistris Decisions
 
+## 2026-07-23: Accept Phaser For The Incremental Presentation Port
+
+Decision: Accept the bounded Phaser motion proof and proceed with an incremental playable-runtime port. Keep the proof isolated until each real scene reaches behavioral and visual parity.
+
+Reason: The proof reproduced Twistris's Pulse, falling-piece motion, camera response, keyboard and touch input, responsive FIT scaling, and the walking-Bit socket jump at 60 FPS on desktop and a `390x844` mobile viewport. The existing game and all 62 browser checks remained unchanged.
+
+Consequences: Slice 7 may begin with Boot/Title parity, but it must not rewrite the entire controller at once. The proof's roughly 1.39 MB minified Phaser chunk also makes deliberate loading and chunk boundaries a release concern.
+
 ## 2026-07-22: Scope The Public Repository To The Demo
 
 Decision: Make the tracked Twistris repository entirely about releasing the demo. The demo ends after the player completes onboarding, repairs the Gravity Module, secures the first firewall sector, unlocks Endless Feed, and gains access to a small upgrade set.

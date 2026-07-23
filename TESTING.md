@@ -73,6 +73,24 @@ Add focused coverage as the corresponding state boundaries are introduced:
 
 The browser smoke harness may be retired only after its characterization cases have equivalent coverage and the Phaser runtime has demonstrated parity.
 
+## Phaser Proof
+
+Run `npm run dev`, then open `/proofs/phaser.html`.
+
+Verify:
+
+- the falling T piece loops without resizing the layout
+- arrow keys or `A`/`D` move the piece
+- Up or `W` rotates the piece
+- Space or the action control starts the walking-Bit sequence
+- the Bit emerges from the Pulse, walks with two visible feet, and hops into the connected socket
+- every copper trace physically connects to the Pulse
+- landing and installation trigger brief camera responses
+- the scene reports stable frame pacing without browser warnings
+- the square scene remains correctly framed at desktop and `390x844` mobile viewport sizes
+
+The proof is not the playable game and must remain isolated until its presentation patterns are ported through slice 7.
+
 ## Demo Acceptance Flow
 
 The release candidate must verify the complete public demo:

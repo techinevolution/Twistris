@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Twistris Phaser Proof</title>
+    <link rel="stylesheet" href="../src/proof/phaser-proof.css" />
+  </head>
+  <body>
+    <main class="proof-shell">
+      <header class="proof-status">
+        <span class="proof-mark">TWISTRIS // PROOF 06</span>
+        <span id="proofState" class="proof-state">READY</span>
+        <span id="proofFps" class="proof-fps">-- FPS</span>
+      </header>
+
+      <section id="phaserProof" class="proof-stage" aria-label="Twistris Phaser motion proof"></section>
+
+      <nav class="proof-controls" aria-label="Motion proof controls">
+        <button type="button" data-action="left" aria-label="Move left" title="Move left">
+          <span aria-hidden="true">←</span>
+        </button>
+        <button type="button" data-action="right" aria-label="Move right" title="Move right">
+          <span aria-hidden="true">→</span>
+        </button>
+        <button type="button" data-action="rotate" aria-label="Rotate piece" title="Rotate piece">
+          <span aria-hidden="true">↻</span>
+        </button>
+        <button class="proof-action" type="button" data-action="trigger" aria-label="Send Bit" title="Send Bit">
+          <span aria-hidden="true">▶</span>
+        </button>
+      </nav>
+    </main>
+
+    <script type="module" src="../src/proof/phaser-proof.ts"></script>
+  </body>
+</html>
