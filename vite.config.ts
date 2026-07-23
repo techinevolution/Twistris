@@ -7,6 +7,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         game: resolve(__dirname, "index.html"),
+        nextTitle: resolve(__dirname, "next/index.html"),
         phaserProof: resolve(__dirname, "proofs/phaser.html"),
       },
     },

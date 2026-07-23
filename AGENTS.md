@@ -51,6 +51,8 @@ When unsure, choose the smallest clean implementation that can be understood, re
 - `style.css`: layout and DOM presentation
 - `src/domain/rules.ts`: pure board, balance, centered-square, and harvest calculations
 - `game.js`: controller state, animation, rendering, input, and runtime effects
+- `next/index.html` and `src/next/`: in-progress Phaser runtime entry and shell
+- `src/scenes/boot-title/`: accepted Boot/Title parity scene
 - `proofs/phaser.html`: isolated Phaser proof entry point
 - `src/proof/`: Phaser proof scene and proof-only presentation
 - `tests/rules.test.ts`: Vitest coverage for the typed rules boundary
@@ -80,6 +82,7 @@ Do not add further Board sectors, a detailed full-game campaign, or speculative 
 - Production build: `npm run build`
 - Browser characterization: open `/tests/smoke.html` through the Vite development server
 - Phaser proof: open `/proofs/phaser.html` through the Vite development server
+- Phaser migration route: open `/next/` through the Vite development server
 - Legacy controller syntax check: `node --check game.js`
 
 ## Coding Conventions
@@ -98,6 +101,7 @@ Do not add further Board sectors, a detailed full-game campaign, or speculative 
 - Do not add online accounts, cloud sync, payments, or external services without approval.
 - Do not mix deferred mechanics into the current slice.
 - Do not import proof-only scene code into the playable runtime.
+- Keep `/` available as the trusted legacy comparison until the `/next/` runtime reaches approved parity.
 - Do not let local private design notes override PROJECT_OUTLINE.md or PLAN.md.
 - Do not store transient animation state in a profile.
 - Do not commit personal data; use synthetic profile examples.

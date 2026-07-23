@@ -6,7 +6,7 @@ This repository is focused on a public demo: reveal the damaged Pulse, teach the
 
 ## Status
 
-Active demo prototype. The core falling, attachment, twisting, centered-square growth, Pulse charge, and animated harvest loops are playable. Vite, TypeScript, and Vitest provide the development foundation, and the isolated Phaser motion proof has passed. The playable runtime has not moved to Phaser yet. Persistent profiles, crafting, Gravity repair, the first firewall sector, Endless Feed, demo upgrades, and the first-run tutorial are planned but not implemented.
+Active demo prototype. The core falling, attachment, twisting, centered-square growth, Pulse charge, and animated harvest loops are playable. Vite, TypeScript, and Vitest provide the development foundation, and the isolated Phaser motion proof has passed. The incremental Phaser port has begun with Boot/Title parity at `/next/`; the current playable game remains at `/`. Persistent profiles, crafting, Gravity repair, the first firewall sector, Endless Feed, demo upgrades, and the first-run tutorial are planned but not implemented.
 
 ## Quick Start
 
@@ -34,6 +34,8 @@ Open the URL printed by Vite. The game now uses browser modules and must be serv
 While the legacy controller remains, open `/tests/smoke.html` through the Vite development server for the full browser characterization harness.
 
 The isolated Phaser proof is available at `/proofs/phaser.html`. It does not replace or modify the playable game.
+
+The in-progress Phaser port is available at `/next/`. It currently implements the title and Start transition only.
 
 ## Controls
 

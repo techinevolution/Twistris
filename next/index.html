@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Twistris</title>
+    <link rel="stylesheet" href="../src/next/next.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="board-wrap">
+        <div id="startScreen" class="start-screen">
+          <div class="start-copy" aria-hidden="true"></div>
+          <button id="startButton" class="start-button" type="button">Start</button>
+        </div>
+        <div class="board-overlay-bottom">
+          <div class="currency-chip">Pulse charges 0</div>
+        </div>
+        <input
+          id="gameKeySink"
+          class="game-key-sink"
+          type="password"
+          inputmode="none"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          aria-hidden="true"
+          tabindex="-1"
+        />
+        <div
+          id="phaserTitle"
+          class="game-stage"
+          tabindex="0"
+          role="application"
+          aria-label="Twistris title"
+        ></div>
+      </section>
+    </main>
+
+    <script type="module" src="../src/next/main.ts"></script>
+  </body>
+</html>

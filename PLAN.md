@@ -40,6 +40,7 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 
 7. **Port the existing playable runtime incrementally**
    Create Boot/Title, Puzzle, and UI scene boundaries. Port current rendering, input, rotation, harvest, and title behavior in reviewable pieces while retaining the pure rules and characterization tests. Remove the legacy runtime only after parity is demonstrated.
+   **In progress:** the isolated `/next/` route now reproduces the animated logo, spinning close-up Pulse, orbiting particles, Start control, 2.05-second pullback, quarter-turn settling, HUD reveal, responsive framing, and focus handoff. Desktop and `390x844` mobile checks hold 60 FPS. The current `/` game remains unchanged.
 
 8. **Establish application, domain, and platform boundaries**
    Separate puzzle, economy, profile, mission, and demo-board logic from Phaser scenes. Add a typed application event boundary and adapters for storage, audio, haptics, fullscreen, lifecycle, and later platform achievements. Do not call wrapper-specific APIs from domain logic.
@@ -70,9 +71,9 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 
 ## Recommended Next Slice
 
-Begin slice 7 with one parity-focused port: create the Phaser Boot/Title scene while keeping the existing playable route and controller available for comparison.
+Continue slice 7 with puzzle rendering and input parity on `/next/` while keeping `/` available for comparison.
 
-This first slice 7 increment must reproduce the current animated title, Pulse presentation, Start transition, responsive framing, and focus behavior before moving puzzle rendering. It must not port gameplay rules, harvest, or progression, and it must keep the existing route available until title parity is approved.
+This increment should render the board, settled Pulse seed, falling piece, ghost, and next-piece preview through Phaser while consuming the existing typed rules. Match movement, rotation, drop timing, focus, and responsive behavior before porting twist and harvest presentation. Do not add progression or remove the legacy controller.
 
 ## Deferred Work
 

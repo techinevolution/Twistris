@@ -14,6 +14,9 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - `style.css`: responsive page layout and DOM overlay presentation
 - `src/domain/rules.ts`: typed DOM-free board, balance, centered-square, and harvest calculations
 - `game.js`: constants, shapes, game state, input, controller effects, harvest presentation, rendering, and startup
+- `next/index.html`: in-progress Phaser runtime shell
+- `src/next/`: Phaser runtime bootstrap and DOM overlay behavior
+- `src/scenes/boot-title/`: Boot/Title scene with responsive Start-transition parity
 - `proofs/phaser.html`: isolated Phaser proof page
 - `src/proof/phaser-proof.ts`: bounded scene, input, tween, camera, and diagnostics proof
 - `src/proof/phaser-proof.css`: proof-only page layout and touch controls
@@ -33,6 +36,7 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - `index.html`: starts the playable game by loading `style.css` and the module-based `game.js`
 - `src/domain/rules.ts`: exports the frozen `TwistrisRules` API without reading browser UI state
 - `game.js`: imports the rules API, creates the game instance, binds browser input, sizes the canvas, and starts the animation loop
+- `next/index.html`: loads the in-progress Phaser route while `/` remains the playable baseline
 - `proofs/phaser.html`: loads the isolated Phaser motion proof without importing the playable controller
 - `tests/smoke.html`: loads production scripts, tests rules directly, and exercises controller integration through a hidden test DOM
 
@@ -45,6 +49,7 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - **Harvest:** the controller creates an immutable result, applies it once to session inventory, and gives the animation a presentation copy.
 - **DOM shell:** the title button and small HUD surround the canvas.
 - **Phaser proof:** a separate page proves Twistris-styled rendering, camera shake, tweens, keyboard/touch input, FIT scaling, walking Bits, and lightweight runtime diagnostics.
+- **Boot/Title scene:** the first real Phaser port reproduces the logo, close Pulse view, orbiting particles, responsive framing, focus handoff, and 2.05-second Start pullback without gameplay ownership.
 
 ## Approved Target Stack
 
@@ -141,12 +146,13 @@ Current:
 - Vitest owns pure-rule unit tests.
 - The 62-check browser harness remains at `/tests/smoke.html` through the Vite server.
 - The accepted Phaser proof remains at `/proofs/phaser.html` for visual, input, responsive, and frame-pacing checks.
+- The in-progress Phaser runtime remains at `/next/` for direct parity comparison with `/`.
 - Manual visual and interaction checks use the Vite-served game.
 - `node --check game.js` remains available for the legacy controller.
 
 Next:
 
-- Slice 7 ports the playable runtime in parity-focused scene increments.
+- Slice 7 continues with puzzle rendering and input after Boot/Title parity.
 - Playwright will own critical browser flows, responsive checks, and selected visual comparisons after it is introduced.
 - The legacy smoke harness remains until equivalent coverage and runtime parity are approved.
 

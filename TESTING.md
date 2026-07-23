@@ -91,6 +91,24 @@ Verify:
 
 The proof is not the playable game and must remain isolated until its presentation patterns are ported through slice 7.
 
+## Phaser Migration Route
+
+Run `npm run dev`, then compare `/next/` with `/`.
+
+Current Boot/Title parity checks:
+
+- the block-built TWISTRIS logo retains its cyan and magenta treatment
+- the close Pulse spins over the faint grid with heartbeat particles
+- Start begins one transition and ignores repeated activation
+- the transition takes approximately 2.05 seconds and settles on a quarter turn
+- the logo and Start control fade while the board pulls back
+- the normal board framing and Pulse charge HUD appear at completion
+- keyboard focus moves to the game surface
+- desktop and `390x844` mobile layouts remain square, centered, and free of overlap
+- the scene holds stable frame pacing without browser warnings
+
+The route is not a replacement for `/` until all gameplay and presentation parity checks pass.
+
 ## Demo Acceptance Flow
 
 The release candidate must verify the complete public demo:
