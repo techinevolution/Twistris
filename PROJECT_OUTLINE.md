@@ -124,8 +124,8 @@ The first repairs should improve the Pulse before they increase player power. Re
 The current resource language is:
 
 - **Duds:** inert or damaged salvage.
-- **Bits:** reconstructed building material made from salvage.
-- **Charged Bits:** activated components that can power systems.
+- **Bits:** reconstructed building material used to replace missing components and repair physical system breaks.
+- **Charged Bits:** activated components that provide continuing power to defenses and other active systems.
 - **Bit Dust:** material produced by shattered or processed blocks and potentially used as fabrication binder.
 - **Pulse charges:** energy generated through centered-square growth.
 
@@ -160,7 +160,7 @@ The first-run tutorial should initially disguise Twistris as a conventional fall
 21. Move the Duds into the resource counters at the bottom of the screen and store them.
 22. Leave only the broken Pulse. Deblur and zoom out to reveal the sparking, damaged motherboard.
 23. Hold on the full reveal long enough for the player to absorb it, currently estimated at five to ten seconds.
-24. Zoom back toward the Pulse, following copper traces to a damaged location shaped to receive a Bit.
+24. Zoom back toward the Pulse, following copper traces to the broken Gravity Module on its left and briefly revealing a damaged location shaped to receive a Bit.
 25. Pull back into the first metagame view with the Pulse on the left. Copper traces lead toward the options on the right. Unavailable options are blacked or scratched out; **BOARD**, **CRAFT**, and a disabled gray **QUIT** are the only visible choices.
 26. Begin a guided sequence with an arrow pointing toward the flashing **CRAFT** option.
 27. Make **CRAFT** the only available interaction.
@@ -172,10 +172,34 @@ The first-run tutorial should initially disguise Twistris as a conventional fall
 33. Make the Pulse pulse as one Pulse charge is consumed, reducing its counter from one to zero.
 34. Emit one newly fabricated Bit from the same side of the Pulse.
 35. Move the Bit to the bottom of the screen and introduce its inventory counter at one. The Dud and Pulse charge counters remain visible at zero.
+36. Shift the view to the left of the Pulse and reveal the damaged Gravity Module with its empty Bit-shaped socket.
+37. Highlight the module with a guided arrow and have the player select it.
+38. Move the Bit out of its counter, along an illuminated copper trace, and automatically slot it into the module. Reduce the Bit counter from one to zero.
+39. Send a brief activation current from the Pulse through the repaired connection without consuming another resource or turning the installed component into a Charged Bit.
+40. Align the Gravity Module, stop its shaking, and bring it online.
+41. Settle the unstable structure and stop the Pulse's uncontrolled rotation.
+42. Display **GRAVITY GYRO STABILIZED** and **MODULE ONLINE**.
+43. Pull back to the **BOARD** view. Show only the Pulse region and one nearby section; obscure everything beyond them with dark interference and fog of war.
+44. Present the nearby section as operational and protected, with a Charged Bit installed in a firewall socket at its boundary.
+45. Make the old Charged Bit flicker, crack, and finally break. It may leave behind Bit Dust, but whether that material is awarded remains unresolved.
+46. Shut down the firewall's illuminated boundary. Corrupt or flash the copper traces leading into the fog.
+47. Send Bugs out of the darkness, along the exposed traces, and into the formerly safe section.
+48. Display **FIREWALL FAILURE** and **SECTOR COMPROMISED**.
+49. Make the section visibly infested, but stop the Bugs before they reach the Pulse. This creates a clear recovery objective without immediately threatening a game over.
+50. Leave the broken firewall socket visible as a destination for a future Charged Bit.
+51. Return to the Pulse menu after the Board reveal.
+52. Add a new **FEED THE PULSE** option and draw attention to it. This is the game's diegetic Play button.
+53. Have the player select **FEED THE PULSE** to begin their first normal run.
+54. Present the first mission: generate four Pulse charges.
+55. Open the active puzzle with the repaired Gravity Module online and give the player full movement, rotation, and placement control for the first time.
 
 The title confirmation and **FEED THE PULSE** confirmation are the player's only inputs before crafting begins. The staged I tetromino and loose Bit position themselves automatically.
 
 This full fabrication animation teaches that the Pulse converts harvested material into useful parts. Later crafts should use a faster version of the same visual language so repeated fabrication remains satisfying without becoming tedious.
+
+The Gravity Module repair establishes the functional difference between resource types: ordinary Bits repair missing structure, while Charged Bits later provide sustained power for systems such as firewalls. The wider Board and Bug threat should be introduced only after the Gravity Module is stable.
+
+After onboarding, **FEED THE PULSE** remains the primary action for starting a puzzle run. Missions give each run a clear restoration objective, beginning with the simple goal of generating four Pulse charges.
 
 ## UX Expectations
 
@@ -212,7 +236,13 @@ These fit the world but are not committed implementation work:
 
 ### Network Reclamation
 
-- Bit Battles or another system-reclamation activity could recover overrun network nodes.
+- The **BOARD** is both a damaged motherboard and a territory map centered on the Pulse.
+- Bugs are an invading or corrupting force occupying connected systems.
+- Most of the Board begins hidden behind dark interference and fog of war.
+- Bits can be sent along copper traces to reclaim nodes, repair connections, and push Bugs back.
+- Reclaimed areas remain vulnerable until a Charged Bit powers a firewall at a strategic boundary or gateway.
+- A secured region keeps its restored upgrade online and prevents Bug reinvasion through that boundary.
+- Each reclaimed portion of the Board can reveal a subsystem, upgrade, recipe, or new activity.
 - Restoring one subsystem should reveal or reconnect others, making the Pulse the center of a larger repairable network.
 - Infinite or expanding-board modes may provide long-form mastery after the finite restoration campaign establishes its rules.
 

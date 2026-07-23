@@ -1,5 +1,29 @@
 # Twistris Decisions
 
+## 2026-07-22: Use Feed The Pulse As The Play Action
+
+Decision: After the first Board threat reveal, return to the Pulse menu and introduce **FEED THE PULSE** as the persistent action for starting puzzle runs. The first normal mission is to generate four Pulse charges.
+
+Reason: The label connects ordinary play directly to the restoration fiction, while a simple charge goal lets the player practice the core square-growth loop after the guided cinematic sequence.
+
+Consequences: The first unrestricted puzzle run begins only after the Gravity Module is repaired and the Bug threat is revealed. Mission variety beyond this first charge goal remains deferred.
+
+## 2026-07-22: Reveal The Board Threat Through A Firewall Failure
+
+Decision: After the Gravity Module repair, reveal a small protected Board region surrounded by fog of war. An old Charged Bit fails, its firewall collapses, and Bugs swarm the exposed section without reaching the Pulse.
+
+Reason: A visible system failure teaches Bugs, fog of war, firewalls, and the defensive purpose of Charged Bits through one event instead of explanatory menus.
+
+Consequences: The broken firewall becomes the player's next clear restoration objective. Charged Bits provide sustained security to reclaimed regions. Whether a failed Charged Bit produces collectible Bit Dust remains unresolved.
+
+## 2026-07-22: Use The First Bit To Restore The Gravity Module
+
+Decision: After the tutorial fabricates its first Bit, install that ordinary Bit into the broken Gravity Module to stabilize the gyro. Do not charge the Bit or consume another resource during installation.
+
+Reason: Bits should repair missing structure, while Charged Bits should remain distinct as sustained power sources for defenses and other active systems. Teaching those roles separately keeps the resource ladder understandable.
+
+Consequences: The first repair is an intentional puzzle-affecting exception that restores normal rotation behavior. A brief activation current may visually bring the repaired module online, but it is not a Charged Bit transaction. The wider Board and Bug reveal follows this repair.
+
 ## 2026-07-22: Fabricate The First Bit Through The Pulse
 
 Decision: Establish the first recipe as `8 Duds + 1 Pulse charge = 1 Bit`. During the first-run sequence, the Pulse visibly consumes the resources and emits the fabricated Bit.

@@ -61,9 +61,10 @@ Persist only approved banked inventory and profile progress. The approved initia
 
 - What recipes create Charged Bits and later repair materials?
 - Is Bit Dust a banked resource, an in-run pressure system, or both?
-- Does the first Pulse repair restore the gyro as one puzzle-affecting exception, or should early repairs remain entirely metagame-facing?
+- Does a failed Charged Bit produce recoverable Bit Dust or only a visual residue?
+- Does Board conflict advance with completed puzzle runs, explicit player actions, slow real time, or a hybrid?
 - What ends a normal run besides reaching board capacity?
-- Which subsystem unlocks missions, fabrication, and eventual infinite mode?
+- Which restored subsystems unlock later mission types and eventual infinite mode?
 - Should the first profile support one named player or multiple local profiles?
 
 ## Validation Path
