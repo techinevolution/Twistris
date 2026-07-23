@@ -30,7 +30,7 @@ The intended refactor is incremental. Preserve the working game, extract testabl
 - **Puzzle rules:** attachment, rotation, balance, and centered-square growth live as class methods and global helpers.
 - **Canvas renderer:** drawing helpers share the global canvas context and constants.
 - **Input:** global keyboard sets are read directly by the game update loop.
-- **Harvest:** calculation, animation phases, counter display, and session banking are currently interleaved.
+- **Harvest:** the controller creates an immutable result, applies it once to session inventory, and gives the animation a presentation copy.
 - **DOM shell:** the title button and small HUD surround the canvas.
 
 ## Intended Boundaries
@@ -52,8 +52,8 @@ These boundaries do not require a framework. They may begin as separate sections
 2. The animation loop calls `game.update(dt)`.
 3. The controller moves or locks the active piece and mutates the board.
 4. A lock can grow the centered square, award run charges, or start a stack rotation.
-5. Reaching capacity starts a phased harvest animation.
-6. Harvest particles currently increment session bank counters as they arrive.
+5. Reaching capacity creates an immutable harvest result and banks it once.
+6. A phased harvest animation advances display-only counters toward the already-banked totals.
 7. `game.draw()` renders the current state to the canvas and updates DOM HUD text.
 
 ## Intended Progression Data Flow
@@ -97,6 +97,6 @@ None currently. The project has no package manager, backend, account system, ana
 - `game.js` currently has a large change surface because it owns most systems.
 - Browser tests require the full runtime and a simulated DOM shell.
 - Random piece selection now accepts an optional injected source for deterministic browser tests.
-- Harvest presentation still decides when earned resources enter the session bank.
+- Harvest calculation and its session transaction still live inside the game controller.
 - Canvas rendering and game mutation share global state.
 - Product resource names and conversion recipes are still provisional.

@@ -237,6 +237,8 @@ class BalanceStackGame {
     this.session = {
       bankedDuds: 0,
       bankedPulseCharges: 0,
+      nextHarvestSequence: 1,
+      appliedHarvestResultIds: [],
     };
     this.lifecycle = {
       phase: GAME_PHASES.TITLE,
@@ -673,6 +675,11 @@ class BalanceStackGame {
       }
     }
 
+    const result = this.createHarvestResult(dudBlocks.length);
+    const displayDuds = this.session.bankedDuds;
+    const displayCharges = this.session.bankedPulseCharges;
+    this.applyHarvestResult(result);
+
     this.run.current = null;
     this.run.ghost = [];
     this.run.lockTimer = 0;
@@ -695,14 +702,38 @@ class BalanceStackGame {
       emittedDuds: 0,
       emittedCharges: 0,
       visibleDuds: dudBlocks.length,
-      displayDuds: this.session.bankedDuds,
-      displayCharges: this.session.bankedPulseCharges,
+      displayDuds,
+      displayCharges,
       dudCounterPulse: 0,
       chargeCounterPulse: 0,
-      harvestedDuds: dudBlocks.length,
-      harvestedCharges: this.run.coreChargeCount,
+      result,
       impactLabel: "Capacity Reached",
     };
+  }
+
+  createHarvestResult(dudCount) {
+    const sequence = this.session.nextHarvestSequence;
+    this.session.nextHarvestSequence += 1;
+    return Object.freeze({
+      id: `harvest-${sequence}`,
+      earned: Object.freeze({
+        duds: dudCount,
+        pulseCharges: this.run.coreChargeCount,
+      }),
+      runStats: Object.freeze({
+        coreLayersReached: this.run.coreLayers,
+        bestSquareSide: this.run.coreLayers * 2 + 1,
+      }),
+      endReason: "capacity_reached",
+    });
+  }
+
+  applyHarvestResult(result) {
+    if (this.session.appliedHarvestResultIds.includes(result.id)) return false;
+    this.session.bankedDuds += result.earned.duds;
+    this.session.bankedPulseCharges += result.earned.pulseCharges;
+    this.session.appliedHarvestResultIds.push(result.id);
+    return true;
   }
 
   advanceHarvestPhase(nextPhase) {
@@ -730,7 +761,7 @@ class BalanceStackGame {
       if (harvest.phaseTime >= HARVEST_FALL_TIME) {
         if (harvest.dudBlocks.length > 0) {
           this.advanceHarvestPhase("duds");
-        } else if (harvest.harvestedCharges > 0) {
+        } else if (harvest.result.earned.pulseCharges > 0) {
           this.advanceHarvestPhase("charges");
         } else {
           this.advanceHarvestPhase("return");
@@ -772,8 +803,7 @@ class BalanceStackGame {
       for (const particle of harvest.activeDudParticles) {
         if (!particle.arrived && particle.age >= particle.duration) {
           particle.arrived = true;
-          this.session.bankedDuds += 1;
-          harvest.displayDuds = this.session.bankedDuds;
+          harvest.displayDuds += 1;
           harvest.dudCounterPulse = 1;
         }
         if (!particle.arrived) {
@@ -783,7 +813,7 @@ class BalanceStackGame {
       harvest.activeDudParticles = remainingDuds;
 
       if (harvest.emittedDuds >= harvest.dudBlocks.length && harvest.activeDudParticles.length === 0) {
-        if (harvest.harvestedCharges > 0) {
+        if (harvest.result.earned.pulseCharges > 0) {
           this.advanceHarvestPhase("charges");
         } else {
           this.advanceHarvestPhase("return");
@@ -794,7 +824,7 @@ class BalanceStackGame {
 
     if (harvest.phase === "charges") {
       while (
-        harvest.emittedCharges < harvest.harvestedCharges &&
+        harvest.emittedCharges < harvest.result.earned.pulseCharges &&
         harvest.phaseTime >= harvest.emittedCharges * HARVEST_CHARGE_EMIT_INTERVAL
       ) {
         harvest.activeChargeParticles.push({
@@ -815,8 +845,7 @@ class BalanceStackGame {
       for (const particle of harvest.activeChargeParticles) {
         if (!particle.arrived && particle.age >= particle.duration) {
           particle.arrived = true;
-          this.session.bankedPulseCharges += 1;
-          harvest.displayCharges = this.session.bankedPulseCharges;
+          harvest.displayCharges += 1;
           harvest.chargeCounterPulse = 1;
         }
         if (!particle.arrived) {
@@ -825,7 +854,10 @@ class BalanceStackGame {
       }
       harvest.activeChargeParticles = remainingCharges;
 
-      if (harvest.emittedCharges >= harvest.harvestedCharges && harvest.activeChargeParticles.length === 0) {
+      if (
+        harvest.emittedCharges >= harvest.result.earned.pulseCharges &&
+        harvest.activeChargeParticles.length === 0
+      ) {
         this.advanceHarvestPhase("return");
       }
       return;

@@ -4,7 +4,7 @@
 
 The prototype currently supports the title flow, falling and rotating pieces, central attachment, imbalance-driven stack rotation, centered-square growth, Pulse charge counting, and an animated capacity harvest. Duds and charges can accumulate as session-only counters, but there is no saved profile, metagame, crafting screen, repair system, mission layer, or tutorial yet.
 
-The current runtime is concentrated in `game.js`. Gameplay rules, lifecycle state, input, rendering, animation, HUD updates, and harvest banking share one class and several global helpers.
+The current runtime is concentrated in `game.js`. Gameplay rules, lifecycle state, input, rendering, animation, HUD updates, and harvest transactions share one class and several global helpers, though their state and economy boundaries are now explicit.
 
 ## Current Product Goal
 
@@ -22,8 +22,8 @@ Twistris is a dependency-free browser project with one HTML entry point, one sty
 2. **Clarify runtime state - Complete**
    The existing runtime now separates session, run, lifecycle, and presentation state. One explicit phase replaces the overlapping title, launch, play, pause, and harvest booleans.
 
-3. **Make harvest atomic**
-   Calculate one immutable harvest result, bank it once, and animate a visual copy. Resource awards must not depend on particle arrival timing.
+3. **Make harvest atomic - Complete**
+   Harvest now creates one immutable result, applies it to the session bank exactly once, and animates presentation-only counters. Resource awards no longer depend on particle arrival or animation completion.
 
 4. **Extract pure puzzle rules**
    Move board creation, attachment, rotation, balance analysis, centered-square detection, and harvest calculation behind a DOM-free boundary that the smoke harness can test directly.
@@ -42,9 +42,9 @@ Twistris is a dependency-free browser project with one HTML entry point, one sty
 
 ## Recommended Next Slice
 
-Implement slice 3 only: calculate one immutable harvest result, apply its resources to the session bank exactly once, and animate a presentation copy of that result.
+Implement slice 4 only: extract board creation, attachment, rotation, balance analysis, centered-square detection, and harvest calculation behind a DOM-free pure-rule boundary.
 
-Keep persistence, production file extraction, and new progression mechanics out of this slice. Add coverage proving that skipping or completing the animation cannot change the award.
+Preserve current behavior and the browser-native project shape. Keep persistence, metagame UI, and new progression mechanics out of this extraction.
 
 ## Deferred Work
 
