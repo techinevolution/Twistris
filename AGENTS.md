@@ -1,73 +1,88 @@
-# AGENTS.md
+# Agent Guide
 
-## Purpose
-This file is a short map for coding agents working in Twistris.
+## Project Documents
 
-Keep this file brief. Put detailed product, balance, and milestone planning in the dedicated docs listed below.
+Before starting implementation, read these files in this order:
 
-## Project
-Twistris is a browser-based falling-block puzzle game where tetrominoes attach to a central mass called the Pulse. The stack may rotate after lock if the structure becomes imbalanced. There are no line clears.
+1. README.md
+   Human-facing overview: what the project is, how to run it, and current status.
 
-Current long-term direction:
-- feed and repair a damaged Pulse across many runs
-- harvest Pulse charges and dud salvage
-- save progress to a persistent local profile
+2. PROJECT_OUTLINE.md
+   Product vision and intended end state: what the project should become.
 
-## Source Of Truth
-- [README.md](/Users/katherinephillips/Documents/Twistris/README.md): player-facing project summary
-- [OUTLINE.md](/Users/katherinephillips/Documents/Twistris/OUTLINE.md): product direction, milestone definitions, future mechanics
-- [TODO.md](/Users/katherinephillips/Documents/Twistris/TODO.md): active implementation backlog
-- [DATA_FORMATS.md](/Users/katherinephillips/Documents/Twistris/DATA_FORMATS.md): runtime state and persistence guidance
-- [BALANCE_PLAN.md](/Users/katherinephillips/Documents/Twistris/BALANCE_PLAN.md): twist heuristic and tuning targets
-- [TESTING.md](/Users/katherinephillips/Documents/Twistris/TESTING.md): verification strategy and smoke checks
+3. PLAN.md
+   Current execution path: current state, next slices, deferred work, validation path, and stop rules.
 
-If this file and those docs disagree, update this file to match the deeper docs unless the deeper docs are clearly stale.
+4. ARCHITECTURE.md, if present
+   Technical map: repo structure, entry points, data flow, persistence, integrations, and invariants.
 
-## Code Map
-- [index.html](/Users/katherinephillips/Documents/Twistris/index.html): shell, overlays, HUD mounts, canvas
-- [style.css](/Users/katherinephillips/Documents/Twistris/style.css): layout, overlays, title presentation
-- [game.js](/Users/katherinephillips/Documents/Twistris/game.js): gameplay loop, state, rendering, tutorial/title logic
-- [tests/smoke.html](/Users/katherinephillips/Documents/Twistris/tests/smoke.html): browser smoke-test harness
+5. DECISIONS.md, if present
+   Major product/architecture decisions and why they were made.
 
-## Current Milestone
-Build the first milestone from [TODO.md](/Users/katherinephillips/Documents/Twistris/TODO.md):
-- Feed the Pulse, recover salvage, and complete the first repair.
+6. TODO.md, if present
+   Small loose cleanup tasks only. Do not treat TODO.md as the roadmap.
 
-Key milestone rules:
-- first session starts by clicking the Pulse and entering a player name
-- the tutorial exists to restore the failed gyro/stabilizer so the Pulse can spin again
-- Pulse rotation is intentionally disabled until that repair is complete
-- Pulse charges come from centered square growth
-- duds come from influenced gray blocks at harvest end
-- first craft rule is `8 duds + 1 Pulse charge = 1 repair block`
+Rules:
+- If PROJECT_OUTLINE.md and PLAN.md disagree, stop and ask for clarification before implementing.
+- If ARCHITECTURE.md disagrees with PROJECT_OUTLINE.md or PLAN.md, stop and ask for clarification before implementing.
+- If PLAN.md is missing a current goal, next slice, deferred list, validation path, or stop rules, update/ask before implementing.
+- Do not let TODO.md override PLAN.md.
+- Do not let technical evidence files replace generalist-readable summaries.
 
-## Working Rules
-- Keep the game dependency-light and openable directly in a browser.
-- Prefer extracting or preserving pure logic helpers when changing board rules so they remain testable.
-- When adding new systems, update the relevant planning doc in the same change if the design has shifted.
-- Use current project vocabulary consistently:
-  - Pulse
-  - Pulse charges
-  - Duds
-  - Harvest
-  - Repair block
-- Future mechanics belong in the backlog unless they are explicitly being pulled into the active milestone.
+## Implementation Discipline
 
-## Testing Expectations
-- For visual or interaction changes, verify in a browser with [index.html](/Users/katherinephillips/Documents/Twistris/index.html).
-- For logic regressions, use [tests/smoke.html](/Users/katherinephillips/Documents/Twistris/tests/smoke.html).
-- If you change balance, attachment, core-growth, harvest, or profile rules, add or update smoke coverage where practical.
-- This repo currently has no Node-based test runner. Do not assume npm, node, or bundler tooling exists.
+Start with the simplest efficient solution that satisfies the current goal while respecting the agreed architecture.
 
-## Good Candidate Test Targets
-- attachment to the existing structure
-- core square growth detection
-- balance profile direction and stability
-- preview layout math
-- profile save/load shape
-- tutorial gating for gyro-disabled vs gyro-restored states
+Do not add scaffolding, abstractions, validators, bridges, plugins, migrations, or automation unless they directly help the current slice work safely and clearly.
 
-## Avoid
-- bloating this file into a full design document
-- introducing build-tool assumptions without adding the tooling explicitly
-- mixing future backlog mechanics into milestone one without updating the docs first
+Code should be simple, but not sloppy:
+- Follow the existing architecture and folder boundaries.
+- Avoid spaghetti logic and hidden side effects.
+- Prefer small readable functions over clever systems.
+- Add tests when behavior could break, repeat, or affect important data.
+- Add scaffolding only when it reduces real risk or repeated work.
+- Stop before building future infrastructure that has not been requested or approved.
+
+When unsure, choose the smallest clean implementation that can be understood, reviewed, and changed later.
+
+## Current Technical Shape
+
+- `index.html`: browser shell, overlays, HUD mounts, and canvas
+- `style.css`: layout and DOM presentation
+- `game.js`: current gameplay, state, animation, rendering, and input runtime
+- `tests/smoke.html`: browser smoke-test harness
+
+The current refactor direction is incremental. Do not rewrite the game or add a framework. Preserve direct browser opening and extract testable boundaries one slice at a time.
+
+## Commands
+
+- Setup: none
+- Run: open `index.html` in a browser
+- Test: open `tests/smoke.html` in a browser
+- Syntax check: `node --check game.js` when Node is available
+- Build/lint/typecheck: none currently
+
+## Coding Conventions
+
+- Keep the project dependency-light and browser-native.
+- Prefer pure helpers for board, balance, harvest, and persistence rules.
+- Keep run-earned resources separate from banked profile resources.
+- Keep visual animation state separate from economy transactions.
+- Use the terms in PROJECT_OUTLINE.md; unresolved names in PLAN.md remain provisional.
+
+## Boundaries
+
+- Do not add online accounts, cloud sync, payments, or external services without approval.
+- Do not mix deferred mechanics into the current slice.
+- Do not store transient animation state in a profile.
+- Do not commit personal data; use synthetic profile examples.
+
+## Validation Before Final Report
+
+- Run the browser smoke harness for logic changes.
+- Inspect `index.html` in a browser for visual or interaction changes.
+- Update the relevant project doc when a product or architecture decision changes.
+
+## Final Report
+
+Include files changed, validation run, remaining risks or blockers, and the recommended next step from PLAN.md.

@@ -1,31 +1,43 @@
 # Twistris
 
-Twistris is a browser-based falling-block puzzle game inspired by Tetris. Tetrominoes fall from the top, but instead of clearing lines they attach to a central mass that can rotate by one 90 degree step when the structure becomes imbalanced.
+Twistris is a browser-based falling-block puzzle game built around the Pulse, a central mass that the player expands and stabilizes. Tetrominoes attach to the existing structure, the settled stack may twist when it becomes imbalanced, and there are no line clears.
 
-The goal is to grow the largest centered square. There are no line clears.
+The long-term direction adds a persistent metagame: runs produce Pulse charges and salvage that help restore the damaged Pulse and the wider system connected to it.
 
-Each time the centered square expands by one layer, the player earns a Pulse charge. These charges are intended to become a spendable currency for future repair and board-shaping mechanics.
+## Status
 
-## Run
+Active prototype. The core falling, attachment, twisting, centered-square growth, Pulse charge, and animated harvest loops are playable. Persistent profiles, crafting, repair progression, missions, and the first-run tutorial are planned but not implemented.
 
-Open [index.html](/Users/katherinephillips/Documents/Twistris/index.html) in a browser.
+## Quick Start
+
+Open [index.html](index.html) directly in a browser. No installation or build step is required.
+
+To run the browser smoke checks, open [tests/smoke.html](tests/smoke.html).
 
 ## Controls
 
-- `A` / `D`: move
-- `W`: rotate piece
-- `S`: soft drop
+- `A` / `D` or arrow keys: move
+- `W`, `X`, or Up: rotate the falling piece
+- `S` or Down: soft drop
 - `Space`: hard drop
 - `P`: pause
 - `R`: restart
 
-## Project Files
+## Main Workflows
 
-- `index.html`: game shell and HUD
-- `style.css`: presentation and layout
-- `game.js`: gameplay loop, stack logic, balance checks, and rendering
-- `OUTLINE.md`: game vision and system direction
-- `TODO.md`: active production backlog
-- `DATA_FORMATS.md`: runtime state and persistence guidance
-- `BALANCE_PLAN.md`: twist and tuning notes
-- `TESTING.md`: smoke checks and manual verification
+- Build outward from the Pulse and complete larger centered squares.
+- Earn Pulse charges when the centered square grows.
+- Reach capacity and harvest Pulse charges and Dud salvage.
+- Future: bank resources, fabricate repair materials, and restore the Pulse network between runs.
+
+## Project Docs
+
+- [Project Outline](PROJECT_OUTLINE.md): product vision and intended end state
+- [Plan](PLAN.md): current execution path and next implementation slices
+- [Architecture](ARCHITECTURE.md): current technical map and intended boundaries
+- [Decisions](DECISIONS.md): major product and architecture decisions
+- [Agent Guide](AGENTS.md): instructions for coding agents
+- [TODO](TODO.md): small loose cleanup tasks only
+- [Data Formats](DATA_FORMATS.md): provisional state and persistence guidance
+- [Balance Plan](BALANCE_PLAN.md): current twist model and tuning targets
+- [Testing](TESTING.md): browser smoke and manual verification guidance

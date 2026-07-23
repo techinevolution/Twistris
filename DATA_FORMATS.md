@@ -1,64 +1,49 @@
-# Data Formats
+# Twistris Data Formats
 
 ## Purpose
-This document describes the intended shape of runtime state and persisted save data for Twistris.
 
-It is not a code-level API contract yet. It is implementation guidance so new systems use consistent names and responsibilities.
+This document records provisional state and persistence guidance. It is not yet a code-level contract. [PLAN.md](PLAN.md) controls when these shapes are implemented, and unresolved resource recipes must not be treated as permanent schema.
 
-## 1. Naming Rules
-- Use `camelCase` for JavaScript object keys.
-- Use explicit resource names:
-  - `pulseCharges`
-  - `duds`
-  - `repairBlocks`
-- Distinguish `run-earned` values from `banked` profile values.
-- Keep save data versioned from the start.
+## Stable Rules
 
-## 2. Runtime Concepts
+- Use `camelCase` for JavaScript keys.
+- Keep the root save object versioned.
+- Separate profile, run, lifecycle, and presentation state.
+- Keep run-earned resources separate from banked inventory.
+- Apply each harvest result exactly once.
+- Do not persist board-derived values or transient animation state.
+- Validate loaded data and fall back safely when a save is missing or malformed.
 
-### Pulse Charges
-- Harvest resource generated when the centered square expands by one layer.
-- Exists during a run as a run-earned value.
-- Becomes banked profile currency at harvest end.
-
-### Duds
-- Salvaged from influenced gray blocks at harvest end.
-- May also be granted by scripted tutorial events.
-- Becomes banked profile salvage at harvest end unless the tutorial intentionally grants it early.
-
-### Repair Blocks
-- Crafted resource created from `8 duds + 1 pulseCharge`.
-- Used to plug voids or holes that prevent Pulse growth.
-
-## 3. Suggested Runtime State
-Suggested top-level buckets inside the game state:
+## Suggested Top-Level Runtime Shape
 
 ```js
 {
   profile: {},
   run: {},
-  tutorial: {},
-  crafting: {},
-  repair: {}
+  lifecycle: {},
+  presentation: {}
 }
 ```
 
 ### `profile`
-Long-term saved progression.
+
+Long-term local progression. Inventory keys remain provisional until resource recipes are approved.
 
 ```js
 {
   version: 1,
-  playerName: "Katherine",
-  banked: {
+  playerName: "Sample Player",
+  inventory: {
     pulseCharges: 0,
     duds: 0,
-    repairBlocks: 0
+    bits: 0,
+    chargedBits: 0,
+    bitDust: 0
   },
   pulse: {
-    repairTier: 0,
-    gyroRestored: false,
-    unlockedRepairs: []
+    repairStage: 0,
+    restoredSystems: [],
+    unlockedSystems: []
   },
   stats: {
     totalRuns: 0,
@@ -67,144 +52,118 @@ Long-term saved progression.
   },
   flags: {
     firstRunComplete: false,
-    namePromptSeen: false,
     firstRepairComplete: false
   }
 }
 ```
 
 ### `run`
-Temporary values earned or tracked during the current run only.
+
+Temporary state for one puzzle run.
 
 ```js
 {
+  phase: "playing",
   earned: {
     pulseCharges: 0,
-    duds: 0
+    duds: 0,
+    bitDust: 0
   },
   summary: {
     coreLayersReached: 0,
-    collapseReason: "out_of_bounds_lock"
-  },
-  harvestReady: false
+    endReason: null
+  }
 }
 ```
 
-### `tutorial`
-Special gating for the first-run scripted opening.
+### `lifecycle`
+
+One explicit application phase rather than several overlapping booleans.
 
 ```js
 {
-  active: false,
-  phase: "intro",
-  gyroDisabled: true,
-  scriptedDudDrops: 0,
-  grantedStartingCharge: false,
-  firstCraftComplete: false
+  phase: "title"
 }
 ```
 
-### `crafting`
-State needed for current recipe and auto-use flows.
+Candidate phases include `title`, `playing`, `paused`, `harvesting`, `profile`, `fabricating`, and `repairing`.
+
+### `presentation`
+
+Animation and view state only. None of this should determine profile inventory.
 
 ```js
 {
-  availableRecipes: [
-    {
-      id: "repair_block_mk1",
-      costs: { duds: 8, pulseCharges: 1 },
-      output: { repairBlocks: 1 }
-    }
-  ],
-  lastCraftResult: null
+  harvestAnimation: null,
+  rotationAnimation: null,
+  particles: []
 }
 ```
 
-### `repair`
-Current repair interaction state.
+## Harvest Result
+
+The core rule layer should produce one immutable result before presentation begins.
 
 ```js
 {
-  pendingVoidCell: null,
-  autoPlugEnabled: true,
-  selectedRepairId: null
-}
-```
-
-## 4. Harvest Summary Shape
-Suggested shape for the run-end harvest screen:
-
-```js
-{
+  id: "run-local-sequence-id",
   earned: {
     pulseCharges: 2,
-    duds: 11
-  },
-  bankBefore: {
-    pulseCharges: 3,
-    duds: 20,
-    repairBlocks: 1
-  },
-  bankAfter: {
-    pulseCharges: 5,
-    duds: 31,
-    repairBlocks: 1
+    duds: 11,
+    bitDust: 0
   },
   runStats: {
     coreLayersReached: 2,
     bestSquareSide: 5
   },
-  presentation: {
-    state: "capacity_reached",
-    dudCounterCorner: "bottom_right",
-    chargeCounterCorner: "bottom_left",
-    returnToPulseScreen: true
-  }
+  endReason: "capacity_reached"
 }
 ```
 
-## 5. Repair Definition Shape
-Suggested format for repair definitions:
+The profile transaction records that the result was applied, updates banked inventory, and saves before or independently of the animation.
+
+## Repair Definitions
+
+Repair definitions should be data-driven once recipes and subsystem rules are approved.
 
 ```js
 {
-  id: "gyro_bootstrap",
-  name: "Gyro Bootstrap",
-  costs: {
-    pulseCharges: 1,
-    duds: 8
-  },
+  id: "example_system_repair",
+  name: "Example System Repair",
+  costs: {},
+  prerequisites: [],
   effects: {
-    gyroRestored: true,
-    repairTierDelta: 1
+    restoredSystem: "example_system"
   },
-  visualState: "gyro_online"
+  visualState: "example_system_online"
 }
 ```
 
-## 6. Profile Persistence Rules
-- Save to browser local storage first.
-- Use one root save object per player profile.
-- Include `version` for migrations.
-- Keep a clear separation between banked profile data and current-run data.
-- Do not persist transient animation state.
+## Derived Values
 
-## 7. Fields That Should Stay Derived
-These should generally be computed, not saved:
-- current centered square size from board occupancy
-- current influence area from `coreLayers`
-- next-piece preview layout positions
-- balance profile values
+Do not save values that can be recomputed safely:
 
-## 8. Migration Rule
-Whenever saved data changes incompatibly:
-- bump `version`
-- add a migration path in code
-- note the change in [OUTLINE.md](/Users/katherinephillips/Documents/Twistris/OUTLINE.md) or [TODO.md](/Users/katherinephillips/Documents/Twistris/TODO.md) if it affects milestone work
+- centered square size from board occupancy
+- Pulse influence area from centered-square growth
+- balance profile and twist prediction
+- preview layout positions
+- particle positions and animation timers
 
-## 9. Next Data Shapes To Formalize
-- named profile list or single-profile container
-- tutorial message event payloads
-- void-detection result shape
-- dud queue-piece state
-- dying-mino timer state
+## Migration Rule
+
+When persisted data changes incompatibly:
+
+1. Bump `version`.
+2. Add an explicit migration from supported older versions.
+3. Preserve inventory when possible.
+4. Fall back to a recoverable default rather than leaving the game unusable.
+5. Record product-impacting changes in DECISIONS.md and schedule implementation in PLAN.md.
+
+## Open Data Questions
+
+- Single local profile or multiple named profiles.
+- Exact Dud, Bit, Charged Bit, Bit Dust, and Pulse charge recipes.
+- Whether Bit Dust exists in inventory, only during a run, or both.
+- Mission definition and progress shape.
+- Repair-pattern and assembly placement shape.
+- Safe duplicate-harvest protection strategy.
