@@ -2,7 +2,7 @@
 
 ## 2026-07-22: Give Bits A Shared Walking Animation
 
-Decision: Ordinary Bits and Charged Bits travel with two tiny feet. They walk along surfaces or copper traces and make a small hop into counters, module sockets, and firewall sockets.
+Decision: Ordinary Bits and Charged Bits travel with two tiny feet. They walk along surfaces or copper traces and make a small hop into counters, upgrade slots, and firewall sockets.
 
 Reason: The movement gives individual Bits personality, makes resource travel easy to follow, and supports the visual idea of small units moving across the Board without requiring elaborate character animation.
 

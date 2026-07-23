@@ -174,9 +174,9 @@ The first-run tutorial should initially disguise Twistris as a conventional fall
 33. Make the Pulse pulse as one Pulse charge is consumed, reducing its counter from one to zero.
 34. Emit one newly fabricated Bit from the same side of the Pulse. Give it two tiny feet when it lands.
 35. Have the Bit walk to the bottom of the screen and hop into its newly introduced inventory counter at one. The Dud and Pulse charge counters remain visible at zero.
-36. Shift the view to the left of the Pulse and reveal the damaged Gravity Module with its empty Bit-shaped socket.
+36. Shift the view to the left of the Pulse and reveal the damaged Gravity Module with its empty Bit-shaped upgrade slot.
 37. Highlight the module with a guided arrow and have the player select it.
-38. Have the Bit hop out of its counter, walk along an illuminated copper trace on its tiny feet, and jump into the module's socket. Reduce the Bit counter from one to zero.
+38. Have the Bit hop out of its counter, walk along an illuminated copper trace on its tiny feet, and jump into the Gravity Module's upgrade slot. Reduce the Bit counter from one to zero.
 39. Send a brief activation current from the Pulse through the repaired connection without consuming another resource or turning the installed component into a Charged Bit.
 40. Align the Gravity Module, stop its shaking, and bring it online.
 41. Settle the unstable structure and stop the Pulse's uncontrolled rotation.
