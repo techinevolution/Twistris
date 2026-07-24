@@ -64,6 +64,11 @@ interface LogoCell {
   y: number;
 }
 
+interface Point {
+  x: number;
+  y: number;
+}
+
 interface HarvestSequence {
   readonly id: string;
   readonly harvest: ReturnType<PuzzleRun["createHarvest"]>;
@@ -73,6 +78,11 @@ interface HarvestSequence {
   phaseElapsed: number;
   displayedDuds: number;
   displayedCharges: number;
+}
+
+interface HarvestTargets {
+  readonly charges: Readonly<Point>;
+  readonly duds: Readonly<Point>;
 }
 
 const LOGO_PATTERNS: Record<string, string[]> = {
@@ -214,6 +224,7 @@ export class WorldScene extends Phaser.Scene {
   onDudsChanged: ((duds: number) => void) | null = null;
   onReturnToTitle: (() => void) | null = null;
   onStatusChanged: ((status: string) => void) | null = null;
+  resolveHarvestTargets: (() => HarvestTargets | null) | null = null;
 
   private phase: WorldPhase = "title";
   private readonly cameraController = new WorldCameraController("title-closeup");
@@ -262,6 +273,10 @@ export class WorldScene extends Phaser.Scene {
   private bankedDuds = 0;
   private bankedPulseCharges = 0;
   private readonly appliedHarvestIds = new Set<string>();
+  private harvestTargets: HarvestTargets = {
+    charges: { x: -285, y: 340 },
+    duds: { x: 285, y: 340 },
+  };
 
   constructor() {
     super("World");
@@ -790,6 +805,7 @@ export class WorldScene extends Phaser.Scene {
     const harvest = this.puzzle.createHarvest(id);
     const startingDuds = this.bankedDuds;
     const startingCharges = this.bankedPulseCharges;
+    this.harvestTargets = this.resolveHarvestTargets?.() ?? this.harvestTargets;
     this.applyHarvestResult(harvest.result);
     this.harvestSequence = {
       id,
@@ -968,8 +984,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     if (phase === "duds") {
-      const targetX = 285;
-      const targetY = 340;
+      const { x: targetX, y: targetY } = this.harvestTargets.duds;
       sequence.harvest.dudCells.forEach((cell, index) => {
         const localTime = phaseElapsed - index * HARVEST_DUD_INTERVAL;
         if (localTime < 0) {
@@ -1001,6 +1016,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     if (phase === "charges") {
+      const { x: targetX, y: targetY } = this.harvestTargets.charges;
       const chargeCount = sequence.harvest.result.earned.pulseCharges;
       for (let index = 0; index < chargeCount; index += 1) {
         const localTime = phaseElapsed - index * HARVEST_CHARGE_INTERVAL;
@@ -1016,8 +1032,8 @@ export class WorldScene extends Phaser.Scene {
           1,
         );
         const eased = Phaser.Math.Easing.Cubic.InOut(progress);
-        const x = Phaser.Math.Linear(0, -285, eased);
-        const y = Phaser.Math.Linear(0, 340, eased);
+        const x = Phaser.Math.Linear(0, targetX, eased);
+        const y = Phaser.Math.Linear(0, targetY, eased);
         const radius = Phaser.Math.Linear(6, 3, progress);
         this.harvestGraphics.fillStyle(0xf2d27a, 1 - progress * 0.2);
         this.harvestGraphics.fillCircle(x, y, radius);
@@ -1350,6 +1366,8 @@ export class WorldScene extends Phaser.Scene {
     root.dataset.worldBankedPulseCharges = String(
       this.bankedPulseCharges,
     );
+    root.dataset.worldHarvestChargeTarget = `${this.harvestTargets.charges.x.toFixed(1)},${this.harvestTargets.charges.y.toFixed(1)}`;
+    root.dataset.worldHarvestDudTarget = `${this.harvestTargets.duds.x.toFixed(1)},${this.harvestTargets.duds.y.toFixed(1)}`;
     root.dataset.worldPuzzleStructureAngle = this.structureContainer
       ? this.structureContainer.angle.toFixed(1)
       : "0";

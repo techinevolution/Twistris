@@ -28,6 +28,7 @@ body {
 }
 
 .board-wrap {
+  --stage-size: min(calc(100vw - 28px), calc(100vh - 28px));
   position: relative;
   display: grid;
   place-items: center;
@@ -40,8 +41,8 @@ body {
 }
 
 .game-stage {
-  width: min(calc(100vw - 28px), calc(100vh - 28px));
-  height: min(calc(100vw - 28px), calc(100vh - 28px));
+  width: var(--stage-size);
+  height: var(--stage-size);
   max-width: 100%;
   max-height: 100%;
   border-radius: 24px;
@@ -115,13 +116,18 @@ body {
 .board-overlay-bottom {
   position: absolute;
   z-index: 2;
-  bottom: 14px;
-  right: 18px;
-  left: 18px;
+  top: 50%;
+  left: 50%;
+  width: var(--stage-size);
+  height: var(--stage-size);
+  max-width: 100%;
+  max-height: 100%;
+  padding: 0 18px 14px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   opacity: 1;
+  transform: translate(-50%, -50%);
   transition: opacity 180ms ease;
   pointer-events: none;
 }
@@ -156,6 +162,7 @@ body {
 }
 
 .currency-chip {
+  min-width: 164px;
   padding: 9px 13px;
   border: 1px solid rgba(242, 210, 122, 0.22);
   border-radius: 18px;
@@ -163,6 +170,8 @@ body {
   color: #f2d27a;
   font-size: 12px;
   font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
   text-transform: uppercase;
 }
 
@@ -171,6 +180,7 @@ body {
 }
 
 .currency-chip-duds {
+  min-width: 96px;
   border-color: rgba(143, 230, 255, 0.22);
   color: #8fe6ff;
 }
@@ -206,12 +216,11 @@ body {
     padding: 8px;
   }
 
-  .start-screen {
-    padding: 20px 14px 30px;
+  .board-wrap {
+    --stage-size: min(calc(100vw - 16px), calc(100vh - 16px));
   }
 
-  .game-stage {
-    width: min(calc(100vw - 16px), calc(100vh - 16px));
-    height: min(calc(100vw - 16px), calc(100vh - 16px));
+  .start-screen {
+    padding: 20px 14px 30px;
   }
 }

@@ -5,6 +5,7 @@ import {
   type PuzzleAction,
 } from "../scenes/world/WorldScene";
 
+const GAME_STAGE_SIZE = 800;
 const worldScene = new WorldScene();
 const stage = document.querySelector<HTMLElement>("#phaserTitle");
 const startScreen = document.querySelector<HTMLElement>("#startScreen");
@@ -24,6 +25,34 @@ const testActions = new Set<PuzzleAction>([
   "pause",
   "restart",
 ]);
+
+function getHarvestTarget(element: HTMLElement | null) {
+  const canvas = stage?.querySelector("canvas");
+  if (!canvas || !element) return null;
+
+  const canvasRect = canvas.getBoundingClientRect();
+  const targetRect = element.getBoundingClientRect();
+  if (canvasRect.width <= 0 || canvasRect.height <= 0) return null;
+
+  return {
+    x:
+      ((targetRect.left + targetRect.width / 2 - canvasRect.left) /
+        canvasRect.width) *
+        GAME_STAGE_SIZE -
+      GAME_STAGE_SIZE / 2,
+    y:
+      ((targetRect.top + targetRect.height / 2 - canvasRect.top) /
+        canvasRect.height) *
+        GAME_STAGE_SIZE -
+      GAME_STAGE_SIZE / 2,
+  };
+}
+
+worldScene.resolveHarvestTargets = () => {
+  const charges = getHarvestTarget(pulseChargeCounter);
+  const duds = getHarvestTarget(dudCounter);
+  return charges && duds ? { charges, duds } : null;
+};
 
 function focusGameSurface() {
   const target = useKeySinkFocus && gameKeySink ? gameKeySink : stage;
@@ -115,8 +144,8 @@ new Phaser.Game({
   type: Phaser.AUTO,
   parent: "phaserTitle",
   backgroundColor: "#091723",
-  width: 800,
-  height: 800,
+  width: GAME_STAGE_SIZE,
+  height: GAME_STAGE_SIZE,
   render: {
     antialias: true,
     pixelArt: false,
@@ -125,8 +154,8 @@ new Phaser.Game({
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: 800,
-    height: 800,
+    width: GAME_STAGE_SIZE,
+    height: GAME_STAGE_SIZE,
   },
   scene: worldScene,
 });
