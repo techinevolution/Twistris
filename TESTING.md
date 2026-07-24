@@ -103,6 +103,7 @@ Current World-scene title parity checks:
 
 - the block-built TWISTRIS logo retains its cyan and magenta treatment
 - the close Pulse spins over the faint grid with heartbeat particles
+- active, settled, preview, and harvested colored Bits retain diagonal depth, inner glow, and animated edge shimmer
 - Start begins one transition and ignores repeated activation
 - the transition takes approximately 2.05 seconds and settles on a quarter turn
 - the logo and Start control fade while the board pulls back

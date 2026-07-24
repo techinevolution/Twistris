@@ -41,6 +41,78 @@ const COLORS = {
   white: 0xf8fdff,
 };
 
+interface PuzzleCellPalette {
+  core: number;
+  edge: number;
+  glow: number;
+  panelA: number;
+  panelMid: number;
+  panelB: number;
+  shellA: number;
+  shellMid: number;
+  shellB: number;
+  sparkle: number;
+}
+
+function getPuzzleCellPalette(
+  color: PieceColor,
+  influenced: boolean,
+): PuzzleCellPalette {
+  if (influenced) {
+    return color === "cyan"
+      ? {
+          core: 0xc3ccd3,
+          edge: 0xd8e0e6,
+          glow: 0xeef4f8,
+          panelA: 0x98a1a8,
+          panelMid: 0x848b91,
+          panelB: 0x707880,
+          shellA: 0x2b3037,
+          shellMid: 0x21262b,
+          shellB: 0x171b20,
+          sparkle: 0xe6edf2,
+        }
+      : {
+          core: 0x8a9097,
+          edge: 0xbcc2c7,
+          glow: 0xd7dde2,
+          panelA: 0x666c73,
+          panelMid: 0x565b62,
+          panelB: 0x464b51,
+          shellA: 0x262a2f,
+          shellMid: 0x1d2125,
+          shellB: 0x14181c,
+          sparkle: 0xd6dce0,
+        };
+  }
+
+  return color === "cyan"
+    ? {
+        core: 0xf8fdff,
+        edge: COLORS.cyanEdge,
+        glow: 0xd4fbff,
+        panelA: 0x72cef2,
+        panelMid: 0x4fa7ce,
+        panelB: 0x2c80a9,
+        shellA: 0x10293e,
+        shellMid: 0x0c1d2d,
+        shellB: 0x08121c,
+        sparkle: 0xe6fbff,
+      }
+    : {
+        core: 0xfff7fb,
+        edge: COLORS.magentaEdge,
+        glow: 0xffd1e6,
+        panelA: 0xf06e9d,
+        panelMid: 0xbf4f79,
+        panelB: 0x8e2f56,
+        shellA: 0x351322,
+        shellMid: 0x26101a,
+        shellB: 0x170911,
+        sparkle: 0xffe3f0,
+      };
+}
+
 type WorldPhase =
   | "title"
   | "launching"
@@ -1219,17 +1291,6 @@ export class WorldScene extends Phaser.Scene {
     const x = (gridX - this.puzzle.center) * CELL_SIZE;
     const y = (gridY - this.puzzle.center) * CELL_SIZE;
     const half = size / 2;
-    const edge = influenced
-      ? 0xd8e0e6
-      : color === "cyan"
-        ? COLORS.cyanEdge
-        : COLORS.magentaEdge;
-    const panel = influenced
-      ? 0x90989f
-      : color === "cyan"
-        ? COLORS.cyan
-        : COLORS.magenta;
-    const shell = influenced ? 0x2b3037 : 0x10293e;
 
     if (ghost) {
       graphics.fillStyle(COLORS.white, alpha * 0.38);
@@ -1239,14 +1300,131 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    graphics.fillStyle(shell, alpha);
-    graphics.fillRoundedRect(x - half, y - half, size, size, 3);
-    graphics.fillStyle(panel, alpha);
-    graphics.fillRoundedRect(x - half + 1.7, y - half + 1.7, size - 3.4, size - 3.4, 2.5);
-    graphics.lineStyle(1.6, edge, alpha * 0.92);
-    graphics.strokeRoundedRect(x - half + 1.7, y - half + 1.7, size - 3.4, size - 3.4, 2.5);
-    graphics.fillStyle(COLORS.white, alpha * 0.28);
-    graphics.fillRoundedRect(x - half + 6, y - half + 6, size - 12, size - 12, 2);
+    const palette = getPuzzleCellPalette(color, influenced);
+    const seed =
+      gridX * 0.73 +
+      gridY * 1.17 +
+      (color === "cyan" ? (influenced ? 0.18 : 0.12) : influenced ? 0.48 : 0.41);
+    const flickerWave = 0.55 + 0.45 * Math.sin((this.elapsed / 1000) * 11 + seed * 6.2);
+    const shimmerWave = 0.55 + 0.45 * Math.sin((this.elapsed / 1000) * 7.5 + seed * 9.7);
+    const lightAlpha = alpha * (influenced ? 0.18 : 0.2 + flickerWave * 0.34);
+    const coreAlpha = alpha * (influenced ? 0.44 : 0.46 + flickerWave * 0.28);
+    const edgeAlpha = alpha * (influenced ? 0.7 : 0.64 + shimmerWave * 0.2);
+    const radius = Math.min(3.4, size * 0.14);
+    const shellInset = size * 0.02;
+    const panelInset = size * 0.065;
+    const lightInset = size * 0.16;
+    const coreInset = size * 0.24;
+    const shellSize = size - shellInset * 2;
+    const panelSize = size - panelInset * 2;
+    const lightSize = size - lightInset * 2;
+    const coreSize = size - coreInset * 2;
+
+    graphics.fillGradientStyle(
+      palette.shellA,
+      palette.shellMid,
+      palette.shellMid,
+      palette.shellB,
+      alpha,
+      alpha,
+      alpha,
+      alpha,
+    );
+    graphics.fillRoundedRect(
+      x - half + shellInset,
+      y - half + shellInset,
+      shellSize,
+      shellSize,
+      radius,
+    );
+
+    graphics.fillGradientStyle(
+      palette.panelA,
+      palette.panelMid,
+      palette.panelMid,
+      palette.panelB,
+      alpha * 0.98,
+      alpha * 0.97,
+      alpha * 0.97,
+      alpha * 0.96,
+    );
+    graphics.fillRoundedRect(
+      x - half + panelInset,
+      y - half + panelInset,
+      panelSize,
+      panelSize,
+      radius * 0.82,
+    );
+    graphics.lineStyle(Math.max(0.9, size * 0.08), palette.edge, edgeAlpha * 0.9);
+    graphics.strokeRoundedRect(
+      x - half + panelInset,
+      y - half + panelInset,
+      panelSize,
+      panelSize,
+      radius * 0.82,
+    );
+
+    graphics.fillStyle(COLORS.white, alpha * 0.06);
+    graphics.fillRoundedRect(
+      x - half + panelInset + 1.2,
+      y - half + panelInset + 1.2,
+      panelSize * 0.52,
+      Math.max(2, panelSize * 0.12),
+      1.1,
+    );
+
+    graphics.fillGradientStyle(
+      COLORS.white,
+      palette.glow,
+      palette.glow,
+      palette.glow,
+      lightAlpha,
+      lightAlpha * 0.78,
+      lightAlpha * 0.78,
+      lightAlpha * 0.52,
+    );
+    graphics.fillRoundedRect(
+      x - half + lightInset,
+      y - half + lightInset,
+      lightSize,
+      lightSize,
+      radius * 0.58,
+    );
+
+    graphics.fillGradientStyle(
+      COLORS.white,
+      palette.core,
+      palette.core,
+      palette.core,
+      coreAlpha,
+      coreAlpha * 0.86,
+      coreAlpha * 0.86,
+      coreAlpha,
+    );
+    graphics.fillRoundedRect(
+      x - half + coreInset,
+      y - half + coreInset,
+      coreSize,
+      coreSize,
+      radius * 0.42,
+    );
+
+    const sparkle = influenced ? 0 : Phaser.Math.Clamp((1 - alpha) * 1.4, 0, 0.42);
+    if (sparkle > 0.01) {
+      const sparkleAlpha = alpha * sparkle * 0.28;
+      graphics.fillStyle(palette.sparkle, sparkleAlpha);
+      graphics.fillCircle(
+        x + (-0.18 + hashUnit(seed * 14.7) * 0.38) * size,
+        y + (-0.16 + hashUnit(seed * 22.1) * 0.36) * size,
+        size * (0.11 + hashUnit(seed * 31.4) * 0.06),
+      );
+      graphics.fillStyle(palette.sparkle, sparkleAlpha * 0.72);
+      graphics.fillCircle(
+        x + (0.08 + hashUnit(seed * 41.8) * 0.26) * size,
+        y + (0.02 + hashUnit(seed * 53.2) * 0.28) * size,
+        size * (0.06 + hashUnit(seed * 63.6) * 0.04),
+      );
+    }
   }
 
   private drawPreview(shape: PieceShape) {
