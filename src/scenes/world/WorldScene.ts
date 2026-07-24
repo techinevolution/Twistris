@@ -520,7 +520,9 @@ export class WorldScene extends Phaser.Scene {
     this.logo.setVisible(false);
     this.puzzle.start();
     this.onStatusChanged?.("");
-    this.onPulseChargesChanged?.(this.puzzle.pulseCharges);
+    this.onPulseChargesChanged?.(
+      this.application.inventory.pulseCharges + this.puzzle.pulseCharges,
+    );
     this.previewLabel.setVisible(true);
     this.renderPuzzle();
     this.publishDiagnostics();
@@ -603,7 +605,9 @@ export class WorldScene extends Phaser.Scene {
     this.previewLabel.setVisible(true);
     this.harvestLabel.setVisible(false);
     this.pauseLabel.setVisible(false);
-    this.onPulseChargesChanged?.(0);
+    this.onPulseChargesChanged?.(
+      this.application.inventory.pulseCharges,
+    );
     this.onDudsChanged?.(this.application.inventory.duds);
     this.onStatusChanged?.("");
     this.setCameraMode("puzzle");
@@ -1170,7 +1174,9 @@ export class WorldScene extends Phaser.Scene {
     this.coreGrowthBoundaryHalf =
       ((growth.coreLayers * 2 + 1) * CELL_SIZE) / 2 + CELL_SIZE * 1.25;
     this.coreGrowthParticleCount = 14 + growth.gainedLayers * 10;
-    this.onPulseChargesChanged?.(growth.pulseCharges);
+    this.onPulseChargesChanged?.(
+      this.application.inventory.pulseCharges + growth.pulseCharges,
+    );
     this.publishDiagnostics();
   }
 

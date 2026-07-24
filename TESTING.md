@@ -162,6 +162,7 @@ Current `/next/` puzzle checks:
 - harvest completion restores the title and Start control with a fresh run ready
 - a second run does not reapply the previous harvest result
 - reloading `/next/` restores banked Duds and Pulse charges from the local profile
+- starting or restarting a run keeps banked Pulse charges visible and adds newly earned run charges without changing the bank
 - profile creation, migration, or recovery completes before Phaser starts
 - blocked storage leaves the game playable and reports a non-persisted profile diagnostic
 

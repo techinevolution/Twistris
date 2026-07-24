@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createNoopPlatformAdapters } from "../src/app/platform/PlatformAdapters";
 import { GameApplication } from "../src/app/state/GameApplication";
+import { ProfileStore } from "../src/app/state/ProfileStore";
 import { createProfile } from "../src/domain/profile/Profile";
 
 describe("GameApplication", () => {
@@ -165,5 +166,43 @@ describe("GameApplication", () => {
     expect(transaction?.applied).toBe(true);
     expect(application.inventory).toEqual({ duds: 5, pulseCharges: 1 });
     expect(listener).toHaveBeenCalledWith({ type: "profileSaveFailed" });
+  });
+
+  it("restores both harvested currencies through a save and reload", async () => {
+    let serialized: string | null = null;
+    const store = new ProfileStore({
+      async read() {
+        return serialized;
+      },
+      async write(_key, value) {
+        serialized = value;
+      },
+      async remove() {
+        serialized = null;
+      },
+    });
+    const initial = await store.load();
+    const firstApplication = new GameApplication({
+      profile: initial.profile,
+      profilePersistence: store,
+    });
+    firstApplication.beginLaunch();
+    firstApplication.completeLaunch();
+    firstApplication.beginHarvest({
+      id: "harvest-1",
+      earned: { duds: 14, pulseCharges: 3 },
+    });
+    await firstApplication.flushProfileSave();
+
+    const reloaded = await store.load();
+    const secondApplication = new GameApplication({
+      profile: reloaded.profile,
+      profilePersistence: store,
+    });
+
+    expect(secondApplication.inventory).toEqual({
+      duds: 14,
+      pulseCharges: 3,
+    });
   });
 });
