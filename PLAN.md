@@ -2,15 +2,15 @@
 
 ## Current State
 
-The prototype currently supports the title flow, falling and rotating pieces, central attachment, imbalance-driven stack rotation, centered-square growth, Pulse charge counting, and an animated capacity harvest. Duds and charges bank through a tested transaction into one versioned local demo profile. There is no crafting screen, repair system, mission layer, Board progression, or tutorial yet.
+The prototype currently supports the title flow, falling and rotating pieces, central attachment, imbalance-driven stack rotation, centered-square growth, Pulse charge counting, an animated capacity harvest, one local profile, first-Bit crafting, and Gravity Module repair. There is no mission layer, Board reclamation, firewall, or tutorial yet.
 
-The accepted `/next/` runtime uses `PuzzleRun` for run rules, `SessionEconomy` for atomic session banking, `Profile` and `ProfileStore` for durable local progression, and `GameApplication` for validated lifecycle transitions and typed application events. Phaser owns input and animated presentation, while browser capabilities enter through platform adapters. The retained legacy route remains centered on `game.js` for comparison.
+The accepted `/next/` runtime uses `PuzzleRun` for run rules, `SessionEconomy` for atomic session banking, pure first-Bit and Gravity Module transactions for progression, `Profile` and `ProfileStore` for durable local state, and `GameApplication` for validated lifecycle transitions and typed application events. Phaser owns input and animated presentation, while browser capabilities enter through platform adapters. The retained legacy route remains centered on `game.js` for comparison.
 
 ## Current Product Goal
 
 Release a polished browser-first demo that carries players through the complete onboarding sequence, the first mission and progression loop, one firewall-sector recovery, and an Endless Feed mode with a small upgrade set.
 
-The modern toolchain migration, playable Phaser parity port, application/domain/platform boundaries, and versioned local profile are complete. The immediate work is the first complete progression loop: harvest, craft one Bit, and repair the Gravity Module.
+The modern toolchain migration, playable Phaser parity port, application/domain/platform boundaries, versioned local profile, and first complete progression loop are complete. The immediate work is the first bounded Board reclamation slice.
 
 ## Current Architecture Shape
 
@@ -48,8 +48,8 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 9. **Add local profile persistence - Complete**
    One anonymous versioned local demo profile now loads before Phaser starts. Pure validation normalizes malformed values, explicitly migrates the supported version-zero inventory shape, recovers unsupported or invalid data, and excludes transient scene state. `ProfileStore` provides create, load, save, and reset behavior through the storage adapter, including a usable in-memory fallback when storage is unavailable. `GameApplication` starts from the loaded inventory and queues each applied harvest to storage before presentation completes. The schema includes approved Duds, Pulse charges, Bits, Gravity repair, first-firewall status, Endless Feed unlock, generic upgrade IDs, run statistics, and first-run/repair flags. Mission progress, Charged Bits, Bit Dust, recipes, and named profile slots remain absent until their rules are approved.
 
-10. **Build the first complete progression loop**
-    Track run-earned resources, show a harvest result, bank it to the profile, craft the first Bit, and install it in the Gravity Module.
+10. **Build the first complete progression loop - Complete**
+    Run-earned Duds and Pulse charges now appear in a harvest-result dialog after their atomic profile transaction. The only Craft recipe spends exactly `8 Duds + 1 Pulse charge`, adds one Bit, and saves before eight Duds circle into the Pulse and the reconstructed Bit walks into its counter. The application then offers only the Gravity Module action, consumes the ordinary Bit without another resource cost, saves the repair, and presents the Bit walking along a Pulse-connected copper trace before hopping into the module socket. The module stops shaking, reports **GRAVITY GYRO STABILIZED** and **MODULE ONLINE**, and remains repaired after reload. Pure recipe and repair transactions reject shortages, duplicates, and invalid modes. Board, firewall, mission, tutorial, Charged Bit, Bit Dust, and extra-recipe behavior remain absent.
 
 11. **Build the first Board reclamation slice**
     Add only the Pulse region, fog boundary, broken firewall, and one Bug-held sector required by the demo. Keep reclamation outcomes pure and separate from walking-Bit and Bug presentation.
@@ -71,7 +71,7 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 
 ## Recommended Next Slice
 
-Begin slice 10 by connecting the first real progression transaction end to end: preserve the harvested profile inventory, present the first approved Bit recipe, spend its approved costs exactly once, add one Bit, and install that Bit in the Gravity Module. Keep crafting and repair outcomes in pure domain modules; use the World scene only to present the documented Craft overlay and walking-Bit installation.
+Begin slice 11 with only the Pulse region, its fog boundary, the broken firewall, and one Bug-held sector required by the demo. Define reclamation outcomes as pure domain transactions before adding the walking-Bit, Bug, fog, and camera presentation. Do not add missions, the tutorial, Endless Feed, a second sector, or unresolved Charged Bit fabrication in this slice.
 
 ## Deferred Work
 

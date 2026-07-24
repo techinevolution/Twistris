@@ -143,6 +143,24 @@ The core rule layer should produce one immutable result before presentation begi
 
 Repair definitions should be data-driven once recipes and subsystem rules are approved.
 
+The first implemented recipe and repair are deliberately code-level constants rather than a general recipe catalog:
+
+```ts
+{
+  recipeId: "first_bit",
+  costs: { duds: 8, pulseCharges: 1 },
+  output: { bits: 1 }
+}
+
+{
+  moduleId: "gravity_module",
+  cost: { bits: 1 },
+  effect: { gravityModuleRepaired: true }
+}
+```
+
+Both transactions return immutable before/after inventory plus an applied flag and guarded failure reason. The accepted profile saves before presentation. Installing the ordinary Bit consumes no Pulse charge and does not create a Charged Bit.
+
 ```js
 {
   id: "example_system_repair",

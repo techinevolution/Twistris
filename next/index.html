@@ -11,8 +11,81 @@
       <section class="board-wrap">
         <div id="startScreen" class="start-screen">
           <div class="start-copy" aria-hidden="true"></div>
-          <button id="startButton" class="start-button" type="button">Start</button>
+          <div class="hub-actions">
+            <button id="startButton" class="start-button" type="button">Start</button>
+            <button id="craftButton" class="hub-button" type="button">
+              Craft
+            </button>
+            <button id="repairButton" class="hub-button" type="button">
+              Gravity Module
+            </button>
+          </div>
         </div>
+        <section
+          id="harvestResultDialog"
+          class="system-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="harvestResultTitle"
+          hidden
+        >
+          <p class="system-kicker">Run complete</p>
+          <h1 id="harvestResultTitle">Harvest Result</h1>
+          <dl class="result-grid">
+            <div>
+              <dt>Duds recovered</dt>
+              <dd id="harvestDudsEarned">+0</dd>
+            </div>
+            <div>
+              <dt>Pulse charges</dt>
+              <dd id="harvestChargesEarned">+0</dd>
+            </div>
+          </dl>
+          <button id="harvestContinueButton" class="dialog-button" type="button">
+            Continue
+          </button>
+        </section>
+        <section
+          id="craftingDialog"
+          class="system-dialog crafting-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="craftingTitle"
+          hidden
+        >
+          <p class="system-kicker">Pulse fabricator</p>
+          <h1 id="craftingTitle">Crafting</h1>
+          <div class="recipe-row">
+            <div>
+              <strong>Craft Bit</strong>
+              <span>8 Duds + 1 Pulse charge</span>
+            </div>
+            <button id="craftBitButton" class="dialog-button" type="button">
+              Craft
+            </button>
+          </div>
+          <p id="craftingStatus" class="dialog-status" aria-live="polite"></p>
+          <button id="craftCancelButton" class="text-button" type="button">
+            Back
+          </button>
+        </section>
+        <section
+          id="repairCompleteDialog"
+          class="system-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="repairCompleteTitle"
+          hidden
+        >
+          <p class="system-kicker">Gravity gyro stabilized</p>
+          <h1 id="repairCompleteTitle">Module Online</h1>
+          <p class="dialog-copy">
+            The repaired Gravity Module is connected to the Pulse.
+          </p>
+          <button id="repairContinueButton" class="dialog-button" type="button">
+            Continue
+          </button>
+        </section>
         <div class="board-overlay-top">
           <div
             id="statusValue"
@@ -26,6 +99,11 @@
             class="currency-chip"
             aria-live="polite"
           >Pulse charges 0</div>
+          <div
+            id="bitCounter"
+            class="currency-chip currency-chip-bits"
+            aria-live="polite"
+          >Bits 0</div>
           <div
             id="dudCounter"
             class="currency-chip currency-chip-duds"

@@ -8,7 +8,7 @@ The intended game is one continuous motherboard world. Puzzle play, the Pulse hu
 
 ## Status
 
-Active demo prototype. The playable Phaser parity runtime is complete at `/next/`: title and Enter launch, puzzle controls, retries, pause, restart, balance-driven whole-Pulse rotation, centered-square growth, Charge feedback, capacity harvest, profile banking, and return to title work in one persistent World scene. Slice 9 adds one versioned local demo profile with safe creation, validation, migration, recovery, reset, and storage-failure behavior. Harvested Duds and Pulse charges are saved before presentation completes. The current Pulse artwork is provisional and will receive a dedicated damaged-machine redesign later. The trusted legacy route and browser harness remain available for comparison. Crafting, Gravity repair, the first firewall sector, Endless Feed, demo upgrades, and the first-run tutorial are planned but not implemented.
+Active demo prototype. The playable Phaser runtime at `/next/` now carries one complete progression loop: puzzle play produces a harvest result, Duds and Pulse charges bank to the versioned local profile, the Pulse fabricates the first Bit for `8 Duds + 1 Pulse charge`, and that Bit walks into the Gravity Module to repair it. All progression outcomes save before their animations. Slice 10 adds the harvest-result dialog, one bounded Craft recipe, the Bit counter, a connected Gravity Module, and its walking installation presentation inside the persistent World scene. The current Pulse artwork remains provisional and will receive a dedicated damaged-machine redesign later. The trusted legacy route and browser harness remain available for comparison. The first Board sector, missions, Endless Feed, demo upgrades, and the first-run tutorial are planned but not implemented.
 
 ## Quick Start
 
@@ -53,7 +53,7 @@ The accepted Phaser parity runtime is available at `/next/`. The legacy `/` rout
 - Build outward from the Pulse and complete larger centered squares.
 - Earn Pulse charges when the centered square grows.
 - Reach capacity and harvest Pulse charges and Dud salvage.
-- Demo target: bank resources, fabricate the first Bit, and restore the Gravity Module.
+- Bank resources, fabricate the first Bit, and restore the Gravity Module.
 - Demo target: secure one firewall sector and unlock Endless Feed.
 - Demo target: earn a small set of optional Endless upgrades.
 

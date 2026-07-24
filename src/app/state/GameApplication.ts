@@ -1,11 +1,16 @@
 import {
   applyHarvestResult,
   createSessionEconomyState,
+  updateSessionInventory,
   type BankedInventory,
   type HarvestAward,
   type HarvestTransaction,
   type SessionEconomyState,
 } from "../../domain/economy/SessionEconomy";
+import {
+  craftFirstBit as applyFirstBitCraft,
+  type FirstBitCraftTransaction,
+} from "../../domain/economy/FirstBitCrafting";
 import {
   createNoopPlatformAdapters,
   type PlatformAdapters,
@@ -16,13 +21,19 @@ import {
   type Profile,
 } from "../../domain/profile/Profile";
 import type { ProfilePersistence } from "./ProfileStore";
+import {
+  installGravityModuleBit,
+  type GravityRepairTransaction,
+} from "../../domain/repairs/GravityModule";
 
 export type ApplicationMode =
   | "title"
   | "launching"
   | "playing"
   | "paused"
-  | "harvesting";
+  | "harvesting"
+  | "crafting"
+  | "repairing";
 
 export interface ApplicationSnapshot {
   readonly mode: ApplicationMode;
@@ -45,6 +56,14 @@ export type ApplicationEvent =
     }
   | {
       readonly type: "profileSaveFailed";
+    }
+  | {
+      readonly type: "firstBitCrafted";
+      readonly transaction: FirstBitCraftTransaction;
+    }
+  | {
+      readonly type: "gravityModuleRepaired";
+      readonly transaction: GravityRepairTransaction;
     };
 
 type ApplicationListener = (event: ApplicationEvent) => void;
@@ -159,6 +178,49 @@ export class GameApplication {
     return this.transition("harvesting", "title");
   }
 
+  openCrafting(): boolean {
+    return this.transition("title", "crafting");
+  }
+
+  cancelCrafting(): boolean {
+    return this.transition("crafting", "title");
+  }
+
+  craftFirstBit(): FirstBitCraftTransaction | null {
+    if (this.currentMode !== "crafting") return null;
+    const crafted = applyFirstBitCraft(this.currentProfile);
+    if (!crafted.transaction.applied) return crafted.transaction;
+
+    this.commitProfile(crafted.profile);
+    this.emit({
+      type: "firstBitCrafted",
+      transaction: crafted.transaction,
+    });
+    return crafted.transaction;
+  }
+
+  completeCrafting(): boolean {
+    return this.transition("crafting", "title");
+  }
+
+  beginGravityRepair(): GravityRepairTransaction | null {
+    if (this.currentMode !== "title") return null;
+    const repaired = installGravityModuleBit(this.currentProfile);
+    if (!repaired.transaction.applied) return repaired.transaction;
+
+    this.commitProfile(repaired.profile);
+    this.setMode("repairing");
+    this.emit({
+      type: "gravityModuleRepaired",
+      transaction: repaired.transaction,
+    });
+    return repaired.transaction;
+  }
+
+  completeGravityRepair(): boolean {
+    return this.transition("repairing", "title");
+  }
+
   flushProfileSave(): Promise<void> {
     return this.pendingProfileSave;
   }
@@ -181,6 +243,15 @@ export class GameApplication {
 
   private emit(event: ApplicationEvent) {
     for (const listener of this.listeners) listener(event);
+  }
+
+  private commitProfile(profile: Profile) {
+    this.currentProfile = profile;
+    this.economy = updateSessionInventory(
+      this.economy,
+      profile.inventory,
+    );
+    this.queueProfileSave(profile);
   }
 
   private queueProfileSave(profile: Profile) {

@@ -205,4 +205,66 @@ describe("GameApplication", () => {
       pulseCharges: 3,
     });
   });
+
+  it("owns and persists the first craft-to-repair progression loop", async () => {
+    const save = vi.fn(async (_profile: ReturnType<typeof createProfile>) => {});
+    const profile = {
+      ...createProfile(),
+      inventory: { duds: 10, pulseCharges: 2, bits: 0 },
+    };
+    const application = new GameApplication({
+      profile,
+      profilePersistence: {
+        save,
+        async reset() {
+          return createProfile();
+        },
+      },
+    });
+    const listener = vi.fn();
+    application.subscribe(listener);
+
+    expect(application.openCrafting()).toBe(true);
+    const crafted = application.craftFirstBit();
+    expect(crafted?.applied).toBe(true);
+    expect(application.mode).toBe("crafting");
+    expect(application.profile.inventory).toEqual({
+      duds: 2,
+      pulseCharges: 1,
+      bits: 1,
+    });
+    expect(application.completeCrafting()).toBe(true);
+
+    const repaired = application.beginGravityRepair();
+    expect(repaired?.applied).toBe(true);
+    expect(application.mode).toBe("repairing");
+    expect(application.profile.inventory.bits).toBe(0);
+    expect(
+      application.profile.restoration.gravityModuleRepaired,
+    ).toBe(true);
+    expect(application.profile.flags.firstRepairComplete).toBe(true);
+    expect(application.completeGravityRepair()).toBe(true);
+    await application.flushProfileSave();
+
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(listener).toHaveBeenCalledWith({
+      type: "firstBitCrafted",
+      transaction: crafted,
+    });
+    expect(listener).toHaveBeenCalledWith({
+      type: "gravityModuleRepaired",
+      transaction: repaired,
+    });
+  });
+
+  it("rejects progression commands outside their valid modes", () => {
+    const application = new GameApplication();
+
+    expect(application.craftFirstBit()).toBeNull();
+    expect(application.beginGravityRepair()?.reason).toBe(
+      "bit_required",
+    );
+    expect(application.completeCrafting()).toBe(false);
+    expect(application.completeGravityRepair()).toBe(false);
+  });
 });

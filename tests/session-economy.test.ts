@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyHarvestResult,
   createSessionEconomyState,
+  updateSessionInventory,
 } from "../src/domain/economy/SessionEconomy";
 
 describe("session economy", () => {
@@ -56,5 +57,22 @@ describe("session economy", () => {
     expect(duplicate.transaction.before).toBe(first.state.inventory);
     expect(duplicate.transaction.after).toBe(first.state.inventory);
     expect(duplicate.state).toBe(first.state);
+  });
+
+  it("updates spendable inventory without losing applied harvest IDs", () => {
+    const harvested = applyHarvestResult(
+      createSessionEconomyState(),
+      {
+        id: "harvest-1",
+        earned: { duds: 12, pulseCharges: 3 },
+      },
+    ).state;
+    const spent = updateSessionInventory(harvested, {
+      duds: 4,
+      pulseCharges: 2,
+    });
+
+    expect(spent.inventory).toEqual({ duds: 4, pulseCharges: 2 });
+    expect(spent.appliedHarvestResultIds).toEqual(["harvest-1"]);
   });
 });

@@ -64,7 +64,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 28px 24px 42px;
+  padding: 28px 24px 72px;
   border-radius: 26px;
   background: radial-gradient(
     circle at center,
@@ -113,9 +113,157 @@ body {
   outline-offset: 3px;
 }
 
+.hub-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+}
+
+.hub-button,
+.dialog-button,
+.text-button {
+  appearance: none;
+  border: 0;
+  font: 700 14px "Segoe UI", Helvetica, Arial, sans-serif;
+  cursor: pointer;
+}
+
+.hub-button {
+  padding: 12px 18px;
+  border: 1px solid rgba(143, 230, 255, 0.32);
+  border-radius: 6px;
+  background: rgba(7, 19, 29, 0.9);
+  color: #d9f8ff;
+}
+
+.hub-button[hidden] {
+  display: none;
+}
+
+.hub-button:disabled,
+.dialog-button:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.3);
+  opacity: 0.48;
+}
+
+.hub-button:focus-visible,
+.dialog-button:focus-visible,
+.text-button:focus-visible {
+  outline: 2px solid #eef7ff;
+  outline-offset: 3px;
+}
+
+.system-dialog {
+  position: absolute;
+  z-index: 8;
+  top: 50%;
+  left: 50%;
+  width: min(390px, calc(100% - 32px));
+  padding: 24px;
+  border: 1px solid rgba(143, 230, 255, 0.34);
+  border-radius: 7px;
+  background: rgba(7, 19, 29, 0.97);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.54);
+  color: var(--text);
+  transform: translate(-50%, -50%);
+}
+
+.system-dialog[hidden] {
+  display: none;
+}
+
+.system-dialog h1 {
+  margin: 4px 0 20px;
+  font-size: 24px;
+  letter-spacing: 0;
+}
+
+.system-kicker {
+  margin: 0;
+  color: #8fe6ff;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin: 0 0 22px;
+  background: rgba(143, 230, 255, 0.14);
+}
+
+.result-grid div {
+  padding: 15px;
+  background: #0d1c29;
+}
+
+.result-grid dt {
+  color: rgba(238, 247, 255, 0.66);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.result-grid dd {
+  margin: 6px 0 0;
+  color: #f2d27a;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.dialog-button {
+  min-height: 42px;
+  padding: 11px 18px;
+  border-radius: 5px;
+  background: var(--cyan);
+  color: #07131d;
+}
+
+.text-button {
+  margin-top: 16px;
+  padding: 8px 0;
+  background: transparent;
+  color: rgba(238, 247, 255, 0.72);
+}
+
+.recipe-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid rgba(143, 230, 255, 0.18);
+  background: rgba(13, 28, 41, 0.82);
+}
+
+.recipe-row strong,
+.recipe-row span {
+  display: block;
+}
+
+.recipe-row strong {
+  margin-bottom: 5px;
+}
+
+.recipe-row span,
+.dialog-copy,
+.dialog-status {
+  color: rgba(238, 247, 255, 0.68);
+  font-size: 13px;
+}
+
+.dialog-status {
+  min-height: 18px;
+  margin: 12px 0 0;
+}
+
 .board-overlay-bottom {
   position: absolute;
-  z-index: 2;
+  z-index: 5;
   top: 50%;
   left: 50%;
   width: var(--stage-size);
@@ -126,6 +274,7 @@ body {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+  gap: 8px;
   opacity: 1;
   transform: translate(-50%, -50%);
   transition: opacity 180ms ease;
@@ -141,8 +290,7 @@ body {
   pointer-events: none;
 }
 
-.start-screen:not(.is-hidden) ~ .board-overlay-top,
-.start-screen:not(.is-hidden) ~ .board-overlay-bottom {
+.start-screen:not(.is-hidden) ~ .board-overlay-top {
   opacity: 0;
 }
 
@@ -162,7 +310,7 @@ body {
 }
 
 .currency-chip {
-  min-width: 164px;
+  min-width: 120px;
   padding: 9px 13px;
   border: 1px solid rgba(242, 210, 122, 0.22);
   border-radius: 18px;
@@ -180,9 +328,15 @@ body {
 }
 
 .currency-chip-duds {
-  min-width: 96px;
+  min-width: 82px;
   border-color: rgba(143, 230, 255, 0.22);
   color: #8fe6ff;
+}
+
+.currency-chip-bits {
+  min-width: 82px;
+  border-color: rgba(216, 224, 230, 0.24);
+  color: #d8e0e6;
 }
 
 @keyframes charge-awarded {
@@ -221,6 +375,16 @@ body {
   }
 
   .start-screen {
-    padding: 20px 14px 30px;
+    padding: 20px 14px 68px;
+  }
+
+  .hub-actions {
+    flex-wrap: wrap;
+  }
+
+  .currency-chip {
+    min-width: 0;
+    padding: 8px 9px;
+    font-size: 10px;
   }
 }

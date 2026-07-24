@@ -51,12 +51,15 @@ When unsure, choose the smallest clean implementation that can be understood, re
 - `style.css`: layout and DOM presentation
 - `src/domain/rules.ts`: pure board, balance, centered-square, and harvest calculations
 - `src/domain/economy/SessionEconomy.ts`: pure page-session inventory and exactly-once harvest transactions
+- `src/domain/economy/FirstBitCrafting.ts`: pure approved first-Bit recipe transaction
 - `src/domain/profile/Profile.ts`: pure versioned local profile validation, migration, and transactions
+- `src/domain/repairs/GravityModule.ts`: pure ordinary-Bit installation and repair transaction
 - `src/app/state/ProfileStore.ts`: storage-adapter-backed profile load, save, recovery, and reset
 - `src/app/state/GameApplication.ts`: validated lifecycle modes, typed events, harvest IDs, profile saves, and session coordination
 - `src/app/platform/PlatformAdapters.ts`: portable platform capability contracts
 - `game.js`: controller state, animation, rendering, input, and runtime effects
 - `next/index.html` and `src/next/`: accepted Phaser runtime entry, browser adapters, and shell
+- `src/presentation/progression/`: first-Bit and Gravity Module animation without progression outcomes
 - `src/scenes/boot-title/`: temporary Boot/Title parity scaffold
 - `proofs/phaser.html`: isolated Phaser proof entry point
 - `src/proof/`: Phaser proof scene and proof-only presentation

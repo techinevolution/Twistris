@@ -2,7 +2,7 @@
 
 ## Overview
 
-Twistris is currently a Vite-served browser game with a retained legacy comparison route and an accepted Phaser runtime at `/next/`. Typed puzzle, economy, and profile modules own outcomes, `GameApplication` owns lifecycle and progression transactions, Phaser owns animated presentation, and browser capabilities enter through injected platform adapters.
+Twistris is currently a Vite-served browser game with a retained legacy comparison route and an accepted Phaser runtime at `/next/`. Typed puzzle, economy, crafting, repair, and profile modules own outcomes, `GameApplication` owns lifecycle and progression transactions, Phaser owns animated presentation, and browser capabilities enter through injected platform adapters.
 
 The approved target remains browser-first and uses TypeScript, Vite, Phaser, Vitest, and Playwright. The Phaser proof is accepted, but the migration remains incremental: preserve the working game and port only after behavioral and visual parity can be demonstrated. The final presentation uses one long-lived motherboard World scene rather than separate player-visible title, puzzle, crafting, and Board scenes.
 
@@ -15,7 +15,9 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - `src/domain/rules.ts`: typed DOM-free board, balance, centered-square, and harvest calculations
 - `src/domain/puzzle/PuzzleRun.ts`: typed DOM-free active-piece, gravity, ghost, attachment, retry, lock, balance, and pending-rotation state for the Phaser port
 - `src/domain/economy/SessionEconomy.ts`: pure page-session inventory and exactly-once harvest transactions
+- `src/domain/economy/FirstBitCrafting.ts`: the single approved first-Bit recipe and guarded profile transaction
 - `src/domain/profile/Profile.ts`: pure versioned profile creation, validation, migration, and harvest updates
+- `src/domain/repairs/GravityModule.ts`: guarded ordinary-Bit installation and Gravity Module repair transaction
 - `src/app/state/ProfileStore.ts`: platform-neutral local profile load, save, recovery, and reset behavior
 - `src/app/state/GameApplication.ts`: validated application modes, typed events, harvest IDs, profile saves, and session-economy coordination
 - `src/app/platform/PlatformAdapters.ts`: portable storage, audio, haptics, fullscreen, lifecycle, and achievements contracts
@@ -23,6 +25,8 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - `next/index.html`: accepted Phaser runtime shell
 - `src/next/`: Phaser runtime bootstrap, browser platform adapters, and DOM overlay behavior
 - `src/scenes/world/`: persistent Phaser World scene; the title is one presentation phase inside it
+- `src/presentation/progression/FirstProgressionPresentation.ts`: first-Bit fabrication, walking, Gravity Module, and installation presentation only
+- `src/presentation/TechCell.ts`: shared small machine-cell visual used by World presentation
 - `src/presentation/camera/`: typed camera modes shared by the World scene and later Board controls
 - `proofs/phaser.html`: isolated Phaser proof page
 - `src/proof/phaser-proof.ts`: bounded scene, input, tween, camera, and diagnostics proof
@@ -64,6 +68,7 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - **Application controller:** `GameApplication` validates title, launch, puzzle, pause, harvest, and return transitions; publishes typed application events; and coordinates page-session transactions without importing Phaser or browser APIs.
 - **Session economy:** `SessionEconomy` applies immutable harvest results once and returns a frozen before/after transaction. It has no scene, DOM, storage, or timing dependency.
 - **Local profile:** `Profile` defines and validates the version-one progression record. `ProfileStore` serializes it through the injected storage adapter and safely creates, migrates, recovers, or resets without importing Phaser.
+- **First progression loop:** `FirstBitCrafting` spends the approved recipe and `GravityModule` consumes the resulting Bit. `GameApplication` validates their modes, synchronizes session inventory, saves outcomes, and emits typed events before the World scene animates either action.
 - **Capacity harvest:** the typed puzzle run creates the immutable harvest classification and result. `GameApplication` commits it through `SessionEconomy` before `WorldScene` begins the collapse and resource-transfer presentation.
 - **Platform boundary:** portable contracts cover storage, audio, haptics, fullscreen, lifecycle, and achievements. The `/next/` browser entry injects browser implementations; no domain module calls browser or wrapper APIs.
 
@@ -139,6 +144,16 @@ This is an ownership map, not permission to create every directory at once. Each
 8. `WorldScene` animates collapse and display-only counters toward the already-banked totals.
 9. The DOM shell presents accessible controls and counters without deciding gameplay or economy outcomes.
 
+## Current First Progression Flow
+
+1. The applied harvest transaction supplies the immutable before/after totals used by the result dialog.
+2. `GameApplication` enters `crafting` only from the title state.
+3. `FirstBitCrafting` either returns a guarded failure or atomically spends eight Duds and one Pulse charge for one Bit.
+4. The accepted profile and synchronized session inventory save before the World scene animates Dud consumption and the walking Bit.
+5. `GameApplication` enters `repairing` only when `GravityModule` accepts an available ordinary Bit.
+6. The accepted repair consumes the Bit, sets the Gravity Module and first-repair flags, and saves before installation presentation.
+7. Phaser walks and hops the already-consumed Bit into the module, then the accessible overlay reports the completed repair.
+
 ## Intended Progression Data Flow
 
 1. Pure run rules produce an immutable harvest result.
@@ -175,7 +190,7 @@ Current:
 
 Next:
 
-- Slice 10 introduces the first pure crafting and Gravity Module repair transactions without putting progression outcomes in Phaser.
+- Slice 11 introduces only the pure first-sector state and bounded Board reclamation presentation required by the demo.
 - Playwright will own critical browser flows, responsive checks, and selected visual comparisons after it is introduced.
 - The legacy smoke harness remains until equivalent coverage and runtime parity are approved.
 

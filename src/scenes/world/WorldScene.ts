@@ -1,16 +1,20 @@
 import Phaser from "phaser";
 
 import { GameApplication } from "../../app/state/GameApplication";
+import type { FirstBitCraftTransaction } from "../../domain/economy/FirstBitCrafting";
 import {
   PuzzleRun,
   type LockOutcome,
   type PieceColor,
   type PieceShape,
 } from "../../domain/puzzle/PuzzleRun";
+import type { GravityRepairTransaction } from "../../domain/repairs/GravityModule";
+import { createTechCell } from "../../presentation/TechCell";
 import {
   WorldCameraController,
   type WorldCameraMode,
 } from "../../presentation/camera/WorldCameraController";
+import { FirstProgressionPresentation } from "../../presentation/progression/FirstProgressionPresentation";
 
 const STAGE_SIZE = 800;
 const GRID_SIZE = 27;
@@ -119,7 +123,9 @@ type WorldPhase =
   | "launching"
   | "playing"
   | "paused"
-  | "harvesting";
+  | "harvesting"
+  | "crafting"
+  | "repairing";
 type HarvestPhase = "impact" | "fall" | "duds" | "charges" | "return";
 export type PuzzleAction =
   | "left"
@@ -156,6 +162,10 @@ interface HarvestSequence {
 interface HarvestTargets {
   readonly charges: Readonly<Point>;
   readonly duds: Readonly<Point>;
+}
+
+interface ProgressionTargets {
+  readonly bits: Readonly<Point>;
 }
 
 const LOGO_PATTERNS: Record<string, string[]> = {
@@ -204,43 +214,6 @@ function createLogoLayout(): { cells: LogoCell[]; columns: number } {
 function hashUnit(value: number): number {
   const wave = Math.sin(value * 12.9898) * 43758.5453;
   return wave - Math.floor(wave);
-}
-
-function createTechCell(
-  scene: Phaser.Scene,
-  color: "cyan" | "magenta",
-  size: number,
-  bright = false,
-): Phaser.GameObjects.Container {
-  const palette =
-    color === "cyan"
-      ? {
-          edge: bright ? 0xd9f8ff : COLORS.cyanEdge,
-          panel: bright ? 0xa6efff : 0x72cef2,
-          shell: bright ? 0x4aa8d8 : 0x10293e,
-        }
-      : {
-          edge: bright ? 0xffd2e4 : COLORS.magentaEdge,
-          panel: bright ? 0xffb0cd : 0xf06e9d,
-          shell: bright ? 0xc63a62 : 0x351322,
-        };
-  const container = scene.add.container();
-  const graphic = scene.add.graphics();
-  const half = size / 2;
-
-  graphic.fillStyle(palette.shell, 1);
-  graphic.fillRoundedRect(-half, -half, size, size, Math.min(3.4, size * 0.14));
-  graphic.fillStyle(palette.panel, 0.98);
-  graphic.fillRoundedRect(-half + size * 0.07, -half + size * 0.07, size * 0.86, size * 0.86, 2.5);
-  graphic.lineStyle(Math.max(1, size * 0.07), palette.edge, 0.88);
-  graphic.strokeRoundedRect(-half + size * 0.07, -half + size * 0.07, size * 0.86, size * 0.86, 2.5);
-  graphic.fillStyle(COLORS.white, bright ? 0.58 : 0.42);
-  graphic.fillRoundedRect(-half + size * 0.23, -half + size * 0.23, size * 0.54, size * 0.54, 2);
-  graphic.fillStyle(COLORS.white, 0.1);
-  graphic.fillRect(-half + size * 0.13, -half + size * 0.13, size * 0.44, Math.max(1, size * 0.07));
-  container.add(graphic);
-
-  return container;
 }
 
 function createPulse(scene: Phaser.Scene): Phaser.GameObjects.Container {
@@ -294,14 +267,18 @@ export class WorldScene extends Phaser.Scene {
   onLaunchProgress: ((progress: number) => void) | null = null;
   onPulseChargesChanged: ((charges: number) => void) | null = null;
   onDudsChanged: ((duds: number) => void) | null = null;
+  onBitsChanged: ((bits: number) => void) | null = null;
   onStatusChanged: ((status: string) => void) | null = null;
   resolveHarvestTargets: (() => HarvestTargets | null) | null = null;
+  resolveProgressionTargets:
+    (() => ProgressionTargets | null) | null = null;
 
   private readonly cameraController = new WorldCameraController("title-closeup");
   private readonly mountedSectors = new Set<string>();
   private world!: Phaser.GameObjects.Container;
   private pulseSector!: Phaser.GameObjects.Container;
   private structureContainer!: Phaser.GameObjects.Container;
+  private firstProgression!: FirstProgressionPresentation;
   private grid!: Phaser.GameObjects.Graphics;
   private coreFieldGraphics!: Phaser.GameObjects.Graphics;
   private structureGraphics!: Phaser.GameObjects.Graphics;
@@ -343,7 +320,6 @@ export class WorldScene extends Phaser.Scene {
     charges: { x: -285, y: 340 },
     duds: { x: 285, y: 340 },
   };
-
   constructor(private readonly application: GameApplication) {
     super("World");
   }
@@ -405,8 +381,30 @@ export class WorldScene extends Phaser.Scene {
       this.pulse,
     ]);
     this.createParticles();
+    this.logo = this.createLogo();
+    this.firstProgression = new FirstProgressionPresentation(this, {
+      profile: this.application.profile,
+      world: this.world,
+      grid: this.grid,
+      pulse: this.pulse,
+      logo: this.logo,
+      titleScale: IDLE_ZOOM,
+      titlePulseScale: IDLE_PULSE_SCALE,
+      titleGridAlpha: IDLE_GRID_ALPHA,
+      resolveResourceTargets: () =>
+        this.resolveHarvestTargets?.() ?? null,
+      resolveProgressionTargets: () =>
+        this.resolveProgressionTargets?.() ?? null,
+      setCameraMode: (mode) => this.setCameraMode(mode),
+      onDudsChanged: (value) => this.onDudsChanged?.(value),
+      onPulseChargesChanged: (value) =>
+        this.onPulseChargesChanged?.(value),
+      onBitsChanged: (value) => this.onBitsChanged?.(value),
+      onStatusChanged: (value) => this.onStatusChanged?.(value),
+    });
     this.pulseSector.add([
       this.grid,
+      this.firstProgression.displayObject,
       this.structureContainer,
       this.pieceGraphics,
       this.previewGraphics,
@@ -421,7 +419,6 @@ export class WorldScene extends Phaser.Scene {
     this.world.setScale(IDLE_ZOOM);
     this.grid.setAlpha(IDLE_GRID_ALPHA);
     this.pulse.setScale(IDLE_PULSE_SCALE);
-    this.logo = this.createLogo();
     this.bindPuzzleInput();
     this.ready = true;
     this.publishDiagnostics();
@@ -443,6 +440,11 @@ export class WorldScene extends Phaser.Scene {
       this.updateHarvest(delta);
     } else if (this.phase === "paused") {
       for (const particle of this.particles) particle.setVisible(false);
+    } else if (
+      this.phase === "crafting" ||
+      this.phase === "repairing"
+    ) {
+      this.updateParticles();
     } else {
       for (const particle of this.particles) particle.setVisible(false);
       this.updateCoreGrowth(delta);
@@ -493,6 +495,29 @@ export class WorldScene extends Phaser.Scene {
     this.renderPuzzle();
     this.publishDiagnostics();
     return changed;
+  }
+
+  presentFirstBitCraft(
+    transaction: FirstBitCraftTransaction,
+    onComplete: () => void,
+  ) {
+    if (!transaction.applied || this.phase !== "crafting") return;
+    this.firstProgression.presentCraft(transaction, onComplete);
+    this.publishDiagnostics();
+  }
+
+  presentGravityModuleRepair(
+    transaction: GravityRepairTransaction,
+    onComplete: () => void,
+  ) {
+    if (!transaction.applied || this.phase !== "repairing") return;
+    this.firstProgression.presentRepair(transaction, onComplete);
+    this.publishDiagnostics();
+  }
+
+  restoreTitleView() {
+    this.firstProgression.restoreTitleView();
+    this.publishDiagnostics();
   }
 
   private updateLaunch(delta: number) {
@@ -1534,6 +1559,20 @@ export class WorldScene extends Phaser.Scene {
     root.dataset.worldBankedDuds = String(this.application.inventory.duds);
     root.dataset.worldBankedPulseCharges = String(
       this.application.inventory.pulseCharges,
+    );
+    root.dataset.worldBankedBits = String(
+      this.application.profile.inventory.bits,
+    );
+    root.dataset.worldGravityModuleRepaired = String(
+      this.application.profile.restoration.gravityModuleRepaired,
+    );
+    root.dataset.worldProgressionPresentation =
+      this.firstProgression.state;
+    root.dataset.worldGravityModuleVisible = String(
+      this.firstProgression?.moduleVisible ?? false,
+    );
+    root.dataset.worldWalkingBitVisible = String(
+      this.firstProgression?.walkingBitVisible ?? false,
     );
     root.dataset.worldHarvestChargeTarget = `${this.harvestTargets.charges.x.toFixed(1)},${this.harvestTargets.charges.y.toFixed(1)}`;
     root.dataset.worldHarvestDudTarget = `${this.harvestTargets.duds.x.toFixed(1)},${this.harvestTargets.duds.y.toFixed(1)}`;

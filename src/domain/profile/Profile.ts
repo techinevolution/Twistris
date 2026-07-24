@@ -40,6 +40,14 @@ export interface ProfileDecodeResult {
   readonly needsSave: boolean;
 }
 
+export interface ProfileUpdate {
+  readonly inventory?: Partial<ProfileInventory>;
+  readonly restoration?: Partial<Profile["restoration"]>;
+  readonly upgrades?: Partial<Profile["upgrades"]>;
+  readonly stats?: Partial<Profile["stats"]>;
+  readonly flags?: Partial<Profile["flags"]>;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -126,6 +134,19 @@ export function createProfile(): Profile {
   return freezeProfile();
 }
 
+export function updateProfile(
+  profile: Profile,
+  update: ProfileUpdate,
+): Profile {
+  return freezeProfile({
+    inventory: { ...profile.inventory, ...update.inventory },
+    restoration: { ...profile.restoration, ...update.restoration },
+    upgrades: { ...profile.upgrades, ...update.upgrades },
+    stats: { ...profile.stats, ...update.stats },
+    flags: { ...profile.flags, ...update.flags },
+  });
+}
+
 function normalizeVersionOne(value: Record<string, unknown>): Profile {
   return freezeProfile({
     inventory: isRecord(value.inventory) ? value.inventory : undefined,
@@ -185,17 +206,11 @@ export function applyHarvestToProfile(
   profile: Profile,
   result: HarvestAward,
 ): Profile {
-  return freezeProfile({
+  return updateProfile(profile, {
     inventory: {
-      ...profile.inventory,
       duds: profile.inventory.duds + result.earned.duds,
       pulseCharges:
         profile.inventory.pulseCharges + result.earned.pulseCharges,
-    },
-    restoration: { ...profile.restoration },
-    upgrades: {
-      unlockedIds: profile.upgrades.unlockedIds,
-      equippedIds: profile.upgrades.equippedIds,
     },
     stats: {
       totalRuns: profile.stats.totalRuns + 1,
@@ -206,7 +221,6 @@ export function applyHarvestToProfile(
       ),
     },
     flags: {
-      ...profile.flags,
       firstRunComplete: true,
     },
   });

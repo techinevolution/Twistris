@@ -39,6 +39,16 @@ export function createSessionEconomyState(
   });
 }
 
+export function updateSessionInventory(
+  state: SessionEconomyState,
+  inventory: BankedInventory,
+): SessionEconomyState {
+  return Object.freeze({
+    inventory: freezeInventory(inventory),
+    appliedHarvestResultIds: state.appliedHarvestResultIds,
+  });
+}
+
 export function applyHarvestResult(
   state: SessionEconomyState,
   result: HarvestAward,

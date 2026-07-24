@@ -2,7 +2,7 @@
 
 ## Current Approach
 
-Twistris uses Vitest for typed puzzle rules, session economy, local profiles, profile storage, and application-state tests; TypeScript for compile-time checks; Vite for development and production builds; and the retained browser smoke harness for legacy controller characterization.
+Twistris uses Vitest for typed puzzle rules, session economy, first-Bit crafting, Gravity Module repair, local profiles, profile storage, and application-state tests; TypeScript for compile-time checks; Vite for development and production builds; and the retained browser smoke harness for legacy controller characterization.
 
 Do not remove the smoke harness merely because the new runner exists. Its controller coverage remains required until equivalent automated coverage and runtime parity are approved.
 
@@ -51,6 +51,9 @@ Run `npm test`. The focused typed suite verifies:
 - banked inventory survives puzzle-run restart and is committed before harvest presentation
 - version-one profiles create, normalize, migrate, recover, save, and reset through fake storage
 - loaded inventory seeds the application, applied harvests update profile statistics, and save failure does not stop gameplay
+- the first Bit recipe spends exactly eight Duds and one Pulse charge, rejects shortages and duplicates, and preserves immutable input
+- Gravity Module repair consumes exactly one ordinary Bit, rejects missing or duplicate installation, and sets both repair flags
+- the application persists crafting and repair before presentation and rejects progression commands in invalid modes
 - puzzle behavior remains covered independently by `PuzzleRun` and the pure rules module
 
 ## Manual Checks
@@ -112,6 +115,8 @@ The proof is not the playable game and must remain isolated until its presentati
 
 Run `npm run dev`, then compare `/next/` with `/`.
 
+For a repeatable, non-persistent Slice 10 QA profile containing exactly eight Duds and one Pulse charge, open `/next/?testProfile=slice10` in development. This fixture never reads from or writes to the player's saved profile.
+
 Current World-scene title parity checks:
 
 - the block-built TWISTRIS logo retains its cyan and magenta treatment
@@ -165,6 +170,10 @@ Current `/next/` puzzle checks:
 - starting or restarting a run keeps banked Pulse charges visible and adds newly earned run charges without changing the bank
 - profile creation, migration, or recovery completes before Phaser starts
 - blocked storage leaves the game playable and reports a non-persisted profile diagnostic
+- a completed run presents its earned Duds and Pulse charges before returning to hub actions
+- Craft exposes only **Craft Bit**, then updates Duds, Pulse charges, and Bits through the already-committed transaction
+- the fabricated Bit walks from the Pulse to its counter and the only next progression action is the Gravity Module
+- repair removes the Bit before presentation, walks it along the connected trace, stabilizes the module, and survives reload
 
 The route is not a replacement for `/` until all gameplay and presentation parity checks pass.
 
