@@ -172,8 +172,10 @@ Current `/next/` puzzle checks:
 - blocked storage leaves the game playable and reports a non-persisted profile diagnostic
 - a completed run presents its earned Duds and Pulse charges before returning to hub actions
 - Craft exposes only **Craft Bit**, then updates Duds, Pulse charges, and Bits through the already-committed transaction
-- the fabricated Bit walks from the Pulse to its counter and the only next progression action is the Gravity Module
-- repair removes the Bit before presentation, walks it along the connected trace, stabilizes the module, and survives reload
+- the fabricated Bit stages beside the Pulse while the display-only Bit counter updates, and the only next progression action is the Gravity Module
+- repair removes the Bit before presentation, visibly starts it at the Pulse rather than the HUD, walks it along the connected trace, stabilizes the compact module, and survives reload
+- ordinary traveling and installed Bits render at roughly half their earlier Slice 10 scale
+- the copper trace remains visibly connected and readable as the Bit's path without dominating the board
 
 The route is not a replacement for `/` until all gameplay and presentation parity checks pass.
 

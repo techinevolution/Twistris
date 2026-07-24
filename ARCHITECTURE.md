@@ -152,7 +152,7 @@ This is an ownership map, not permission to create every directory at once. Each
 4. The accepted profile and synchronized session inventory save before the World scene animates Dud consumption and the walking Bit.
 5. `GameApplication` enters `repairing` only when `GravityModule` accepts an available ordinary Bit.
 6. The accepted repair consumes the Bit, sets the Gravity Module and first-repair flags, and saves before installation presentation.
-7. Phaser walks and hops the already-consumed Bit into the module, then the accessible overlay reports the completed repair.
+7. Phaser stages the Bit beside the Pulse, then walks and hops the already-consumed Bit along the connected trace into the module. The HUD inventory counter is display-only, and the accessible overlay reports the completed repair.
 
 ## Intended Progression Data Flow
 

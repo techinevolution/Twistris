@@ -111,11 +111,6 @@ worldScene.resolveHarvestTargets = () => {
   return charges && duds ? { charges, duds } : null;
 };
 
-worldScene.resolveProgressionTargets = () => {
-  const bits = getHarvestTarget(bitCounter);
-  return bits ? { bits } : null;
-};
-
 function focusGameSurface() {
   const target = useKeySinkFocus && gameKeySink ? gameKeySink : stage;
   target?.focus({ preventScroll: true });

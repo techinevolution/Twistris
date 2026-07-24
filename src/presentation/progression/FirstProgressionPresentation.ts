@@ -8,6 +8,11 @@ import type { WorldCameraMode } from "../camera/WorldCameraController";
 
 const FIRST_BIT_DUD_COUNT = 8;
 const CYAN_EDGE = 0x8fe6ff;
+const GRAVITY_MODULE_X = -184;
+const GRAVITY_TRACE_END_X = -156;
+const GRAVITY_WALK_END_X = -148;
+const BIT_STAGING_X = -42;
+const ORDINARY_BIT_SIZE = 14;
 
 interface Point {
   readonly x: number;
@@ -17,10 +22,6 @@ interface Point {
 interface ResourceTargets {
   readonly charges: Readonly<Point>;
   readonly duds: Readonly<Point>;
-}
-
-interface ProgressionTargets {
-  readonly bits: Readonly<Point>;
 }
 
 export type ProgressionPresentationState =
@@ -40,7 +41,6 @@ interface FirstProgressionOptions {
   readonly titlePulseScale: number;
   readonly titleGridAlpha: number;
   readonly resolveResourceTargets: () => ResourceTargets | null;
-  readonly resolveProgressionTargets: () => ProgressionTargets | null;
   readonly setCameraMode: (mode: WorldCameraMode) => void;
   readonly onDudsChanged: (value: number) => void;
   readonly onPulseChargesChanged: (value: number) => void;
@@ -52,9 +52,14 @@ function createWalkingBit(scene: Phaser.Scene) {
   const container = scene.add.container();
   const feet = scene.add.graphics();
   feet.fillStyle(0xb9efff, 1);
-  feet.fillRoundedRect(-10, 14, 7, 6, 2);
-  feet.fillRoundedRect(3, 14, 7, 6, 2);
-  const cell = createTechCell(scene, "cyan", 28, true);
+  feet.fillRoundedRect(-6, 7, 4, 4, 1);
+  feet.fillRoundedRect(2, 7, 4, 4, 1);
+  const cell = createTechCell(
+    scene,
+    "cyan",
+    ORDINARY_BIT_SIZE,
+    true,
+  );
   container.add([feet, cell]);
   container.setVisible(false);
   return { container, feet };
@@ -71,9 +76,6 @@ export class FirstProgressionPresentation {
   private resourceTargets: ResourceTargets = {
     charges: { x: -285, y: 340 },
     duds: { x: 285, y: 340 },
-  };
-  private progressionTargets: ProgressionTargets = {
-    bits: { x: 0, y: 340 },
   };
   private currentState: ProgressionPresentationState = "idle";
 
@@ -95,7 +97,7 @@ export class FirstProgressionPresentation {
 
     if (options.profile.restoration.gravityModuleRepaired) {
       scene.tweens.killTweensOf(this.module);
-      this.module.setPosition(-196, 0);
+      this.module.setPosition(GRAVITY_MODULE_X, 0);
       this.module.setAngle(0);
       this.socketGlow.setFillStyle(CYAN_EDGE, 0.16);
       this.socketGlow.setStrokeStyle(3, CYAN_EDGE, 0.92);
@@ -132,9 +134,6 @@ export class FirstProgressionPresentation {
     this.prepareView();
     this.resourceTargets =
       this.options.resolveResourceTargets() ?? this.resourceTargets;
-    this.progressionTargets =
-      this.options.resolveProgressionTargets() ??
-      this.progressionTargets;
     this.setModuleVisible(false);
     this.options.onStatusChanged("FABRICATING BIT");
 
@@ -214,9 +213,6 @@ export class FirstProgressionPresentation {
 
     this.currentState = "repairing";
     this.prepareView();
-    this.progressionTargets =
-      this.options.resolveProgressionTargets() ??
-      this.progressionTargets;
     this.setModuleVisible(true);
     this.installedBit.setVisible(false);
     this.socketGlow.setFillStyle(CYAN_EDGE, 0.06);
@@ -224,7 +220,7 @@ export class FirstProgressionPresentation {
     this.options.onBitsChanged(transaction.after.bits);
     this.options.onStatusChanged("INSTALL BIT · GRAVITY MODULE");
 
-    const start = this.progressionTargets.bits;
+    const start = { x: BIT_STAGING_X, y: 0 };
     this.walkingBit.setVisible(true);
     this.walkingBit.setAlpha(1);
     this.walkingBit.setScale(1);
@@ -249,7 +245,7 @@ export class FirstProgressionPresentation {
         const progress = tween.getValue() ?? 0;
         this.walkingBit.x = Phaser.Math.Linear(
           start.x,
-          -148,
+          GRAVITY_WALK_END_X,
           progress,
         );
         this.walkingBit.y =
@@ -288,16 +284,15 @@ export class FirstProgressionPresentation {
       yoyo: true,
       onComplete: () =>
         this.scene.time.delayedCall(160, () =>
-          this.walkToCounter(transaction, onComplete),
+          this.stageCraftedBit(transaction, onComplete),
         ),
     });
   }
 
-  private walkToCounter(
+  private stageCraftedBit(
     transaction: FirstBitCraftTransaction,
     onComplete: () => void,
   ) {
-    const target = this.progressionTargets.bits;
     this.walkingBit.setVisible(true);
     this.walkingBit.setAlpha(1);
     this.walkingBit.setScale(1);
@@ -320,17 +315,15 @@ export class FirstProgressionPresentation {
       ease: "Sine.InOut",
       onUpdate: (tween) => {
         const progress = tween.getValue() ?? 0;
-        this.walkingBit.x = Phaser.Math.Linear(0, target.x, progress);
+        this.walkingBit.x = Phaser.Math.Linear(
+          0,
+          BIT_STAGING_X,
+          progress,
+        );
         this.walkingBit.y =
-          Phaser.Math.Linear(0, target.y, progress) -
-          Math.abs(Math.sin(progress * Math.PI * 8)) * 7 -
-          Math.sin(
-            (Math.max(0, progress - 0.78) / 0.22) * Math.PI,
-          ) *
-            34;
+          -Math.abs(Math.sin(progress * Math.PI * 8)) * 5;
       },
       onComplete: () => {
-        this.walkingBit.setVisible(false);
         this.options.onBitsChanged(transaction.after.bits);
         this.currentState = "bit-ready";
         this.setModuleVisible(true);
@@ -366,7 +359,7 @@ export class FirstProgressionPresentation {
       onComplete: () => {
         this.walkingBit.setVisible(false);
         this.installedBit.setVisible(true);
-        this.module.setPosition(-196, 0);
+        this.module.setPosition(GRAVITY_MODULE_X, 0);
         this.module.setAngle(0);
         this.scene.tweens.killTweensOf(this.module);
         this.socketGlow.setFillStyle(CYAN_EDGE, 0.16);
@@ -412,39 +405,39 @@ export class FirstProgressionPresentation {
   }
 
   private createGravityModule() {
-    this.trace.lineStyle(12, 0x101a23, 0.92);
-    this.trace.lineBetween(0, 0, -164, 0);
-    this.trace.lineStyle(4, 0x9d5c3b, 0.9);
-    this.trace.lineBetween(0, 0, -164, 0);
-    this.trace.lineStyle(1, 0xf0a36d, 0.55);
-    this.trace.lineBetween(0, -3, -164, -3);
+    this.trace.lineStyle(7, 0x101a23, 0.76);
+    this.trace.lineBetween(0, 0, GRAVITY_TRACE_END_X, 0);
+    this.trace.lineStyle(2, 0x9d5c3b, 0.82);
+    this.trace.lineBetween(0, 0, GRAVITY_TRACE_END_X, 0);
+    this.trace.lineStyle(1, 0xf0a36d, 0.46);
+    this.trace.lineBetween(0, -2, GRAVITY_TRACE_END_X, -2);
 
-    const module = this.scene.add.container(-196, 0);
+    const module = this.scene.add.container(GRAVITY_MODULE_X, 0);
     module.setName("gravity-module");
     const body = this.scene.add.graphics();
     body.fillStyle(0x0a131c, 0.98);
-    body.fillRoundedRect(-42, -42, 84, 84, 6);
-    body.lineStyle(3, 0x687b89, 0.78);
-    body.strokeRoundedRect(-38, -38, 76, 76, 5);
+    body.fillRoundedRect(-28, -28, 56, 56, 5);
+    body.lineStyle(2, 0x687b89, 0.78);
+    body.strokeRoundedRect(-25, -25, 50, 50, 4);
     body.lineStyle(2, 0x9d5c3b, 0.72);
-    body.lineBetween(32, 0, 42, 0);
+    body.lineBetween(22, 0, 28, 0);
     body.fillStyle(0x050a0f, 1);
-    body.fillRoundedRect(-18, -18, 36, 36, 4);
-    body.lineStyle(2, 0x687b89, 0.7);
-    body.strokeRoundedRect(-16, -16, 32, 32, 3);
+    body.fillRoundedRect(-12, -12, 24, 24, 3);
+    body.lineStyle(1, 0x687b89, 0.7);
+    body.strokeRoundedRect(-11, -11, 22, 22, 2);
 
     const socketGlow = this.scene.add.circle(
       0,
       0,
-      21,
+      14,
       CYAN_EDGE,
       0,
     );
-    socketGlow.setStrokeStyle(3, CYAN_EDGE, 0);
+    socketGlow.setStrokeStyle(2, CYAN_EDGE, 0);
     const installedBit = createTechCell(
       this.scene,
       "cyan",
-      26,
+      ORDINARY_BIT_SIZE,
       true,
     );
     installedBit.setVisible(
@@ -452,12 +445,12 @@ export class FirstProgressionPresentation {
     );
     const label = this.scene.add.text(
       0,
-      55,
+      38,
       "GRAVITY MODULE",
       {
         color: "#aebbc5",
         fontFamily: '"Segoe UI", Helvetica, Arial, sans-serif',
-        fontSize: "11px",
+        fontSize: "9px",
         fontStyle: "bold",
       },
     );

@@ -163,7 +163,7 @@ In the established harvest loop, Duds come from influenced gray blocks at harves
 
 The Charged Bit acquisition rule, whether the failed firewall component leaves recoverable Bit Dust, and whether Bit Dust belongs in the demo remain open design questions.
 
-When Bits or Charged Bits travel outside a tetromino, counter, or installed socket, they use a simple shared animation language: two tiny feet appear, the square walks along surfaces or copper traces, and it makes a small hop into its destination slot. This should remain a compact, readable animation rather than a full character performance.
+When Bits or Charged Bits travel outside a tetromino or installed socket, they use a simple shared animation language: two tiny feet appear, the square walks along surfaces or copper traces, and it makes a small hop into its destination slot. Inventory counters are display-only and are not physical origins or destinations for traveling Bits. This should remain a compact, readable animation rather than a full character performance.
 
 ### First-Run Reveal Sequence
 
@@ -203,10 +203,10 @@ The first-run tutorial should initially disguise Twistris as a conventional fall
 32. Feed the eight circling Duds into the cracked side of the Pulse.
 33. Make the Pulse pulse as one Pulse charge is consumed, reducing its counter from one to zero.
 34. Emit one newly fabricated Bit from the same side of the Pulse. Give it two tiny feet when it lands.
-35. Have the Bit walk to the bottom of the screen and hop into its newly introduced inventory counter at one. The Dud and Pulse charge counters remain visible at zero.
+35. Leave the newly fabricated Bit visibly staged beside the Pulse and introduce its display-only inventory counter at one. The Dud and Pulse charge counters remain visible at zero.
 36. Shift the view to the left of the Pulse and reveal the damaged Gravity Module with its empty Bit-shaped upgrade slot.
 37. Highlight the module with a guided arrow and have the player select it.
-38. Have the Bit hop out of its counter, walk along an illuminated copper trace on its tiny feet, and jump into the Gravity Module's upgrade slot. Reduce the Bit counter from one to zero.
+38. Have the Bit emerge from the Pulse, walk along the illuminated copper trace on its tiny feet, and jump into the Gravity Module's upgrade slot. Reduce the display-only Bit counter from one to zero.
 39. Send a brief activation current from the Pulse through the repaired connection without consuming another resource or turning the installed component into a Charged Bit.
 40. Align the Gravity Module, stop its shaking, and bring it online.
 41. Settle the unstable structure and stop the Pulse's uncontrolled rotation.

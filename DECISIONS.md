@@ -82,11 +82,11 @@ Consequences: Every visual slice needs desktop and mobile-class validation. Doma
 
 ## 2026-07-22: Give Bits A Shared Walking Animation
 
-Decision: Ordinary Bits and Charged Bits travel with two tiny feet. They walk along surfaces or copper traces and make a small hop into counters, upgrade slots, and firewall sockets.
+Decision: Ordinary Bits and Charged Bits travel with two tiny feet. They walk along surfaces or copper traces and make a small hop into upgrade slots and firewall sockets. HUD inventory counters remain display-only rather than physical storage locations.
 
 Reason: The movement gives individual Bits personality, makes resource travel easy to follow, and supports the visual idea of small units moving across the Board without requiring elaborate character animation.
 
-Consequences: The first fabricated Bit walks to its counter and later walks to the Gravity Module before jumping into place. Charged Bits use the same visual language. The animation should stay simple and reusable so routine crafting and Board actions remain quick.
+Consequences: The first fabricated Bit stages beside the Pulse, then visibly originates there and follows the connected copper trace to the Gravity Module before jumping into place. Charged Bits use the same visual language. The animation should stay simple and reusable so routine crafting and Board actions remain quick.
 
 ## 2026-07-22: Use Feed The Pulse As The Play Action
 

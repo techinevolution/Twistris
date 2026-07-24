@@ -164,10 +164,6 @@ interface HarvestTargets {
   readonly duds: Readonly<Point>;
 }
 
-interface ProgressionTargets {
-  readonly bits: Readonly<Point>;
-}
-
 const LOGO_PATTERNS: Record<string, string[]> = {
   T: ["111", "010", "010", "010", "010"],
   W: ["10001", "10001", "10101", "10101", "01010"],
@@ -270,8 +266,6 @@ export class WorldScene extends Phaser.Scene {
   onBitsChanged: ((bits: number) => void) | null = null;
   onStatusChanged: ((status: string) => void) | null = null;
   resolveHarvestTargets: (() => HarvestTargets | null) | null = null;
-  resolveProgressionTargets:
-    (() => ProgressionTargets | null) | null = null;
 
   private readonly cameraController = new WorldCameraController("title-closeup");
   private readonly mountedSectors = new Set<string>();
@@ -393,8 +387,6 @@ export class WorldScene extends Phaser.Scene {
       titleGridAlpha: IDLE_GRID_ALPHA,
       resolveResourceTargets: () =>
         this.resolveHarvestTargets?.() ?? null,
-      resolveProgressionTargets: () =>
-        this.resolveProgressionTargets?.() ?? null,
       setCameraMode: (mode) => this.setCameraMode(mode),
       onDudsChanged: (value) => this.onDudsChanged?.(value),
       onPulseChargesChanged: (value) =>
