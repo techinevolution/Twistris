@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 
 import { GameApplication } from "../app/state/GameApplication";
+import { ProfileStore } from "../app/state/ProfileStore";
 import {
   WorldScene,
   type PuzzleAction,
@@ -8,9 +9,18 @@ import {
 import { createBrowserPlatform } from "./createBrowserPlatform";
 
 const GAME_STAGE_SIZE = 800;
+const platform = createBrowserPlatform();
+const profileStore = new ProfileStore(platform.storage);
+const profileLoad = await profileStore.load();
 const application = new GameApplication({
-  platform: createBrowserPlatform(),
+  platform,
+  profile: profileLoad.profile,
+  profilePersistence: profileStore,
 });
+document.documentElement.dataset.profileLoadSource = profileLoad.source;
+document.documentElement.dataset.profilePersisted = String(
+  profileLoad.persisted,
+);
 const worldScene = new WorldScene(application);
 const stage = document.querySelector<HTMLElement>("#phaserTitle");
 const startScreen = document.querySelector<HTMLElement>("#startScreen");
@@ -91,6 +101,14 @@ worldScene.onDudsChanged = (duds) => {
     dudCounter.classList.add("is-awarded");
   }
 };
+
+if (pulseChargeCounter) {
+  pulseChargeCounter.textContent =
+    `Pulse charges ${application.inventory.pulseCharges}`;
+}
+if (dudCounter) {
+  dudCounter.textContent = `Duds ${application.inventory.duds}`;
+}
 
 worldScene.onStatusChanged = (status) => {
   if (!statusValue) return;

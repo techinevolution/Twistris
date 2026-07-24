@@ -2,7 +2,7 @@
 
 ## Overview
 
-Twistris is currently a Vite-served browser game with a retained legacy comparison route and an accepted Phaser runtime at `/next/`. Typed puzzle and economy modules own outcomes, `GameApplication` owns lifecycle and page-session transactions, Phaser owns animated presentation, and browser capabilities enter through injected platform adapters.
+Twistris is currently a Vite-served browser game with a retained legacy comparison route and an accepted Phaser runtime at `/next/`. Typed puzzle, economy, and profile modules own outcomes, `GameApplication` owns lifecycle and progression transactions, Phaser owns animated presentation, and browser capabilities enter through injected platform adapters.
 
 The approved target remains browser-first and uses TypeScript, Vite, Phaser, Vitest, and Playwright. The Phaser proof is accepted, but the migration remains incremental: preserve the working game and port only after behavioral and visual parity can be demonstrated. The final presentation uses one long-lived motherboard World scene rather than separate player-visible title, puzzle, crafting, and Board scenes.
 
@@ -15,7 +15,9 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - `src/domain/rules.ts`: typed DOM-free board, balance, centered-square, and harvest calculations
 - `src/domain/puzzle/PuzzleRun.ts`: typed DOM-free active-piece, gravity, ghost, attachment, retry, lock, balance, and pending-rotation state for the Phaser port
 - `src/domain/economy/SessionEconomy.ts`: pure page-session inventory and exactly-once harvest transactions
-- `src/app/state/GameApplication.ts`: validated application modes, typed events, harvest IDs, and session-economy coordination
+- `src/domain/profile/Profile.ts`: pure versioned profile creation, validation, migration, and harvest updates
+- `src/app/state/ProfileStore.ts`: platform-neutral local profile load, save, recovery, and reset behavior
+- `src/app/state/GameApplication.ts`: validated application modes, typed events, harvest IDs, profile saves, and session-economy coordination
 - `src/app/platform/PlatformAdapters.ts`: portable storage, audio, haptics, fullscreen, lifecycle, and achievements contracts
 - `game.js`: constants, shapes, game state, input, controller effects, harvest presentation, rendering, and startup
 - `next/index.html`: accepted Phaser runtime shell
@@ -33,7 +35,7 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - `vite.config.ts`: production entries for the playable game and isolated proof
 - `PROJECT_OUTLINE.md`: intended product destination
 - `PLAN.md`: current implementation order
-- `DATA_FORMATS.md`: provisional state and persistence guidance
+- `DATA_FORMATS.md`: current profile contract and provisional future data
 - `BALANCE_PLAN.md`: balance model and tuning notes
 - `TESTING.md`: validation guidance
 
@@ -61,6 +63,7 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - **Core-growth presentation:** the typed puzzle run derives completed centered layers and awards run Charges before exposing a one-shot presentation event. The World scene consumes that event for the neutral field, inward burst, Pulse scale, and DOM HUD update without making economy outcomes depend on animation.
 - **Application controller:** `GameApplication` validates title, launch, puzzle, pause, harvest, and return transitions; publishes typed application events; and coordinates page-session transactions without importing Phaser or browser APIs.
 - **Session economy:** `SessionEconomy` applies immutable harvest results once and returns a frozen before/after transaction. It has no scene, DOM, storage, or timing dependency.
+- **Local profile:** `Profile` defines and validates the version-one progression record. `ProfileStore` serializes it through the injected storage adapter and safely creates, migrates, recovers, or resets without importing Phaser.
 - **Capacity harvest:** the typed puzzle run creates the immutable harvest classification and result. `GameApplication` commits it through `SessionEconomy` before `WorldScene` begins the collapse and resource-transfer presentation.
 - **Platform boundary:** portable contracts cover storage, audio, haptics, fullscreen, lifecycle, and achievements. The `/next/` browser entry injects browser implementations; no domain module calls browser or wrapper APIs.
 
@@ -131,9 +134,10 @@ This is an ownership map, not permission to create every directory at once. Each
 3. A lock can grow the centered square, award run Charges, or stage a board rotation.
 4. Reaching capacity creates an immutable harvest result.
 5. `GameApplication` validates the harvest transition and commits the result through `SessionEconomy` exactly once.
-6. The typed application event boundary publishes the mode and transaction after inventory is decided.
-7. `WorldScene` animates collapse and display-only counters toward the already-banked totals.
-8. The DOM shell presents accessible controls and counters without deciding gameplay or economy outcomes.
+6. `GameApplication` applies the same accepted result to the in-memory profile and queues a storage write.
+7. The typed application event boundary publishes the mode and transaction after inventory is decided.
+8. `WorldScene` animates collapse and display-only counters toward the already-banked totals.
+9. The DOM shell presents accessible controls and counters without deciding gameplay or economy outcomes.
 
 ## Intended Progression Data Flow
 
@@ -146,9 +150,9 @@ This is an ownership map, not permission to create every directory at once. Each
 
 ## Persistence and State
 
-There is no persistent save yet. `GameApplication` holds banked Duds, Pulse charges, applied harvest IDs, and the next harvest sequence for the current page session. Restart replaces the puzzle run while preserving that application-owned session state.
+The `/next/` route loads one anonymous version-one profile from `twistris.profile` before creating Phaser. Browser local storage is the first adapter; packaged builds may later use platform storage while preserving the same payload. Missing data creates a default, malformed or unsupported data recovers safely, and the supported version-zero shape migrates its inventory. Storage failure leaves a usable in-memory profile and emits an application event after failed harvest saves.
 
-Future persistence should use a versioned root object, safe defaults, and explicit migrations. Browser local storage is the first adapter; packaged builds may later use platform storage while preserving the same payload. Run state, animation state, wrapper paths, permissions, and platform handles must not be persisted as profile inventory.
+The profile persists approved inventory, restoration milestones, generic upgrade IDs, run statistics, and first-run/repair flags. Applied harvest IDs and the next harvest sequence remain page-session safeguards. Run state, animation state, mission progress, unresolved resources, recipes, wrapper paths, permissions, and platform handles are not persisted.
 
 ## External Services and Integrations
 
@@ -171,7 +175,7 @@ Current:
 
 Next:
 
-- Slice 9 introduces a versioned local profile through the storage adapter without putting persistence in Phaser.
+- Slice 10 introduces the first pure crafting and Gravity Module repair transactions without putting progression outcomes in Phaser.
 - Playwright will own critical browser flows, responsive checks, and selected visual comparisons after it is introduced.
 - The legacy smoke harness remains until equivalent coverage and runtime parity are approved.
 

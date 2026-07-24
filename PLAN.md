@@ -2,15 +2,15 @@
 
 ## Current State
 
-The prototype currently supports the title flow, falling and rotating pieces, central attachment, imbalance-driven stack rotation, centered-square growth, Pulse charge counting, and an animated capacity harvest. Duds and charges accumulate through a tested page-session economy transaction, but there is no saved profile, metagame, crafting screen, repair system, mission layer, or tutorial yet.
+The prototype currently supports the title flow, falling and rotating pieces, central attachment, imbalance-driven stack rotation, centered-square growth, Pulse charge counting, and an animated capacity harvest. Duds and charges bank through a tested transaction into one versioned local demo profile. There is no crafting screen, repair system, mission layer, Board progression, or tutorial yet.
 
-The accepted `/next/` runtime uses `PuzzleRun` for run rules, `SessionEconomy` for atomic page-session banking, and `GameApplication` for validated lifecycle transitions and typed application events. Phaser owns input and animated presentation, while browser capabilities enter through platform adapters. The retained legacy route remains centered on `game.js` for comparison.
+The accepted `/next/` runtime uses `PuzzleRun` for run rules, `SessionEconomy` for atomic session banking, `Profile` and `ProfileStore` for durable local progression, and `GameApplication` for validated lifecycle transitions and typed application events. Phaser owns input and animated presentation, while browser capabilities enter through platform adapters. The retained legacy route remains centered on `game.js` for comparison.
 
 ## Current Product Goal
 
 Release a polished browser-first demo that carries players through the complete onboarding sequence, the first mission and progression loop, one firewall-sector recovery, and an Endless Feed mode with a small upgrade set.
 
-The modern toolchain migration, playable Phaser parity port, and application/domain/platform boundary work are complete. The immediate work is a small versioned local profile before crafting, missions, repair, and Board progression begin.
+The modern toolchain migration, playable Phaser parity port, application/domain/platform boundaries, and versioned local profile are complete. The immediate work is the first complete progression loop: harvest, craft one Bit, and repair the Gravity Module.
 
 ## Current Architecture Shape
 
@@ -45,8 +45,8 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 8. **Establish application, domain, and platform boundaries - Complete**
    `GameApplication` now owns validated title, launch, puzzle, pause, harvest, and return transitions; emits typed mode, restart, and harvest events; allocates session-unique harvest IDs; and exposes the current banked inventory. Pure `SessionEconomy` applies immutable harvest results exactly once outside Phaser and returns a before/after transaction for presentation. `WorldScene` retains puzzle timing, input, camera, animation, and display counters but no longer owns lifecycle or banked inventory decisions. Portable contracts now cover storage, audio, haptics, fullscreen, lifecycle, and achievements, with browser implementations injected at the `/next/` entry point. Profile, mission, and demo-board modules remain intentionally absent until their approved rules are implemented.
 
-9. **Add local profile persistence**
-   Introduce a small versioned save shape with safe load, create, reset, and migration behavior. Persist demo inventory, Gravity Module repair, first-sector status, mission progress, Endless Feed unlock, selected upgrades, and tutorial flags only when their rules are approved. Keep transient animation and scene state out of the save.
+9. **Add local profile persistence - Complete**
+   One anonymous versioned local demo profile now loads before Phaser starts. Pure validation normalizes malformed values, explicitly migrates the supported version-zero inventory shape, recovers unsupported or invalid data, and excludes transient scene state. `ProfileStore` provides create, load, save, and reset behavior through the storage adapter, including a usable in-memory fallback when storage is unavailable. `GameApplication` starts from the loaded inventory and queues each applied harvest to storage before presentation completes. The schema includes approved Duds, Pulse charges, Bits, Gravity repair, first-firewall status, Endless Feed unlock, generic upgrade IDs, run statistics, and first-run/repair flags. Mission progress, Charged Bits, Bit Dust, recipes, and named profile slots remain absent until their rules are approved.
 
 10. **Build the first complete progression loop**
     Track run-earned resources, show a harvest result, bank it to the profile, craft the first Bit, and install it in the Gravity Module.
@@ -71,7 +71,7 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 
 ## Recommended Next Slice
 
-Begin slice 9 by adding a small versioned local profile through the established storage adapter. Keep save validation, migration, reset, and harvest application independent of Phaser; do not add crafting, missions, Board rules, wrappers, or tutorial behavior in the persistence slice.
+Begin slice 10 by connecting the first real progression transaction end to end: preserve the harvested profile inventory, present the first approved Bit recipe, spend its approved costs exactly once, add one Bit, and install that Bit in the Gravity Module. Keep crafting and repair outcomes in pure domain modules; use the World scene only to present the documented Craft overlay and walking-Bit installation.
 
 ## Deferred Work
 
@@ -94,7 +94,7 @@ Detailed post-demo design belongs in the gitignored local ideation area and is n
 - What exactly makes Endless Feed endless while preserving performance and puzzle clarity?
 - Which three or four upgrades ship in the demo, and what are their attainable costs?
 - What limits, if any, keep Gyro Override useful without trivializing placement?
-- Should the first profile support one named player or multiple local profiles?
+- Whether a later release needs named players or multiple local profiles; the demo starts with one anonymous local profile.
 - Which desktop wrapper and storefront integrations are appropriate when a PC release is scheduled?
 
 ## Validation Path

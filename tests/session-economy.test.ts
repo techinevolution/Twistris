@@ -35,6 +35,15 @@ describe("session economy", () => {
     expect(initial.inventory).toEqual({ duds: 0, pulseCharges: 0 });
   });
 
+  it("can begin from validated profile inventory", () => {
+    const state = createSessionEconomyState({
+      duds: 7,
+      pulseCharges: 2,
+    });
+
+    expect(state.inventory).toEqual({ duds: 7, pulseCharges: 2 });
+  });
+
   it("does not apply the same result twice", () => {
     const result = {
       id: "harvest-1",

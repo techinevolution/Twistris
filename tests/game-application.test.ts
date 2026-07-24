@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createNoopPlatformAdapters } from "../src/app/platform/PlatformAdapters";
 import { GameApplication } from "../src/app/state/GameApplication";
+import { createProfile } from "../src/domain/profile/Profile";
 
 describe("GameApplication", () => {
   it("owns validated title, launch, play, and pause transitions", () => {
@@ -92,5 +93,77 @@ describe("GameApplication", () => {
     const application = new GameApplication({ platform });
 
     expect(application.platform).toBe(platform);
+  });
+
+  it("starts session inventory from the loaded profile", () => {
+    const profile = {
+      ...createProfile(),
+      inventory: { duds: 11, pulseCharges: 3, bits: 1 },
+    };
+    const application = new GameApplication({ profile });
+
+    expect(application.inventory).toEqual({ duds: 11, pulseCharges: 3 });
+    expect(application.profile.inventory.bits).toBe(1);
+  });
+
+  it("persists an applied harvest before presentation completes", async () => {
+    const save = vi.fn(async (_profile: ReturnType<typeof createProfile>) => {});
+    const application = new GameApplication({
+      profilePersistence: {
+        save,
+        async reset() {
+          return createProfile();
+        },
+      },
+    });
+    application.beginLaunch();
+    application.completeLaunch();
+
+    application.beginHarvest({
+      id: "harvest-1",
+      earned: { duds: 8, pulseCharges: 2 },
+      runStats: { coreLayersReached: 3 },
+    });
+    await application.flushProfileSave();
+
+    expect(application.mode).toBe("harvesting");
+    expect(save).toHaveBeenCalledOnce();
+    expect(save.mock.calls[0][0].inventory).toEqual({
+      duds: 8,
+      pulseCharges: 2,
+      bits: 0,
+    });
+    expect(save.mock.calls[0][0].stats).toEqual({
+      totalRuns: 1,
+      totalHarvests: 1,
+      bestCoreLayers: 3,
+    });
+  });
+
+  it("keeps gameplay usable and reports a failed profile save", async () => {
+    const application = new GameApplication({
+      profilePersistence: {
+        async save() {
+          throw new Error("storage unavailable");
+        },
+        async reset() {
+          return createProfile();
+        },
+      },
+    });
+    const listener = vi.fn();
+    application.subscribe(listener);
+    application.beginLaunch();
+    application.completeLaunch();
+
+    const transaction = application.beginHarvest({
+      id: "harvest-1",
+      earned: { duds: 5, pulseCharges: 1 },
+    });
+    await application.flushProfileSave();
+
+    expect(transaction?.applied).toBe(true);
+    expect(application.inventory).toEqual({ duds: 5, pulseCharges: 1 });
+    expect(listener).toHaveBeenCalledWith({ type: "profileSaveFailed" });
   });
 });

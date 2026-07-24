@@ -6,6 +6,9 @@ export interface BankedInventory {
 export interface HarvestAward {
   readonly id: number | string;
   readonly earned: BankedInventory;
+  readonly runStats?: {
+    readonly coreLayersReached: number;
+  };
 }
 
 export interface SessionEconomyState {
@@ -27,9 +30,11 @@ function freezeInventory(inventory: BankedInventory): BankedInventory {
   });
 }
 
-export function createSessionEconomyState(): SessionEconomyState {
+export function createSessionEconomyState(
+  inventory: BankedInventory = { duds: 0, pulseCharges: 0 },
+): SessionEconomyState {
   return Object.freeze({
-    inventory: freezeInventory({ duds: 0, pulseCharges: 0 }),
+    inventory: freezeInventory(inventory),
     appliedHarvestResultIds: Object.freeze([]),
   });
 }

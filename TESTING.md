@@ -2,7 +2,7 @@
 
 ## Current Approach
 
-Twistris uses Vitest for typed puzzle rules, session economy, and application-state tests; TypeScript for compile-time checks; Vite for development and production builds; and the retained browser smoke harness for legacy controller characterization.
+Twistris uses Vitest for typed puzzle rules, session economy, local profiles, profile storage, and application-state tests; TypeScript for compile-time checks; Vite for development and production builds; and the retained browser smoke harness for legacy controller characterization.
 
 Do not remove the smoke harness merely because the new runner exists. Its controller coverage remains required until equivalent automated coverage and runtime parity are approved.
 
@@ -49,6 +49,8 @@ Run `npm test`. The focused typed suite verifies:
 - title, launch, puzzle, pause, harvest, and return transitions reject invalid order
 - typed mode, restart, and harvest events are emitted from the application boundary
 - banked inventory survives puzzle-run restart and is committed before harvest presentation
+- version-one profiles create, normalize, migrate, recover, save, and reset through fake storage
+- loaded inventory seeds the application, applied harvests update profile statistics, and save failure does not stop gameplay
 - puzzle behavior remains covered independently by `PuzzleRun` and the pure rules module
 
 ## Manual Checks
@@ -75,7 +77,6 @@ Open [index.html](index.html) and verify:
 
 Add focused coverage as the corresponding state boundaries are introduced:
 
-- malformed and older-version profile data after persistence exists
 - pure crafting, mission, and first-sector transactions
 - tutorial event ordering without waiting for real animation durations
 - platform-adapter contracts using browser-safe fakes
@@ -160,6 +161,9 @@ Current `/next/` puzzle checks:
 - run Charges transfer to the left counter after the Dud transfer
 - harvest completion restores the title and Start control with a fresh run ready
 - a second run does not reapply the previous harvest result
+- reloading `/next/` restores banked Duds and Pulse charges from the local profile
+- profile creation, migration, or recovery completes before Phaser starts
+- blocked storage leaves the game playable and reports a non-persisted profile diagnostic
 
 The route is not a replacement for `/` until all gameplay and presentation parity checks pass.
 

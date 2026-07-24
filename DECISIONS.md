@@ -6,7 +6,7 @@ Decision: Use a typed application controller for lifecycle and session transacti
 
 Reason: The persistent World scene should coordinate animation and input without becoming the owner of inventory, progression, saves, missions, Board outcomes, or wrapper APIs.
 
-Consequences: `WorldScene` may present application decisions but does not bank harvests or validate lifecycle transitions. Browser implementations are wired at the `/next/` entry point, packaged builds can replace them without changing domain rules, and future profile, mission, and demo-board logic receives its own tested module only when that slice implements real approved behavior.
+Consequences: `WorldScene` may present application decisions but does not bank harvests or validate lifecycle transitions. Browser implementations are wired at the `/next/` entry point, packaged builds can replace them without changing domain rules, and profile, mission, and demo-board logic receives its own tested module only when that slice implements real approved behavior.
 
 ## 2026-07-23: Keep The World Continuous Without Loading It All
 
@@ -176,7 +176,7 @@ Decision: Represent each harvest as an immutable result with a session-unique ID
 
 Reason: Earned inventory must survive skipped, interrupted, shortened, or changed animation timing without being duplicated.
 
-Consequences: Harvest presentation can evolve independently, while future profile persistence must retain result identity and exactly-once application semantics.
+Consequences: Harvest presentation can evolve independently, while profile persistence retains result identity and exactly-once application semantics.
 
 ## 2026-07-22: Keep Puzzle Rules DOM-Free
 
@@ -187,3 +187,11 @@ Reason: Puzzle behavior needs direct deterministic testing and should not depend
 Consequences: `game.js` consumes rule results and retains orchestration and effects. New puzzle calculations should enter through this pure boundary unless their ownership clearly belongs elsewhere.
 
 Status: The boundary remains active, but slice 5 migrated its implementation to the typed `src/domain/rules.ts` module and Vite now resolves the import.
+
+## 2026-07-23: Start With One Anonymous Versioned Demo Profile
+
+Decision: Persist one local version-one profile through the platform storage adapter. Save only approved inventory, demo restoration milestones, generic upgrade IDs, run statistics, and first-run/repair flags.
+
+Reason: The demo needs durable progression before crafting and repair arrive, but it does not yet need account UI, named slots, unresolved recipes, mission schemas, Charged Bits, or Bit Dust.
+
+Consequences: Profile validation, migration, recovery, and harvest updates remain independent of Phaser. Missing or damaged saves recover safely, storage failure leaves the game usable in memory, and future incompatible changes require an explicit version migration.

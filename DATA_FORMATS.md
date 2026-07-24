@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document records provisional state and persistence guidance. It is not yet a code-level contract. [PLAN.md](PLAN.md) controls when these shapes are implemented, and unresolved resources must not be treated as permanent schema.
+This document records the current version-one local profile contract plus provisional guidance for future runtime data. [PLAN.md](PLAN.md) controls when additional shapes are implemented, and unresolved resources must not be treated as permanent schema.
 
 ## Stable Rules
 
@@ -27,9 +27,9 @@ This document records provisional state and persistence guidance. It is not yet 
 }
 ```
 
-### `session` and future `profile`
+### `session` and `profile`
 
-The current `/next/` runtime has a page-session inventory only. `GameApplication` coordinates it through the pure `SessionEconomy` boundary until profile persistence is implemented.
+The current `/next/` runtime loads one anonymous local profile before Phaser starts. `GameApplication` seeds `SessionEconomy` from its banked Duds and Pulse charges, commits an applied harvest to both boundaries, and queues the updated profile for storage before harvest presentation completes.
 
 ```js
 {
@@ -40,28 +40,26 @@ The current `/next/` runtime has a page-session inventory only. `GameApplication
 }
 ```
 
-The sequence is application metadata and the applied-ID list belongs to the session-economy state. Persistence may replace their implementation later, but repeated application of the same result must remain idempotent.
+The sequence is application metadata and the applied-ID list belongs to the page-session economy state. They are not persistent profile fields. Repeated application of the same result remains idempotent within the running application.
 
-The future `profile` is the demo's local progression record. Pulse charges, Duds, and Bits are approved initial inventory keys. Charged Bits and Bit Dust remain provisional.
+The version-one profile is the demo's local progression record. Pulse charges, Duds, and Bits are approved inventory keys. Charged Bits, Bit Dust, mission progress, recipes, player names, and multiple save slots remain provisional and are not serialized.
 
-```js
+```ts
 {
   version: 1,
-  playerName: "Sample Player",
   inventory: {
     pulseCharges: 0,
     duds: 0,
     bits: 0
   },
-  pulse: {
-    repairStage: 0,
-    gravityModuleRepaired: false
-  },
-  demo: {
+  restoration: {
+    gravityModuleRepaired: false,
     firewallSectorSecured: false,
-    endlessFeedUnlocked: false,
-    unlockedUpgrades: [],
-    equippedUpgrades: []
+    endlessFeedUnlocked: false
+  },
+  upgrades: {
+    unlockedIds: [],
+    equippedIds: []
   },
   stats: {
     totalRuns: 0,
@@ -74,6 +72,8 @@ The future `profile` is the demo's local progression record. Pulse charges, Duds
   }
 }
 ```
+
+The storage key is `twistris.profile`. Loaded values are normalized to finite nonnegative integers, strict booleans, unique non-empty upgrade IDs, and equipped IDs that are already unlocked. Missing data creates and stores a default profile. Malformed or unsupported data recovers to the default profile. The supported version-zero migration preserves the former flat Dud, Pulse-charge, and Bit counts.
 
 ### `run`
 
@@ -137,7 +137,7 @@ The core rule layer should produce one immutable result before presentation begi
 }
 ```
 
-`SessionEconomy` records that the result was applied and updates banked inventory before the animation. A future profile transaction must preserve that ordering and save independently of presentation.
+`SessionEconomy` records that the result was applied, then `GameApplication` updates and queues the profile save before the animation. Presentation remains independent of the storage write.
 
 ## Repair Definitions
 
@@ -178,9 +178,9 @@ When persisted data changes incompatibly:
 
 ## Open Data Questions
 
-- Single local profile or multiple named profiles.
+- Whether post-demo releases need named players or multiple local profiles.
 - The demo's Charged Bit source or fabrication recipe.
 - Whether Bit Dust exists in inventory, only during a run, or both.
 - Four-charge mission and first-firewall progress shapes.
 - Endless Feed unlock and demo-upgrade definition shapes.
-- Safe duplicate-harvest protection strategy.
+- Whether duplicate-harvest IDs eventually need to survive a browser process interruption; current IDs protect one running application session.
