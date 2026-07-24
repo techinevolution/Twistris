@@ -20,6 +20,7 @@ const IDLE_GRID_ALPHA = 0.36;
 const LAUNCH_DURATION = 2050;
 const ROTATION_DURATION = 340;
 const CORE_GROWTH_DURATION = 960;
+const BLOCK_FADE_DURATION = 4000;
 const HARVEST_IMPACT_DURATION = 744;
 const HARVEST_FALL_DURATION = 840;
 const HARVEST_DUD_INTERVAL = 40;
@@ -40,14 +41,21 @@ const COLORS = {
   white: 0xf8fdff,
 };
 
-type WorldPhase = "title" | "launching" | "playing" | "harvesting";
+type WorldPhase =
+  | "title"
+  | "launching"
+  | "playing"
+  | "paused"
+  | "harvesting";
 type HarvestPhase = "impact" | "fall" | "duds" | "charges" | "return";
 export type PuzzleAction =
   | "left"
   | "right"
   | "rotate"
   | "softDrop"
-  | "hardDrop";
+  | "hardDrop"
+  | "pause"
+  | "restart";
 
 interface LogoCell {
   color: "cyan" | "magenta";
@@ -205,6 +213,7 @@ export class WorldScene extends Phaser.Scene {
   onPulseChargesChanged: ((charges: number) => void) | null = null;
   onDudsChanged: ((duds: number) => void) | null = null;
   onReturnToTitle: (() => void) | null = null;
+  onStatusChanged: ((status: string) => void) | null = null;
 
   private phase: WorldPhase = "title";
   private readonly cameraController = new WorldCameraController("title-closeup");
@@ -218,6 +227,7 @@ export class WorldScene extends Phaser.Scene {
   private coreGrowthGraphics!: Phaser.GameObjects.Graphics;
   private harvestGraphics!: Phaser.GameObjects.Graphics;
   private harvestLabel!: Phaser.GameObjects.Text;
+  private pauseLabel!: Phaser.GameObjects.Text;
   private pieceGraphics!: Phaser.GameObjects.Graphics;
   private previewGraphics!: Phaser.GameObjects.Graphics;
   private previewLabel!: Phaser.GameObjects.Text;
@@ -233,7 +243,14 @@ export class WorldScene extends Phaser.Scene {
   private ready = false;
   private puzzle = new PuzzleRun();
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private letterKeys!: Record<"left" | "right" | "rotateW" | "rotateX" | "softDrop", Phaser.Input.Keyboard.Key>;
+  private letterKeys!: Record<
+    | "left"
+    | "right"
+    | "rotateW"
+    | "rotateX"
+    | "softDrop",
+    Phaser.Input.Keyboard.Key
+  >;
   private horizontalDirection = 0;
   private horizontalRepeatElapsed = 0;
   private rotationElapsed = 0;
@@ -283,6 +300,18 @@ export class WorldScene extends Phaser.Scene {
     this.harvestLabel.setBackgroundColor("rgba(7, 19, 29, 0.92)");
     this.harvestLabel.setPadding(14, 8);
     this.harvestLabel.setVisible(false);
+    this.pauseLabel = this.add.text(0, 0, "PAUSED\nPress P to resume", {
+      align: "center",
+      color: "#f8fdff",
+      fontFamily: '"Segoe UI", Helvetica, Arial, sans-serif',
+      fontSize: "24px",
+      fontStyle: "bold",
+      lineSpacing: 8,
+    });
+    this.pauseLabel.setOrigin(0.5);
+    this.pauseLabel.setBackgroundColor("rgba(7, 19, 29, 0.94)");
+    this.pauseLabel.setPadding(22, 16);
+    this.pauseLabel.setVisible(false);
     this.pulse = createPulse(this);
     this.structureContainer.add([
       this.coreFieldGraphics,
@@ -299,6 +328,7 @@ export class WorldScene extends Phaser.Scene {
       this.previewLabel,
       this.harvestGraphics,
       this.harvestLabel,
+      this.pauseLabel,
       ...this.particles,
     ]);
     this.world.add(this.pulseSector);
@@ -326,6 +356,8 @@ export class WorldScene extends Phaser.Scene {
     } else if (this.phase === "harvesting") {
       for (const particle of this.particles) particle.setVisible(false);
       this.updateHarvest(delta);
+    } else if (this.phase === "paused") {
+      for (const particle of this.particles) particle.setVisible(false);
     } else {
       for (const particle of this.particles) particle.setVisible(false);
       this.updateCoreGrowth(delta);
@@ -351,6 +383,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   act(action: PuzzleAction): boolean {
+    if (action === "pause") return this.togglePause();
+    if (action === "restart") return this.restartRun();
     if (this.phase !== "playing" || this.puzzle.pendingRotation) return false;
 
     let changed = false;
@@ -364,6 +398,9 @@ export class WorldScene extends Phaser.Scene {
       changed = outcome !== null;
     }
     this.consumeCoreGrowth();
+    if (outcome === "retried") {
+      this.onStatusChanged?.("Missed the stack");
+    }
     if (outcome === "capacity") {
       this.startHarvest();
       return true;
@@ -397,6 +434,7 @@ export class WorldScene extends Phaser.Scene {
     this.pulse.setAngle(0);
     this.logo.setVisible(false);
     this.puzzle.start();
+    this.onStatusChanged?.("");
     this.onPulseChargesChanged?.(this.puzzle.pulseCharges);
     this.previewLabel.setVisible(true);
     this.renderPuzzle();
@@ -443,6 +481,53 @@ export class WorldScene extends Phaser.Scene {
       Phaser.Input.Keyboard.KeyCodes.W,
       Phaser.Input.Keyboard.KeyCodes.X,
     ]);
+  }
+
+  private togglePause(): boolean {
+    if (this.phase === "playing") {
+      this.phase = "paused";
+      this.pauseLabel.setVisible(true);
+      this.onStatusChanged?.("Paused");
+      this.publishDiagnostics();
+      return true;
+    }
+    if (this.phase === "paused") {
+      this.phase = "playing";
+      this.pauseLabel.setVisible(false);
+      this.onStatusChanged?.("");
+      this.publishDiagnostics();
+      return true;
+    }
+    return false;
+  }
+
+  private restartRun(): boolean {
+    if (this.phase !== "playing" && this.phase !== "paused") return false;
+
+    this.phase = "playing";
+    this.puzzle = new PuzzleRun();
+    this.puzzle.start();
+    this.harvestSequence = null;
+    this.coreGrowthElapsed = CORE_GROWTH_DURATION;
+    this.horizontalDirection = 0;
+    this.horizontalRepeatElapsed = 0;
+    this.rotationElapsed = 0;
+    this.world.setScale(1);
+    this.grid.setAlpha(1);
+    this.structureContainer.setAngle(0);
+    this.pulse.setScale(1);
+    this.pulse.setAngle(0);
+    this.logo.setVisible(false);
+    this.previewLabel.setVisible(true);
+    this.harvestLabel.setVisible(false);
+    this.pauseLabel.setVisible(false);
+    this.onPulseChargesChanged?.(0);
+    this.onDudsChanged?.(this.bankedDuds);
+    this.onStatusChanged?.("");
+    this.setCameraMode("puzzle");
+    this.renderPuzzle();
+    this.publishDiagnostics();
+    return true;
   }
 
   private updatePuzzle(delta: number) {
@@ -492,10 +577,14 @@ export class WorldScene extends Phaser.Scene {
     }
 
     this.consumeCoreGrowth();
+    if (outcome === "retried") {
+      this.onStatusChanged?.("Missed the stack");
+    }
     if (outcome === "capacity") {
       this.startHarvest();
       return;
     }
+    this.updateBlockAges(delta);
     this.renderPuzzle();
   }
 
@@ -532,22 +621,30 @@ export class WorldScene extends Phaser.Scene {
       for (let x = 0; x < this.puzzle.size; x += 1) {
         const block = this.puzzle.board[y][x];
         if (!block || block.seed) continue;
+        const influenced =
+          this.puzzle.coreLayers > 0 &&
+          Math.max(
+            Math.abs(x - this.puzzle.center),
+            Math.abs(y - this.puzzle.center),
+          ) <= this.puzzle.coreLayers;
+        const shake = influenced
+          ? this.influenceShake(x, y)
+          : { x: 0, y: 0 };
+        const fade = this.blockFade(x, y);
+        const alpha = influenced ? Math.max(0.68, fade * 0.82) : fade;
         this.drawPuzzleCell(
           this.structureGraphics,
-          x,
-          y,
+          x + shake.x / CELL_SIZE,
+          y + shake.y / CELL_SIZE,
           block.color === "magenta" ? "magenta" : "cyan",
-          1,
+          alpha,
           false,
           CELL_SIZE,
-          this.puzzle.coreLayers > 0 &&
-            Math.max(
-              Math.abs(x - this.puzzle.center),
-              Math.abs(y - this.puzzle.center),
-            ) <= this.puzzle.coreLayers,
+          influenced,
         );
       }
     }
+    this.drawMassOutline();
 
     if (this.puzzle.current) {
       for (const cell of this.puzzle.worldCells()) {
@@ -561,6 +658,102 @@ export class WorldScene extends Phaser.Scene {
     }
 
     this.drawPreview(this.puzzle.nextShape);
+  }
+
+  private updateBlockAges(delta: number) {
+    for (const row of this.puzzle.board) {
+      for (const block of row) {
+        if (!block || block.seed) continue;
+        if (block.placementId === this.puzzle.lockSequence) continue;
+        const age = typeof block.age === "number" ? block.age : 0;
+        block.age = Math.min(12000, age + delta);
+      }
+    }
+  }
+
+  private blockFade(x: number, y: number): number {
+    const block = this.puzzle.board[y]?.[x];
+    const age =
+      block && typeof block.age === "number" ? block.age : 1000;
+    const distance = Math.max(
+      Math.abs(x - this.puzzle.center),
+      Math.abs(y - this.puzzle.center),
+    );
+    if (distance <= this.puzzle.coreLayers) return 1;
+    const target =
+      distance <= this.puzzle.coreLayers + 2 ? 0.42 : 0.14;
+    const progress = Phaser.Math.Clamp(age / BLOCK_FADE_DURATION, 0, 1);
+    return Phaser.Math.Linear(1, target, progress);
+  }
+
+  private influenceShake(x: number, y: number) {
+    const time = this.elapsed / 1000;
+    const seed = hashUnit(x * 12.9898 + y * 78.233);
+    const window = Math.floor(time * 3.2 + seed * 9.7);
+    const active = hashUnit(window * 19.17 + seed * 41.83);
+    if (active < 0.9) return { x: 0, y: 0 };
+    const strength =
+      0.088 + hashUnit(window * 7.31 + seed * 29.7) * 0.264;
+    return {
+      x: Math.sin(time * 33 + seed * 40) * strength,
+      y: Math.cos(time * 29 + seed * 35) * strength * 0.82,
+    };
+  }
+
+  private drawMassOutline() {
+    const graphics = this.structureGraphics;
+    const board = this.puzzle.board;
+    const half = CELL_SIZE / 2 - 1.5;
+
+    for (let y = 0; y < this.puzzle.size; y += 1) {
+      for (let x = 0; x < this.puzzle.size; x += 1) {
+        const block = board[y][x];
+        if (!block || block.seed) continue;
+        const left = x > 0 ? board[y][x - 1] : null;
+        const right = x < this.puzzle.size - 1 ? board[y][x + 1] : null;
+        const up = y > 0 ? board[y - 1][x] : null;
+        const down = y < this.puzzle.size - 1 ? board[y + 1][x] : null;
+        if (left && right && up && down) continue;
+
+        const centerX = (x - this.puzzle.center) * CELL_SIZE;
+        const centerY = (y - this.puzzle.center) * CELL_SIZE;
+        const edge =
+          block.color === "magenta" ? COLORS.magentaEdge : COLORS.cyanEdge;
+        graphics.lineStyle(4, edge, 1);
+        if (!up) {
+          graphics.lineBetween(
+            centerX - half,
+            centerY - half,
+            centerX + half,
+            centerY - half,
+          );
+        }
+        if (!right) {
+          graphics.lineBetween(
+            centerX + half,
+            centerY - half,
+            centerX + half,
+            centerY + half,
+          );
+        }
+        if (!down) {
+          graphics.lineBetween(
+            centerX - half,
+            centerY + half,
+            centerX + half,
+            centerY + half,
+          );
+        }
+        if (!left) {
+          graphics.lineBetween(
+            centerX - half,
+            centerY - half,
+            centerX - half,
+            centerY + half,
+          );
+        }
+      }
+    }
   }
 
   private updateStructureRotation(delta: number) {
@@ -610,6 +803,8 @@ export class WorldScene extends Phaser.Scene {
     };
     this.phase = "harvesting";
     this.previewLabel.setVisible(false);
+    this.pauseLabel.setVisible(false);
+    this.onStatusChanged?.("");
     this.onDudsChanged?.(startingDuds);
     this.onPulseChargesChanged?.(startingCharges);
     this.cameras.main.shake(260, 0.004);
@@ -882,6 +1077,7 @@ export class WorldScene extends Phaser.Scene {
     this.logo.y = 0;
     this.previewLabel.setVisible(false);
     this.harvestLabel.setVisible(false);
+    this.pauseLabel.setVisible(false);
     this.coreFieldGraphics.clear();
     this.structureGraphics.clear();
     this.coreGrowthGraphics.clear();
@@ -889,6 +1085,7 @@ export class WorldScene extends Phaser.Scene {
     this.previewGraphics.clear();
     this.harvestGraphics.clear();
     this.setCameraMode("title-closeup");
+    this.onStatusChanged?.("");
     this.onReturnToTitle?.();
     this.publishDiagnostics();
   }

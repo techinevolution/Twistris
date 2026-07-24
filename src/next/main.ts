@@ -10,6 +10,7 @@ const stage = document.querySelector<HTMLElement>("#phaserTitle");
 const startScreen = document.querySelector<HTMLElement>("#startScreen");
 const startButton = document.querySelector<HTMLButtonElement>("#startButton");
 const gameKeySink = document.querySelector<HTMLInputElement>("#gameKeySink");
+const statusValue = document.querySelector<HTMLElement>("#statusValue");
 const pulseChargeCounter =
   document.querySelector<HTMLElement>("#pulseChargeCounter");
 const dudCounter = document.querySelector<HTMLElement>("#dudCounter");
@@ -20,6 +21,8 @@ const testActions = new Set<PuzzleAction>([
   "rotate",
   "softDrop",
   "hardDrop",
+  "pause",
+  "restart",
 ]);
 
 function focusGameSurface() {
@@ -64,10 +67,39 @@ worldScene.onReturnToTitle = () => {
   startScreen?.style.setProperty("--launch-progress", "0");
 };
 
-startButton?.addEventListener("click", () => {
+worldScene.onStatusChanged = (status) => {
+  if (!statusValue) return;
+  statusValue.textContent = status;
+  statusValue.classList.toggle("is-hidden", !status);
+};
+
+function beginLaunch() {
   if (!worldScene.startTransition()) return;
   startScreen?.classList.add("is-launching");
   focusGameSurface();
+}
+
+startButton?.addEventListener("click", beginLaunch);
+window.addEventListener("keydown", (event) => {
+  if (
+    event.repeat &&
+    (event.code === "Enter" ||
+      event.code === "KeyP" ||
+      event.code === "KeyR")
+  ) {
+    event.preventDefault();
+    return;
+  }
+  if (event.code === "Enter") {
+    event.preventDefault();
+    beginLaunch();
+  } else if (event.code === "KeyP") {
+    event.preventDefault();
+    worldScene.act("pause");
+  } else if (event.code === "KeyR") {
+    event.preventDefault();
+    worldScene.act("restart");
+  }
 });
 
 stage?.addEventListener("pointerdown", focusGameSurface);

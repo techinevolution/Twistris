@@ -56,6 +56,14 @@ describe("PuzzleRun", () => {
     const occupied = run.board.flat().filter(Boolean);
     expect(occupied).toHaveLength(5);
     expect(run.pendingRotation?.direction).toBe(-1);
+    expect(run.lockSequence).toBe(1);
+    expect(
+      occupied
+        .filter((block) => !block?.seed)
+        .every(
+          (block) => block?.age === 0 && block?.placementId === 1,
+        ),
+    ).toBe(true);
   });
 
   it("retries the same shape after a detached drop", () => {

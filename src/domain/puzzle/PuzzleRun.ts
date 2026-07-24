@@ -144,6 +144,7 @@ export class PuzzleRun {
   current: ActivePiece | null = null;
   nextShape: PieceShape;
   piecesPlaced = 0;
+  lockSequence = 0;
   rotationCount = 0;
   orientationTurns = 0;
   coreLayers = 0;
@@ -360,10 +361,13 @@ export class PuzzleRun {
       return this.lastOutcome;
     }
 
+    this.lockSequence += 1;
     for (const cell of landed) {
       this.board[cell.y][cell.x] = {
         color: this.current.color,
         seed: false,
+        age: 0,
+        placementId: this.lockSequence,
       };
     }
 

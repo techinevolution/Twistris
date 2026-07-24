@@ -10,7 +10,7 @@ The browser runtime remains centered on `game.js`, but board and economy calcula
 
 Release a polished browser-first demo that carries players through the complete onboarding sequence, the first mission and progression loop, one firewall-sector recovery, and an Endless Feed mode with a small upgrade set.
 
-The modern toolchain migration is complete. The immediate work is a bounded Phaser proof. Demo persistence and metagame implementation follow only after the new presentation stack proves that it can reproduce the current game smoothly.
+The modern toolchain migration and playable Phaser parity port are complete. The immediate work is to establish durable application, domain, and platform boundaries before persistence and metagame implementation.
 
 ## Current Architecture Shape
 
@@ -38,9 +38,9 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 6. **Prove Phaser with one bounded visual slice - Complete**
    The isolated `/proofs/phaser.html` entry reproduces the Pulse, one falling piece, camera shake, and a two-footed Bit that emerges from the Pulse, walks a connected copper trace, and hops into a socket. Keyboard and touch input, WebGL rendering, FIT scaling, and 60 FPS presentation passed on desktop and a `390x844` mobile viewport. The existing playable controller remains untouched. Phaser adds a roughly 1.39 MB minified proof chunk, so loading boundaries remain a slice 7 concern.
 
-7. **Port the existing playable runtime incrementally**
+7. **Port the existing playable runtime incrementally - Complete**
    Establish one long-lived motherboard World scene plus UI and presentation layers. Port current rendering, input, rotation, harvest, and title behavior into that continuous space in reviewable pieces while retaining the pure rules and characterization tests. Remove the legacy runtime only after parity is demonstrated.
-   **In progress:** the isolated `/next/` route reproduces the animated logo, spinning close-up Pulse, orbiting particles, Start control, 2.05-second pullback, quarter-turn settling, HUD reveal, responsive framing, and focus handoff. That presentation now lives inside the persistent World scene with typed title-closeup, guided-pullback, Pulse-home, puzzle, and Board-free camera modes. A DOM-free puzzle-run model now drives the visible board, Pulse seed, falling piece, ghost, next-piece preview, normal and soft gravity, movement, piece rotation, hard drop, attachment locks, detached-piece retries, balance analysis, staged board rotation, centered-square growth, run Charge awards, and immutable capacity-harvest calculation. Off-balance locks freeze the active piece while the settled mass and Pulse perform the characterized 340 ms overshooting quarter-turn, then commit the rotated board. Completing one or more centered layers turns the enclosed Bits neutral, expands the Pulse field, draws an inward energy burst, pulses the core, and updates the Charge HUD from the already-decided domain result. Reaching capacity now banks the immutable result once, presents the capacity warning, collapses outer blocks, transfers Duds and Charges to counters, and returns to a clean title state. The scene currently mounts only the Pulse sector, establishing the future loading boundary without adding hidden Board content. Progression remains on `/` until its own parity increments. The current `/` game remains unchanged.
+   The isolated `/next/` route now reproduces the animated logo, spinning close-up Pulse, orbiting particles, Start and Enter launch, 2.05-second pullback, quarter-turn settling, HUD reveal, focus handoff, pause, restart, miss feedback, and responsive framing. That presentation lives inside the persistent World scene with typed title-closeup, guided-pullback, Pulse-home, puzzle, and Board-free camera modes. A DOM-free puzzle-run model drives the visible board, Pulse seed, falling piece, ghost, next-piece preview, normal and soft gravity, movement, piece rotation, hard drop, attachment locks, bottom-exit and detached-piece retries, balance analysis, staged board rotation, centered-square growth, run Charge awards, immutable capacity-harvest calculation, and placement metadata used by presentation. Off-balance locks freeze the active piece while the settled mass and Pulse perform the characterized 340 ms overshooting quarter-turn, then commit the rotated board. Older outer Bits fade, influenced Bits use the secured treatment and light agitation, and the connected mass keeps its colored outline. Completing centered layers expands the Pulse field, draws the inward energy burst, pulses the core, and updates the Charge HUD from the already-decided domain result. Reaching capacity banks the immutable result once, presents the warning and collapse, transfers Duds and Charges, and returns to a clean title state. The scene mounts only the Pulse sector, preserving the future loading boundary without adding hidden Board content. The legacy `/` runtime and 63-check browser harness remain as retained comparisons until a later removal decision; progression is intentionally deferred to the following slices.
 
 8. **Establish application, domain, and platform boundaries**
    Separate puzzle, economy, profile, mission, and demo-board logic from Phaser scenes. Add a typed application event boundary and adapters for storage, audio, haptics, fullscreen, lifecycle, and later platform achievements. Do not call wrapper-specific APIs from domain logic.
@@ -71,9 +71,7 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 
 ## Recommended Next Slice
 
-Compare the complete `/next/` run against `/`, with particular attention to capacity timing, immutable Dud and Charge totals, outer-block collapse, resource transfers, return-to-title behavior, repeated runs, focus, and responsive framing.
-
-Once that checkpoint is accepted, close slice 7 and begin slice 8 by establishing explicit application, domain, and platform boundaries. Do not add progression or remove the legacy controller until parity is approved.
+Begin slice 8 by establishing explicit application, domain, and platform boundaries around the accepted `/next/` runtime. Keep this boundary work small and incremental: do not add progression, persistence, wrappers, or remove the legacy controller in the same slice.
 
 ## Deferred Work
 

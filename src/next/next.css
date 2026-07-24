@@ -126,8 +126,33 @@ body {
   pointer-events: none;
 }
 
+.board-overlay-top {
+  position: absolute;
+  z-index: 3;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.start-screen:not(.is-hidden) ~ .board-overlay-top,
 .start-screen:not(.is-hidden) ~ .board-overlay-bottom {
   opacity: 0;
+}
+
+.status-chip {
+  padding: 9px 13px;
+  border: 1px solid rgba(120, 163, 196, 0.2);
+  border-radius: 18px;
+  background: rgba(7, 19, 29, 0.9);
+  color: rgba(238, 247, 255, 0.82);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status-chip.is-hidden {
+  display: none;
 }
 
 .currency-chip {

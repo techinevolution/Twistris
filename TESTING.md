@@ -114,6 +114,7 @@ Current World-scene title parity checks:
 
 Current `/next/` puzzle checks:
 
+- Enter starts the same guarded launch as the Start button
 - Start finishes in the `puzzle` camera mode without replacing the World scene
 - the Pulse seed, falling piece, ghost, and next-piece preview share the mounted Pulse sector
 - Arrow keys or WASD move, rotate, and soft-drop the active piece
@@ -132,6 +133,12 @@ Current `/next/` puzzle checks:
 - core growth draws an inward white energy burst and briefly expands the Pulse
 - Charge feedback can overlap a staged twist without changing the awarded result
 - the bottom Charge HUD updates once and remains readable at desktop and mobile widths
+- older outer Bits fade while the newest placement remains readable
+- secured Bits retain their neutral treatment and light agitation
+- the colored mass outline follows the exposed boundary of the settled structure
+- `P` pauses gravity and input with visible feedback, then resumes the same run
+- `R` starts a fresh run while preserving page-session bank values
+- misses display feedback without changing the settled board
 - a piece locking above the top boundary enters `harvesting` instead of leaving the run frozen with no active piece
 - capacity creates one immutable result and banks its Duds and Charges exactly once
 - `CAPACITY REACHED` remains readable over the occupied top of the stack

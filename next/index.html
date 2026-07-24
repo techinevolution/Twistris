@@ -13,6 +13,13 @@
           <div class="start-copy" aria-hidden="true"></div>
           <button id="startButton" class="start-button" type="button">Start</button>
         </div>
+        <div class="board-overlay-top">
+          <div
+            id="statusValue"
+            class="status-chip is-hidden"
+            aria-live="polite"
+          ></div>
+        </div>
         <div class="board-overlay-bottom">
           <div
             id="pulseChargeCounter"
@@ -41,7 +48,7 @@
           class="game-stage"
           tabindex="0"
           role="application"
-          aria-label="Twistris title"
+          aria-label="Twistris game"
         ></div>
       </section>
     </main>

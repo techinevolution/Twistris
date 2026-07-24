@@ -52,7 +52,7 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - **Harvest:** the controller creates an immutable result, applies it once to session inventory, and gives the animation a presentation copy.
 - **DOM shell:** the title button and small HUD surround the canvas.
 - **Phaser proof:** a separate page proves Twistris-styled rendering, camera shake, tweens, keyboard/touch input, FIT scaling, walking Bits, and lightweight runtime diagnostics.
-- **World scene scaffold:** the first parity port now keeps the logo, close Pulse view, orbiting particles, responsive framing, focus handoff, and 2.05-second Start pullback inside one persistent World scene. Its camera controller distinguishes title close-up, guided pullback, Pulse home, puzzle, and free Board modes. Only the Pulse sector is currently mounted.
+- **World scene runtime:** the accepted parity port keeps title, puzzle, pause, restart, growth, twist, harvest, responsive framing, focus handoff, and return-to-title presentation inside one persistent World scene. Its camera controller distinguishes title close-up, guided pullback, Pulse home, puzzle, and free Board modes. Only the Pulse sector is currently mounted.
 - **Typed puzzle run:** `/next/` renders its active piece, ghost, settled cells, and next-piece preview from a DOM-free model that consumes the existing attachment, balance, and board-rotation rules.
 - **Twist presentation:** a successful off-balance lock stages a separate rotated board, freezes puzzle input, turns the settled mass and Pulse through the characterized 340 ms overshoot, then commits the staged board.
 - **Core-growth presentation:** the typed puzzle run derives completed centered layers and awards run Charges before exposing a one-shot presentation event. The World scene consumes that event for the neutral field, inward burst, Pulse scale, and DOM HUD update without making economy outcomes depend on animation.
@@ -158,13 +158,13 @@ Current:
 - Vitest owns pure-rule unit tests.
 - The 63-check browser harness remains at `/tests/smoke.html` through the Vite server.
 - The accepted Phaser proof remains at `/proofs/phaser.html` for visual, input, responsive, and frame-pacing checks.
-- The in-progress Phaser runtime remains at `/next/` for direct parity comparison with `/`.
+- The accepted Phaser parity runtime remains at `/next/`; `/` and its harness stay available as retained comparisons.
 - Manual visual and interaction checks use the Vite-served game.
 - `node --check game.js` remains available for the legacy controller.
 
 Next:
 
-- Slice 7 now needs full-run parity review before slice 8 establishes the durable application and platform boundaries.
+- Slice 8 establishes durable application, domain, and platform boundaries around the accepted `/next/` runtime.
 - Playwright will own critical browser flows, responsive checks, and selected visual comparisons after it is introduced.
 - The legacy smoke harness remains until equivalent coverage and runtime parity are approved.
 
