@@ -29,7 +29,7 @@ This document records provisional state and persistence guidance. It is not yet 
 
 ### `session` and future `profile`
 
-The current runtime has a page-session inventory only. It deliberately uses a small `session` bucket until profile persistence is implemented.
+The current `/next/` runtime has a page-session inventory only. `GameApplication` coordinates it through the pure `SessionEconomy` boundary until profile persistence is implemented.
 
 ```js
 {
@@ -40,7 +40,7 @@ The current runtime has a page-session inventory only. It deliberately uses a sm
 }
 ```
 
-The sequence and applied-ID list are page-session transaction metadata. Persistence may replace their implementation later, but repeated application of the same result must remain idempotent.
+The sequence is application metadata and the applied-ID list belongs to the session-economy state. Persistence may replace their implementation later, but repeated application of the same result must remain idempotent.
 
 The future `profile` is the demo's local progression record. Pulse charges, Duds, and Bits are approved initial inventory keys. Charged Bits and Bit Dust remain provisional.
 
@@ -137,7 +137,7 @@ The core rule layer should produce one immutable result before presentation begi
 }
 ```
 
-The current session transaction records that the result was applied and updates banked inventory before the animation. A future profile transaction must preserve that ordering and save independently of presentation.
+`SessionEconomy` records that the result was applied and updates banked inventory before the animation. A future profile transaction must preserve that ordering and save independently of presentation.
 
 ## Repair Definitions
 

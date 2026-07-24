@@ -2,7 +2,7 @@
 
 ## Overview
 
-Twistris is currently a small Vite-served browser game. The browser loads a minimal HTML shell, CSS lays out the canvas and overlays, `src/domain/rules.ts` owns typed pure puzzle and harvest calculations, and `game.js` owns runtime orchestration and presentation.
+Twistris is currently a Vite-served browser game with a retained legacy comparison route and an accepted Phaser runtime at `/next/`. Typed puzzle and economy modules own outcomes, `GameApplication` owns lifecycle and page-session transactions, Phaser owns animated presentation, and browser capabilities enter through injected platform adapters.
 
 The approved target remains browser-first and uses TypeScript, Vite, Phaser, Vitest, and Playwright. The Phaser proof is accepted, but the migration remains incremental: preserve the working game and port only after behavioral and visual parity can be demonstrated. The final presentation uses one long-lived motherboard World scene rather than separate player-visible title, puzzle, crafting, and Board scenes.
 
@@ -14,9 +14,12 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - `style.css`: responsive page layout and DOM overlay presentation
 - `src/domain/rules.ts`: typed DOM-free board, balance, centered-square, and harvest calculations
 - `src/domain/puzzle/PuzzleRun.ts`: typed DOM-free active-piece, gravity, ghost, attachment, retry, lock, balance, and pending-rotation state for the Phaser port
+- `src/domain/economy/SessionEconomy.ts`: pure page-session inventory and exactly-once harvest transactions
+- `src/app/state/GameApplication.ts`: validated application modes, typed events, harvest IDs, and session-economy coordination
+- `src/app/platform/PlatformAdapters.ts`: portable storage, audio, haptics, fullscreen, lifecycle, and achievements contracts
 - `game.js`: constants, shapes, game state, input, controller effects, harvest presentation, rendering, and startup
-- `next/index.html`: in-progress Phaser runtime shell
-- `src/next/`: Phaser runtime bootstrap and DOM overlay behavior
+- `next/index.html`: accepted Phaser runtime shell
+- `src/next/`: Phaser runtime bootstrap, browser platform adapters, and DOM overlay behavior
 - `src/scenes/world/`: persistent Phaser World scene; the title is one presentation phase inside it
 - `src/presentation/camera/`: typed camera modes shared by the World scene and later Board controls
 - `proofs/phaser.html`: isolated Phaser proof page
@@ -39,7 +42,7 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - `index.html`: starts the playable game by loading `style.css` and the module-based `game.js`
 - `src/domain/rules.ts`: exports the frozen `TwistrisRules` API without reading browser UI state
 - `game.js`: imports the rules API, creates the game instance, binds browser input, sizes the canvas, and starts the animation loop
-- `next/index.html`: loads the in-progress Phaser route while `/` remains the playable baseline
+- `next/index.html`: loads the accepted Phaser route while `/` remains the retained legacy comparison
 - `proofs/phaser.html`: loads the isolated Phaser motion proof without importing the playable controller
 - `tests/smoke.html`: loads production scripts, tests rules directly, and exercises controller integration through a hidden test DOM
 
@@ -56,7 +59,10 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - **Typed puzzle run:** `/next/` renders its active piece, ghost, settled cells, and next-piece preview from a DOM-free model that consumes the existing attachment, balance, and board-rotation rules.
 - **Twist presentation:** a successful off-balance lock stages a separate rotated board, freezes puzzle input, turns the settled mass and Pulse through the characterized 340 ms overshoot, then commits the staged board.
 - **Core-growth presentation:** the typed puzzle run derives completed centered layers and awards run Charges before exposing a one-shot presentation event. The World scene consumes that event for the neutral field, inward burst, Pulse scale, and DOM HUD update without making economy outcomes depend on animation.
-- **Capacity harvest:** the typed puzzle run creates the immutable harvest classification and result. The World scene applies each result ID to page-session inventory once, then owns only the collapse, resource-transfer counters, and return-to-title presentation. Persistent progression still remains on the legacy route.
+- **Application controller:** `GameApplication` validates title, launch, puzzle, pause, harvest, and return transitions; publishes typed application events; and coordinates page-session transactions without importing Phaser or browser APIs.
+- **Session economy:** `SessionEconomy` applies immutable harvest results once and returns a frozen before/after transaction. It has no scene, DOM, storage, or timing dependency.
+- **Capacity harvest:** the typed puzzle run creates the immutable harvest classification and result. `GameApplication` commits it through `SessionEconomy` before `WorldScene` begins the collapse and resource-transfer presentation.
+- **Platform boundary:** portable contracts cover storage, audio, haptics, fullscreen, lifecycle, and achievements. The `/next/` browser entry injects browser implementations; no domain module calls browser or wrapper APIs.
 
 ## Approved Target Stack
 
@@ -118,15 +124,16 @@ This is an ownership map, not permission to create every directory at once. Each
 
 `src/domain/rules.ts` is the first migrated production boundary. It must remain free of Phaser, DOM, storage, and platform dependencies.
 
-## Current Data Flow
+## Current `/next/` Data Flow
 
-1. Browser events update global key state.
-2. The animation loop calls `game.update(dt)`.
-3. The controller moves or locks the active piece and mutates the board.
-4. A lock can grow the centered square, award run charges, or start a stack rotation.
-5. Reaching capacity creates an immutable harvest result and banks it once.
-6. A phased harvest animation advances display-only counters toward the already-banked totals.
-7. `game.draw()` renders the current state to the canvas and updates DOM HUD text.
+1. Browser input reaches the persistent `WorldScene`.
+2. `PuzzleRun` moves or locks the active piece and produces puzzle outcomes without Phaser or DOM access.
+3. A lock can grow the centered square, award run Charges, or stage a board rotation.
+4. Reaching capacity creates an immutable harvest result.
+5. `GameApplication` validates the harvest transition and commits the result through `SessionEconomy` exactly once.
+6. The typed application event boundary publishes the mode and transaction after inventory is decided.
+7. `WorldScene` animates collapse and display-only counters toward the already-banked totals.
+8. The DOM shell presents accessible controls and counters without deciding gameplay or economy outcomes.
 
 ## Intended Progression Data Flow
 
@@ -139,7 +146,7 @@ This is an ownership map, not permission to create every directory at once. Each
 
 ## Persistence and State
 
-There is no persistent save yet. `session.bankedDuds` and `session.bankedPulseCharges` survive run resets within the current page session only. Restart replaces the `run` state while preserving the `session` state.
+There is no persistent save yet. `GameApplication` holds banked Duds, Pulse charges, applied harvest IDs, and the next harvest sequence for the current page session. Restart replaces the puzzle run while preserving that application-owned session state.
 
 Future persistence should use a versioned root object, safe defaults, and explicit migrations. Browser local storage is the first adapter; packaged builds may later use platform storage while preserving the same payload. Run state, animation state, wrapper paths, permissions, and platform handles must not be persisted as profile inventory.
 
@@ -164,7 +171,7 @@ Current:
 
 Next:
 
-- Slice 8 establishes durable application, domain, and platform boundaries around the accepted `/next/` runtime.
+- Slice 9 introduces a versioned local profile through the storage adapter without putting persistence in Phaser.
 - Playwright will own critical browser flows, responsive checks, and selected visual comparisons after it is introduced.
 - The legacy smoke harness remains until equivalent coverage and runtime parity are approved.
 
@@ -189,7 +196,7 @@ Next:
 - `game.js` still has a large change surface because controller, input, presentation, and rendering remain together.
 - Controller tests require the full runtime and a simulated DOM shell; pure rules can run without either.
 - Random piece selection now accepts an optional injected source for deterministic browser tests.
-- The session transaction still lives inside the game controller.
+- The accepted `/next/` session transaction is separated, but the retained legacy comparison still owns its older transaction internally.
 - The legacy controller remains JavaScript and is not yet covered by TypeScript.
 - Canvas rendering and game mutation share global state.
 - The first Bit recipe and Charged Bits' firewall role are approved, but Charged Bit recipes, exact firewall rules, Bit Dust, and later conversions remain provisional.

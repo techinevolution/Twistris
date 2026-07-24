@@ -1,12 +1,17 @@
 import Phaser from "phaser";
 
+import { GameApplication } from "../app/state/GameApplication";
 import {
   WorldScene,
   type PuzzleAction,
 } from "../scenes/world/WorldScene";
+import { createBrowserPlatform } from "./createBrowserPlatform";
 
 const GAME_STAGE_SIZE = 800;
-const worldScene = new WorldScene();
+const application = new GameApplication({
+  platform: createBrowserPlatform(),
+});
+const worldScene = new WorldScene(application);
 const stage = document.querySelector<HTMLElement>("#phaserTitle");
 const startScreen = document.querySelector<HTMLElement>("#startScreen");
 const startButton = document.querySelector<HTMLButtonElement>("#startButton");
@@ -65,10 +70,6 @@ worldScene.onLaunchProgress = (progress) => {
   startScreen?.style.setProperty("--launch-progress", progress.toFixed(3));
 };
 
-worldScene.onLaunchComplete = () => {
-  startScreen?.classList.add("is-hidden");
-};
-
 worldScene.onPulseChargesChanged = (charges) => {
   if (pulseChargeCounter) {
     const nextText = `Pulse charges ${charges}`;
@@ -91,20 +92,29 @@ worldScene.onDudsChanged = (duds) => {
   }
 };
 
-worldScene.onReturnToTitle = () => {
-  startScreen?.classList.remove("is-hidden", "is-launching");
-  startScreen?.style.setProperty("--launch-progress", "0");
-};
-
 worldScene.onStatusChanged = (status) => {
   if (!statusValue) return;
   statusValue.textContent = status;
   statusValue.classList.toggle("is-hidden", !status);
 };
 
+application.subscribe((event) => {
+  if (event.type !== "modeChanged") return;
+  if (event.current === "launching") {
+    startScreen?.classList.add("is-launching");
+  } else if (
+    event.current === "playing" &&
+    event.previous === "launching"
+  ) {
+    startScreen?.classList.add("is-hidden");
+  } else if (event.current === "title") {
+    startScreen?.classList.remove("is-hidden", "is-launching");
+    startScreen?.style.setProperty("--launch-progress", "0");
+  }
+});
+
 function beginLaunch() {
   if (!worldScene.startTransition()) return;
-  startScreen?.classList.add("is-launching");
   focusGameSurface();
 }
 

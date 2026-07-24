@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 
+import { GameApplication } from "../../app/state/GameApplication";
 import {
   PuzzleRun,
   type LockOutcome,
@@ -290,15 +291,12 @@ function createPulse(scene: Phaser.Scene): Phaser.GameObjects.Container {
 }
 
 export class WorldScene extends Phaser.Scene {
-  onLaunchComplete: (() => void) | null = null;
   onLaunchProgress: ((progress: number) => void) | null = null;
   onPulseChargesChanged: ((charges: number) => void) | null = null;
   onDudsChanged: ((duds: number) => void) | null = null;
-  onReturnToTitle: (() => void) | null = null;
   onStatusChanged: ((status: string) => void) | null = null;
   resolveHarvestTargets: (() => HarvestTargets | null) | null = null;
 
-  private phase: WorldPhase = "title";
   private readonly cameraController = new WorldCameraController("title-closeup");
   private readonly mountedSectors = new Set<string>();
   private world!: Phaser.GameObjects.Container;
@@ -341,17 +339,17 @@ export class WorldScene extends Phaser.Scene {
   private coreGrowthBoundaryHalf = 0;
   private coreGrowthParticleCount = 0;
   private harvestSequence: HarvestSequence | null = null;
-  private nextHarvestSequence = 1;
-  private bankedDuds = 0;
-  private bankedPulseCharges = 0;
-  private readonly appliedHarvestIds = new Set<string>();
   private harvestTargets: HarvestTargets = {
     charges: { x: -285, y: 340 },
     duds: { x: 285, y: 340 },
   };
 
-  constructor() {
+  constructor(private readonly application: GameApplication) {
     super("World");
+  }
+
+  private get phase(): WorldPhase {
+    return this.application.mode;
   }
 
   create() {
@@ -460,8 +458,8 @@ export class WorldScene extends Phaser.Scene {
 
   startTransition(): boolean {
     if (!this.ready || this.phase !== "title") return false;
+    if (!this.application.beginLaunch()) return false;
 
-    this.phase = "launching";
     this.setCameraMode("guided-pullback");
     this.launchElapsed = 0;
     this.settleDegrees = Math.round(this.titleSpinDegrees / 90) * 90;
@@ -513,7 +511,7 @@ export class WorldScene extends Phaser.Scene {
 
     if (progress < 1) return;
 
-    this.phase = "playing";
+    if (!this.application.completeLaunch()) return;
     this.setCameraMode("puzzle");
     this.world.setScale(1);
     this.grid.setAlpha(1);
@@ -525,7 +523,6 @@ export class WorldScene extends Phaser.Scene {
     this.onPulseChargesChanged?.(this.puzzle.pulseCharges);
     this.previewLabel.setVisible(true);
     this.renderPuzzle();
-    this.onLaunchComplete?.();
     this.publishDiagnostics();
   }
 
@@ -571,15 +568,14 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private togglePause(): boolean {
-    if (this.phase === "playing") {
-      this.phase = "paused";
+    const mode = this.application.togglePause();
+    if (mode === "paused") {
       this.pauseLabel.setVisible(true);
       this.onStatusChanged?.("Paused");
       this.publishDiagnostics();
       return true;
     }
-    if (this.phase === "paused") {
-      this.phase = "playing";
+    if (mode === "playing") {
       this.pauseLabel.setVisible(false);
       this.onStatusChanged?.("");
       this.publishDiagnostics();
@@ -589,9 +585,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private restartRun(): boolean {
-    if (this.phase !== "playing" && this.phase !== "paused") return false;
+    if (!this.application.restartRun()) return false;
 
-    this.phase = "playing";
     this.puzzle = new PuzzleRun();
     this.puzzle.start();
     this.harvestSequence = null;
@@ -609,7 +604,7 @@ export class WorldScene extends Phaser.Scene {
     this.harvestLabel.setVisible(false);
     this.pauseLabel.setVisible(false);
     this.onPulseChargesChanged?.(0);
-    this.onDudsChanged?.(this.bankedDuds);
+    this.onDudsChanged?.(this.application.inventory.duds);
     this.onStatusChanged?.("");
     this.setCameraMode("puzzle");
     this.renderPuzzle();
@@ -872,13 +867,14 @@ export class WorldScene extends Phaser.Scene {
   private startHarvest() {
     if (this.phase !== "playing" || this.harvestSequence) return;
 
-    const id = `next-harvest-${this.nextHarvestSequence}`;
-    this.nextHarvestSequence += 1;
+    const id = this.application.createHarvestId();
+    if (!id) return;
     const harvest = this.puzzle.createHarvest(id);
-    const startingDuds = this.bankedDuds;
-    const startingCharges = this.bankedPulseCharges;
     this.harvestTargets = this.resolveHarvestTargets?.() ?? this.harvestTargets;
-    this.applyHarvestResult(harvest.result);
+    const transaction = this.application.beginHarvest(harvest.result);
+    if (!transaction) return;
+    const startingDuds = transaction.before.duds;
+    const startingCharges = transaction.before.pulseCharges;
     this.harvestSequence = {
       id,
       harvest,
@@ -889,7 +885,6 @@ export class WorldScene extends Phaser.Scene {
       displayedDuds: startingDuds,
       displayedCharges: startingCharges,
     };
-    this.phase = "harvesting";
     this.previewLabel.setVisible(false);
     this.pauseLabel.setVisible(false);
     this.onStatusChanged?.("");
@@ -898,16 +893,6 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.shake(260, 0.004);
     this.renderHarvest();
     this.publishDiagnostics();
-  }
-
-  private applyHarvestResult(
-    result: ReturnType<PuzzleRun["createHarvest"]>["result"],
-  ): boolean {
-    if (this.appliedHarvestIds.has(String(result.id))) return false;
-    this.appliedHarvestIds.add(String(result.id));
-    this.bankedDuds += result.earned.duds;
-    this.bankedPulseCharges += result.earned.pulseCharges;
-    return true;
   }
 
   private advanceHarvestPhase(phase: HarvestPhase) {
@@ -1151,7 +1136,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private finishHarvest() {
-    this.phase = "title";
+    if (!this.application.completeHarvest()) return;
     this.harvestSequence = null;
     this.puzzle = new PuzzleRun();
     this.coreGrowthElapsed = CORE_GROWTH_DURATION;
@@ -1174,7 +1159,6 @@ export class WorldScene extends Phaser.Scene {
     this.harvestGraphics.clear();
     this.setCameraMode("title-closeup");
     this.onStatusChanged?.("");
-    this.onReturnToTitle?.();
     this.publishDiagnostics();
   }
 
@@ -1521,6 +1505,7 @@ export class WorldScene extends Phaser.Scene {
   private publishDiagnostics() {
     const root = document.documentElement;
     root.dataset.worldScene = "active";
+    root.dataset.applicationMode = this.application.mode;
     root.dataset.worldCameraMode = this.cameraController.mode;
     root.dataset.worldMountedSectors = [...this.mountedSectors].sort().join(",");
     root.dataset.worldPuzzleActive = String(this.phase === "playing");
@@ -1540,9 +1525,9 @@ export class WorldScene extends Phaser.Scene {
       this.coreGrowthElapsed < CORE_GROWTH_DURATION,
     );
     root.dataset.worldHarvestPhase = this.harvestSequence?.phase ?? "";
-    root.dataset.worldBankedDuds = String(this.bankedDuds);
+    root.dataset.worldBankedDuds = String(this.application.inventory.duds);
     root.dataset.worldBankedPulseCharges = String(
-      this.bankedPulseCharges,
+      this.application.inventory.pulseCharges,
     );
     root.dataset.worldHarvestChargeTarget = `${this.harvestTargets.charges.x.toFixed(1)},${this.harvestTargets.charges.y.toFixed(1)}`;
     root.dataset.worldHarvestDudTarget = `${this.harvestTargets.duds.x.toFixed(1)},${this.harvestTargets.duds.y.toFixed(1)}`;

@@ -8,7 +8,7 @@ The intended game is one continuous motherboard world. Puzzle play, the Pulse hu
 
 ## Status
 
-Active demo prototype. Slice 7's playable Phaser parity port is complete at `/next/`: title and Enter launch, puzzle controls, retries, pause, restart, balance-driven whole-Pulse rotation, centered-square growth, Charge feedback, capacity harvest, session banking, and return to title are working in one persistent World scene. The trusted legacy route and browser harness remain available for comparison while the next slice establishes durable application and platform boundaries. Persistent profiles, crafting, Gravity repair, the first firewall sector, Endless Feed, demo upgrades, and the first-run tutorial are planned but not implemented.
+Active demo prototype. The playable Phaser parity runtime is complete at `/next/`: title and Enter launch, puzzle controls, retries, pause, restart, balance-driven whole-Pulse rotation, centered-square growth, Charge feedback, capacity harvest, session banking, and return to title work in one persistent World scene. Slice 8 now keeps lifecycle and session economy decisions in a typed application controller, keeps atomic harvest banking in a pure economy module, and injects browser capabilities through portable platform adapters. The current Pulse artwork is provisional and will receive a dedicated damaged-machine redesign later. The trusted legacy route and browser harness remain available for comparison. Persistent profiles, crafting, Gravity repair, the first firewall sector, Endless Feed, demo upgrades, and the first-run tutorial are planned but not implemented.
 
 ## Quick Start
 
@@ -67,7 +67,7 @@ Broader ideas may be developed locally under `notes/private/`, which is ignored 
 
 The browser is the primary target. The approved architecture keeps one portable web game codebase that can later be packaged for PC, Android, and iOS without forking core gameplay or progression logic.
 
-The current foundation uses TypeScript, Vite, Vitest, and Phaser. Phaser now powers the accepted proof and the in-progress `/next/` runtime; Playwright remains planned for later browser automation.
+The current foundation uses TypeScript, Vite, Vitest, and Phaser. Phaser powers the accepted proof and `/next/` runtime; application and economy decisions remain engine-independent, and browser storage, audio, haptics, fullscreen, lifecycle, and achievement capabilities sit behind platform adapters. Playwright remains planned for later browser automation.
 
 ## Project Docs
 

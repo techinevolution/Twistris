@@ -1,5 +1,13 @@
 # Twistris Decisions
 
+## 2026-07-23: Keep Application And Platform Decisions Outside Phaser
+
+Decision: Use a typed application controller for lifecycle and session transactions, pure domain modules for puzzle and economy outcomes, and injected platform adapters for storage, audio, haptics, fullscreen, lifecycle, and achievements.
+
+Reason: The persistent World scene should coordinate animation and input without becoming the owner of inventory, progression, saves, missions, Board outcomes, or wrapper APIs.
+
+Consequences: `WorldScene` may present application decisions but does not bank harvests or validate lifecycle transitions. Browser implementations are wired at the `/next/` entry point, packaged builds can replace them without changing domain rules, and future profile, mission, and demo-board logic receives its own tested module only when that slice implements real approved behavior.
+
 ## 2026-07-23: Keep The World Continuous Without Loading It All
 
 Decision: Preserve one connected Board coordinate space while mounting and simulating only the revealed sectors close enough to the active camera or current interaction.

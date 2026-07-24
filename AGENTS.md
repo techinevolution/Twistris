@@ -50,15 +50,18 @@ When unsure, choose the smallest clean implementation that can be understood, re
 - `index.html`: browser shell, overlays, HUD mounts, and canvas
 - `style.css`: layout and DOM presentation
 - `src/domain/rules.ts`: pure board, balance, centered-square, and harvest calculations
+- `src/domain/economy/SessionEconomy.ts`: pure page-session inventory and exactly-once harvest transactions
+- `src/app/state/GameApplication.ts`: validated lifecycle modes, typed events, harvest IDs, and session coordination
+- `src/app/platform/PlatformAdapters.ts`: portable platform capability contracts
 - `game.js`: controller state, animation, rendering, input, and runtime effects
-- `next/index.html` and `src/next/`: in-progress Phaser runtime entry and shell
+- `next/index.html` and `src/next/`: accepted Phaser runtime entry, browser adapters, and shell
 - `src/scenes/boot-title/`: temporary Boot/Title parity scaffold
 - `proofs/phaser.html`: isolated Phaser proof entry point
 - `src/proof/`: Phaser proof scene and proof-only presentation
 - `tests/rules.test.ts`: Vitest coverage for the typed rules boundary
 - `tests/smoke.html`: browser smoke-test harness
 
-The approved refactor direction is incremental migration to TypeScript, Vite, and Phaser. Do not rewrite the game in one pass. Follow the slice order in PLAN.md, preserve the legacy runtime until parity is proven, and add only the tooling or boundary owned by the current slice.
+The approved refactor direction is incremental migration to TypeScript, Vite, and Phaser. The playable parity port and application/domain/platform boundary slices are complete. Do not rewrite the game in one pass. Follow the slice order in PLAN.md, preserve the legacy runtime until its removal is approved, and add only the tooling or boundary owned by the current slice.
 
 ## Demo Scope
 

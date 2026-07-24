@@ -2,19 +2,19 @@
 
 ## Current State
 
-The prototype currently supports the title flow, falling and rotating pieces, central attachment, imbalance-driven stack rotation, centered-square growth, Pulse charge counting, and an animated capacity harvest. Duds and charges can accumulate as session-only counters, but there is no saved profile, metagame, crafting screen, repair system, mission layer, or tutorial yet.
+The prototype currently supports the title flow, falling and rotating pieces, central attachment, imbalance-driven stack rotation, centered-square growth, Pulse charge counting, and an animated capacity harvest. Duds and charges accumulate through a tested page-session economy transaction, but there is no saved profile, metagame, crafting screen, repair system, mission layer, or tutorial yet.
 
-The browser runtime remains centered on `game.js`, but board and economy calculations now live in the typed, DOM-free `src/domain/rules.ts` boundary. Lifecycle, input, rendering, animation, HUD updates, and session transactions remain controller responsibilities.
+The accepted `/next/` runtime uses `PuzzleRun` for run rules, `SessionEconomy` for atomic page-session banking, and `GameApplication` for validated lifecycle transitions and typed application events. Phaser owns input and animated presentation, while browser capabilities enter through platform adapters. The retained legacy route remains centered on `game.js` for comparison.
 
 ## Current Product Goal
 
 Release a polished browser-first demo that carries players through the complete onboarding sequence, the first mission and progression loop, one firewall-sector recovery, and an Endless Feed mode with a small upgrade set.
 
-The modern toolchain migration and playable Phaser parity port are complete. The immediate work is to establish durable application, domain, and platform boundaries before persistence and metagame implementation.
+The modern toolchain migration, playable Phaser parity port, and application/domain/platform boundary work are complete. The immediate work is a small versioned local profile before crafting, missions, repair, and Board progression begin.
 
 ## Current Architecture Shape
 
-Twistris is currently a Vite browser project with one HTML entry point, one stylesheet, one legacy JavaScript controller, a typed pure-rules module, Vitest unit coverage, and the retained browser smoke harness.
+Twistris is currently a Vite browser project with a retained legacy route, an accepted Phaser `/next/` route, typed puzzle and economy rules, a typed application controller, injected browser platform adapters, Vitest unit coverage, and the retained browser smoke harness.
 
 The approved target is a TypeScript and Vite browser game using Phaser for scenes and animated presentation, Vitest for pure logic, Playwright for browser and visual flows, and HTML/CSS overlays for accessible interface surfaces. See [ARCHITECTURE.md](ARCHITECTURE.md) for the current and target maps.
 
@@ -42,8 +42,8 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
    Establish one long-lived motherboard World scene plus UI and presentation layers. Port current rendering, input, rotation, harvest, and title behavior into that continuous space in reviewable pieces while retaining the pure rules and characterization tests. Remove the legacy runtime only after parity is demonstrated.
    The isolated `/next/` route now reproduces the animated logo, spinning close-up Pulse, orbiting particles, Start and Enter launch, 2.05-second pullback, quarter-turn settling, HUD reveal, focus handoff, pause, restart, miss feedback, and responsive framing. That presentation lives inside the persistent World scene with typed title-closeup, guided-pullback, Pulse-home, puzzle, and Board-free camera modes. A DOM-free puzzle-run model drives the visible board, Pulse seed, falling piece, ghost, next-piece preview, normal and soft gravity, movement, piece rotation, hard drop, attachment locks, bottom-exit and detached-piece retries, balance analysis, staged board rotation, centered-square growth, run Charge awards, immutable capacity-harvest calculation, and placement metadata used by presentation. Off-balance locks freeze the active piece while the settled mass and Pulse perform the characterized 340 ms overshooting quarter-turn, then commit the rotated board. Colored Bits retain the legacy diagonal depth, inner glow, edge shimmer, and fade sparkle; older outer Bits fade, influenced Bits use the secured treatment and light agitation, and the connected mass keeps its colored outline. Completing centered layers expands the Pulse field, draws the inward energy burst, pulses the core, and updates the Charge HUD from the already-decided domain result. Reaching capacity banks the immutable result once, presents the warning and collapse, transfers Duds and Charges to their responsive HUD destinations, and returns to a clean title state. The scene mounts only the Pulse sector, preserving the future loading boundary without adding hidden Board content. The legacy `/` runtime and 63-check browser harness remain as retained comparisons until a later removal decision; progression is intentionally deferred to the following slices.
 
-8. **Establish application, domain, and platform boundaries**
-   Separate puzzle, economy, profile, mission, and demo-board logic from Phaser scenes. Add a typed application event boundary and adapters for storage, audio, haptics, fullscreen, lifecycle, and later platform achievements. Do not call wrapper-specific APIs from domain logic.
+8. **Establish application, domain, and platform boundaries - Complete**
+   `GameApplication` now owns validated title, launch, puzzle, pause, harvest, and return transitions; emits typed mode, restart, and harvest events; allocates session-unique harvest IDs; and exposes the current banked inventory. Pure `SessionEconomy` applies immutable harvest results exactly once outside Phaser and returns a before/after transaction for presentation. `WorldScene` retains puzzle timing, input, camera, animation, and display counters but no longer owns lifecycle or banked inventory decisions. Portable contracts now cover storage, audio, haptics, fullscreen, lifecycle, and achievements, with browser implementations injected at the `/next/` entry point. Profile, mission, and demo-board modules remain intentionally absent until their approved rules are implemented.
 
 9. **Add local profile persistence**
    Introduce a small versioned save shape with safe load, create, reset, and migration behavior. Persist demo inventory, Gravity Module repair, first-sector status, mission progress, Endless Feed unlock, selected upgrades, and tutorial flags only when their rules are approved. Keep transient animation and scene state out of the save.
@@ -71,7 +71,7 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 
 ## Recommended Next Slice
 
-Begin slice 8 by establishing explicit application, domain, and platform boundaries around the accepted `/next/` runtime. Keep this boundary work small and incremental: do not add progression, persistence, wrappers, or remove the legacy controller in the same slice.
+Begin slice 9 by adding a small versioned local profile through the established storage adapter. Keep save validation, migration, reset, and harvest application independent of Phaser; do not add crafting, missions, Board rules, wrappers, or tutorial behavior in the persistence slice.
 
 ## Deferred Work
 
@@ -82,6 +82,7 @@ Begin slice 8 by establishing explicit application, domain, and platform boundar
 - PWA installation and offline packaging.
 - Capacitor projects for Android and iOS.
 - A desktop wrapper and storefront integration.
+- Final damaged-Pulse art direction and restoration-stage visual redesign; the current Pulse geometry is temporary.
 
 Detailed post-demo design belongs in the gitignored local ideation area and is not part of this public implementation plan.
 

@@ -279,13 +279,3 @@ export const TwistrisRules = Object.freeze({
   findCenteredSquareLayers,
   rotateBoard,
 });
-
-declare global {
-  interface Window {
-    TwistrisRules: typeof TwistrisRules;
-  }
-}
-
-if (typeof window !== "undefined") {
-  window.TwistrisRules = TwistrisRules;
-}

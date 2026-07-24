@@ -2,7 +2,7 @@
 
 ## Current Approach
 
-Twistris uses Vitest for typed pure-rule tests, TypeScript for compile-time checks, Vite for development and production builds, and the retained browser smoke harness for controller characterization.
+Twistris uses Vitest for typed puzzle rules, session economy, and application-state tests; TypeScript for compile-time checks; Vite for development and production builds; and the retained browser smoke harness for legacy controller characterization.
 
 Do not remove the smoke harness merely because the new runner exists. Its controller coverage remains required until equivalent automated coverage and runtime parity are approved.
 
@@ -38,6 +38,18 @@ The harness loads the production runtime into a hidden test DOM and currently ru
 - repeated-action and invalid-phase guards
 
 The harness is a characterization safety net, not complete unit coverage.
+
+## Application Boundary Tests
+
+Run `npm test`. The focused typed suite verifies:
+
+- page-session inventory starts empty and immutable
+- a harvest result is applied atomically with frozen before/after values
+- duplicate harvest IDs do not change inventory
+- title, launch, puzzle, pause, harvest, and return transitions reject invalid order
+- typed mode, restart, and harvest events are emitted from the application boundary
+- banked inventory survives puzzle-run restart and is committed before harvest presentation
+- puzzle behavior remains covered independently by `PuzzleRun` and the pure rules module
 
 ## Manual Checks
 
@@ -112,6 +124,7 @@ Current World-scene title parity checks:
 - desktop and `390x844` mobile layouts remain square, centered, and free of overlap
 - the scene holds stable frame pacing without browser warnings
 - diagnostics report one active World scene, the expected camera mode, and only the Pulse sector mounted
+- diagnostics report the application-owned lifecycle mode rather than scene-owned lifecycle state
 
 Current `/next/` puzzle checks:
 
