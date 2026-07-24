@@ -30,10 +30,13 @@ The game is not balanced around score races or line clearing. It is balanced aro
 ## 3. Current Balance Heuristic
 
 ### Structure Attachment Rule
-- A landed piece must touch the existing structure by edge adjacency.
+- A piece can lock only when settled structure physically blocks its downward path.
+- Side adjacency during an otherwise unobstructed fall does not attach the piece.
+- At a valid collision, the landed piece must join the existing structure by edge adjacency.
+- The bottom edge is an exit, not a floor or part of the structure. Any shape that reaches it retries before side adjacency is considered.
 - If it does not attach, the same shape currently returns from the spawn lane for another attempt.
 
-This keeps the game focused on building onto a single central mass and avoids stranded junk at the floor.
+This keeps the game focused on building onto a single central mass and avoids stranded junk or false side attachments at the floor.
 
 ### Mass / Rotation Rule
 Current imbalance is calculated from a weighted horizontal center-of-mass model:

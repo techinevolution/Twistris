@@ -244,6 +244,31 @@
           "detached retry leaves the settled board unchanged"
         );
 
+        const allShapesExitAtBottom = api.SHAPES.every((shape) => {
+          const floorRetryGame = new api.BalanceStackGame({ random: () => 0 });
+          const floorX = api.CENTER + 6;
+          const maxY = Math.max(...shape.cells.map((cell) => cell.y));
+          const floorY = api.GRID_SIZE - 1 - maxY;
+          const leftEdge = Math.min(...shape.cells.map((cell) => cell.x));
+          const sideCell = shape.cells.find((cell) => cell.x === leftEdge);
+          setCurrentPiece(floorRetryGame, shape, floorX, floorY);
+          floorRetryGame.run.board[floorY + sideCell.y][floorX + leftEdge - 1] = {
+            color: "magenta",
+            seed: false,
+            age: 0,
+          };
+          floorRetryGame.lockPiece();
+          return (
+            floorRetryGame.run.piecesPlaced === 0 &&
+            floorRetryGame.run.current?.shape === shape &&
+            floorRetryGame.run.board.flat().filter(Boolean).length === 2
+          );
+        });
+        assert(
+          allShapesExitAtBottom,
+          "bottom exit retries every side-adjacent shape instead of attaching it to the floor"
+        );
+
         const clockwiseGame = new api.BalanceStackGame({ random: () => 0 });
         clockwiseGame.run.board[api.CENTER][api.CENTER + 2] = { color: "magenta", seed: false, age: 0 };
         const directClockwiseBoard = rules.rotateBoard(clockwiseGame.run.board, 1, api.CENTER);

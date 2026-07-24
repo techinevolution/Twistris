@@ -236,6 +236,11 @@ export class PuzzleRun {
         continue;
       }
 
+      if (this.reachedBottomExit(this.worldCells())) {
+        outcome = this.lock();
+        continue;
+      }
+
       this.lockElapsed += interval;
       if (this.lockElapsed >= LOCK_THRESHOLD_MS) outcome = this.lock();
     }
@@ -255,7 +260,8 @@ export class PuzzleRun {
     if (!this.current) return [];
     let dy = 0;
     while (this.canPlace(this.current, 0, dy + 1)) dy += 1;
-    return this.worldCells(this.current, 0, dy);
+    const ghost = this.worldCells(this.current, 0, dy);
+    return this.reachedBottomExit(ghost) ? [] : ghost;
   }
 
   commitPendingRotation(): boolean {
@@ -326,6 +332,13 @@ export class PuzzleRun {
     if (!this.current) return "retried";
 
     const landed = this.worldCells();
+    if (this.reachedBottomExit(landed)) {
+      const retryShape = this.current.shape;
+      this.spawnPiece(retryShape);
+      this.lastOutcome = "retried";
+      return this.lastOutcome;
+    }
+
     if (!attachesToStructure(this.board, landed)) {
       const retryShape = this.current.shape;
       this.spawnPiece(retryShape);
@@ -361,6 +374,10 @@ export class PuzzleRun {
     this.spawnPiece();
     this.lastOutcome = "locked";
     return this.lastOutcome;
+  }
+
+  private reachedBottomExit(cells: ReadonlyArray<GridCell>): boolean {
+    return cells.some((cell) => cell.y >= this.size - 1);
   }
 
   private recalculateCoreSquare() {

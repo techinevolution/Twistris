@@ -156,7 +156,7 @@ Current:
 - Vite supplies development and production builds.
 - TypeScript checks the migrated source boundary.
 - Vitest owns pure-rule unit tests.
-- The 62-check browser harness remains at `/tests/smoke.html` through the Vite server.
+- The 63-check browser harness remains at `/tests/smoke.html` through the Vite server.
 - The accepted Phaser proof remains at `/proofs/phaser.html` for visual, input, responsive, and frame-pacing checks.
 - The in-progress Phaser runtime remains at `/next/` for direct parity comparison with `/`.
 - Manual visual and interaction checks use the Vite-served game.
@@ -171,7 +171,8 @@ Next:
 ## Important Invariants
 
 - The core board has one fixed center pivot.
-- Settled pieces must attach to the existing structure.
+- Settled pieces lock only after a downward collision with existing structure; side adjacency alone never causes attachment.
+- The bottom board edge is an exit boundary, never an attachment surface; any shape reaching it retries before adjacency is evaluated.
 - Gravity remains downward in screen space while the settled structure may rotate.
 - Centered-square growth is derived from board occupancy.
 - Run-earned and banked resources are separate concepts.

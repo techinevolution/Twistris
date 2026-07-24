@@ -10,7 +10,7 @@ Do not remove the smoke harness merely because the new runner exists. Its contro
 
 Run `npm run dev`, then open `/tests/smoke.html` from the URL printed by Vite.
 
-The harness loads the production runtime into a hidden test DOM and currently runs 62 checks covering:
+The harness loads the production runtime into a hidden test DOM and currently runs 63 checks covering:
 
 - test API availability
 - DOM-free rules API availability and independent board creation
@@ -21,6 +21,7 @@ The harness loads the production runtime into a hidden test DOM and currently ru
 - direct attached and detached placement detection
 - deterministic piece selection
 - successful lock and detached-piece retry behavior
+- bottom-edge exit retry before side-adjacency evaluation
 - direct non-mutating rotation plus controller clockwise and counterclockwise rotation
 - direct centered-square detection plus controller `3x3` and `5x5` growth
 - charge awards across multiple growth layers
@@ -46,6 +47,9 @@ Open [index.html](index.html) and verify:
 - Start begins a run and keyboard focus works
 - active-piece movement, rotation, soft drop, and hard drop work
 - detached pieces retry correctly
+- every tetromino that reaches the bottom edge passes through and retries even when its final cells sit beside settled structure
+- side adjacency never locks a piece while its downward path remains clear
+- a floor-bound miss has no ghost suggesting that it can lock to the bottom edge
 - attached pieces update the central structure
 - left-heavy and right-heavy structures twist in the expected direction
 - Pulse charges update when the centered square grows
@@ -182,4 +186,4 @@ The release candidate must verify the complete public demo:
 - Balance changes: perform repeated left-heavy, right-heavy, early-run, and late-run manual scenarios.
 - Persistence changes: test missing, valid, malformed, and older-version saves.
 - Harvest changes: verify inventory awards remain correct if animation is skipped, interrupted, or reduced.
-- Stack migration changes: run `npm run build`, `npm test`, `npm run typecheck`, the 62-check browser harness, and a manual playable-page check until parity is approved.
+- Stack migration changes: run `npm run build`, `npm test`, `npm run typecheck`, the 63-check browser harness, and a manual playable-page check until parity is approved.

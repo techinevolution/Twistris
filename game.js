@@ -496,7 +496,8 @@ class BalanceStackGame {
     while (this.canPlace(this.run.current, 0, dy + 1)) {
       dy += 1;
     }
-    this.run.ghost = this.worldCells(this.run.current, 0, dy);
+    const ghost = this.worldCells(this.run.current, 0, dy);
+    this.run.ghost = this.reachedBottomExit(ghost) ? [] : ghost;
   }
 
   hardDrop() {
@@ -595,6 +596,10 @@ class BalanceStackGame {
     this.run.dropTimer = Math.min(this.run.dropTimer, tickRate);
 
     if (!this.movePiece(0, 1)) {
+      if (this.reachedBottomExit(this.worldCells(this.run.current))) {
+        this.lockPiece();
+        return;
+      }
       this.run.lockTimer += tickRate;
       if (this.run.lockTimer >= LOCK_THRESHOLD) {
         this.lockPiece();
@@ -608,6 +613,16 @@ class BalanceStackGame {
     if (!this.run.current) return;
 
     const landed = this.worldCells(this.run.current);
+    if (this.reachedBottomExit(landed)) {
+      const retryShape = this.run.current.shape;
+      this.setStatus("Missed the stack");
+      this.run.current = null;
+      this.run.lockTimer = 0;
+      this.spawnPiece(retryShape);
+      this.updateGhost();
+      return;
+    }
+
     if (!this.attachesToStructure(landed)) {
       const retryShape = this.run.current.shape;
       this.setStatus("Missed the stack");
@@ -641,6 +656,10 @@ class BalanceStackGame {
     this.run.lockTimer = 0;
     this.spawnPiece();
     this.updateGhost();
+  }
+
+  reachedBottomExit(cells) {
+    return cells.some((cell) => cell.y >= GRID_SIZE - 1);
   }
 
   startHarvestSequence() {

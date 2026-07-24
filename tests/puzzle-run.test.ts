@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { PuzzleRun } from "../src/domain/puzzle/PuzzleRun";
+import {
+  PuzzleRun,
+  PUZZLE_SHAPES,
+} from "../src/domain/puzzle/PuzzleRun";
 
 describe("PuzzleRun", () => {
   it("starts with the Pulse seed and a deterministic active piece", () => {
@@ -66,6 +69,65 @@ describe("PuzzleRun", () => {
     expect(run.piecesPlaced).toBe(0);
     expect(run.current?.shape.name).toBe("I");
     expect(run.board.flat().filter(Boolean)).toHaveLength(1);
+  });
+
+  it("keeps falling past side-adjacent structure while the path below is clear", () => {
+    const run = new PuzzleRun({ size: 13, random: () => 0 });
+    run.start();
+    if (!run.current) throw new Error("Expected an active piece");
+    run.current.cells = [{ x: 0, y: 0 }];
+    run.current.x = run.center + 3;
+    run.current.y = run.center;
+    run.board[run.current.y][run.current.x - 1] = { color: "magenta" };
+
+    expect(run.move(0, 1)).toBe(true);
+    expect(run.current.y).toBe(run.center + 1);
+    expect(run.piecesPlaced).toBe(0);
+  });
+
+  it("treats the bottom edge as an exit before side attachment for every shape", () => {
+    for (const shape of PUZZLE_SHAPES) {
+      const run = new PuzzleRun({ size: 13, random: () => 0 });
+      run.start();
+      if (!run.current) throw new Error("Expected an active piece");
+      run.current.shape = shape;
+      run.current.color = shape.color;
+      run.current.cells = shape.cells.map((cell) => ({ ...cell }));
+      run.current.x = run.center + 3;
+      run.current.y =
+        run.size - 1 - Math.max(...run.current.cells.map((cell) => cell.y));
+      const leftEdge = Math.min(...run.current.cells.map((cell) => cell.x));
+      const sideCell = run.current.cells.find((cell) => cell.x === leftEdge);
+      if (!sideCell) throw new Error("Expected a left-edge cell");
+      run.board[run.current.y + sideCell.y][run.current.x + leftEdge - 1] = {
+        color: "magenta",
+      };
+
+      expect(run.ghostCells(), shape.name).toEqual([]);
+      expect(run.hardDrop(), shape.name).toBe("retried");
+      expect(run.piecesPlaced, shape.name).toBe(0);
+      expect(run.current?.shape.name, shape.name).toBe(shape.name);
+      expect(run.board.flat().filter(Boolean), shape.name).toHaveLength(2);
+    }
+  });
+
+  it("retries immediately when normal gravity carries a piece to the bottom exit", () => {
+    const run = new PuzzleRun({ size: 9, random: () => 0 });
+    run.start();
+    if (!run.current) throw new Error("Expected an active piece");
+    run.current.cells = [
+      { x: 0, y: -1 },
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: 2 },
+    ];
+    run.current.x = run.center + 3;
+    run.current.y = run.size - 4;
+    run.board[run.size - 2][run.current.x - 1] = { color: "magenta" };
+
+    expect(run.advance(1040)).toBe("retried");
+    expect(run.current?.shape.name).toBe("I");
+    expect(run.piecesPlaced).toBe(0);
   });
 
   it("computes a ghost without moving the active piece", () => {

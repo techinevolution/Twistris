@@ -21,7 +21,7 @@ The approved target is a TypeScript and Vite browser game using Phaser for scene
 ## Next Implementation Slices
 
 1. **Characterize current behavior - Complete**
-   The browser harness now covers deterministic piece selection, locking, detached-piece retry, both rotation directions, multi-layer centered-square growth, harvest totals, restart behavior, lifecycle transitions, and run-versus-banked values.
+   The browser harness now covers deterministic piece selection, locking, detached-piece and bottom-exit retry, both rotation directions, multi-layer centered-square growth, harvest totals, restart behavior, lifecycle transitions, and run-versus-banked values.
 
 2. **Clarify runtime state - Complete**
    The existing runtime now separates session, run, lifecycle, and presentation state. One explicit phase replaces the overlapping title, launch, play, pause, and harvest booleans.
@@ -101,7 +101,7 @@ Detailed post-demo design belongs in the gitignored local ideation area and is n
 ## Validation Path
 
 - Run the documented `dev`, `build`, `test`, and `typecheck` commands for every stack slice.
-- Open `/tests/smoke.html` through Vite and retain all 62 legacy characterization checks until parity coverage is approved.
+- Open `/tests/smoke.html` through Vite and retain all 63 legacy characterization checks until parity coverage is approved.
 - After the Phaser proof, use Playwright for critical browser flows and stable visual checkpoints.
 - Manually verify title, controls, attachment, twist, pause, restart, harvest, HUD, keyboard, touch, and responsive layout after behavioral or visual changes.
 - Target smooth 60 FPS presentation on desktop and modern mobile hardware. Pool repeated objects, cap effects, cull hidden Board entities, and bound rendering resolution.
