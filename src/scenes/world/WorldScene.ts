@@ -2,6 +2,7 @@ import Phaser from "phaser";
 
 import {
   PuzzleRun,
+  type LockOutcome,
   type PieceColor,
   type PieceShape,
 } from "../../domain/puzzle/PuzzleRun";
@@ -19,6 +20,13 @@ const IDLE_GRID_ALPHA = 0.36;
 const LAUNCH_DURATION = 2050;
 const ROTATION_DURATION = 340;
 const CORE_GROWTH_DURATION = 960;
+const HARVEST_IMPACT_DURATION = 744;
+const HARVEST_FALL_DURATION = 840;
+const HARVEST_DUD_INTERVAL = 40;
+const HARVEST_DUD_TRAVEL_DURATION = 340;
+const HARVEST_CHARGE_INTERVAL = 216;
+const HARVEST_CHARGE_TRAVEL_DURATION = 456;
+const HARVEST_RETURN_DURATION = 1020;
 const HEARTBEAT_CYCLE = 1740;
 const HEARTBEAT_WINDOW = 820;
 
@@ -32,7 +40,8 @@ const COLORS = {
   white: 0xf8fdff,
 };
 
-type WorldPhase = "title" | "launching" | "playing";
+type WorldPhase = "title" | "launching" | "playing" | "harvesting";
+type HarvestPhase = "impact" | "fall" | "duds" | "charges" | "return";
 export type PuzzleAction =
   | "left"
   | "right"
@@ -45,6 +54,17 @@ interface LogoCell {
   seed: number;
   x: number;
   y: number;
+}
+
+interface HarvestSequence {
+  readonly id: string;
+  readonly harvest: ReturnType<PuzzleRun["createHarvest"]>;
+  readonly startingDuds: number;
+  readonly startingCharges: number;
+  phase: HarvestPhase;
+  phaseElapsed: number;
+  displayedDuds: number;
+  displayedCharges: number;
 }
 
 const LOGO_PATTERNS: Record<string, string[]> = {
@@ -88,6 +108,11 @@ function createLogoLayout(): { cells: LogoCell[]; columns: number } {
   }
 
   return { cells, columns: Math.max(1, column) };
+}
+
+function hashUnit(value: number): number {
+  const wave = Math.sin(value * 12.9898) * 43758.5453;
+  return wave - Math.floor(wave);
 }
 
 function createTechCell(
@@ -178,6 +203,8 @@ export class WorldScene extends Phaser.Scene {
   onLaunchComplete: (() => void) | null = null;
   onLaunchProgress: ((progress: number) => void) | null = null;
   onPulseChargesChanged: ((charges: number) => void) | null = null;
+  onDudsChanged: ((duds: number) => void) | null = null;
+  onReturnToTitle: (() => void) | null = null;
 
   private phase: WorldPhase = "title";
   private readonly cameraController = new WorldCameraController("title-closeup");
@@ -189,6 +216,8 @@ export class WorldScene extends Phaser.Scene {
   private coreFieldGraphics!: Phaser.GameObjects.Graphics;
   private structureGraphics!: Phaser.GameObjects.Graphics;
   private coreGrowthGraphics!: Phaser.GameObjects.Graphics;
+  private harvestGraphics!: Phaser.GameObjects.Graphics;
+  private harvestLabel!: Phaser.GameObjects.Text;
   private pieceGraphics!: Phaser.GameObjects.Graphics;
   private previewGraphics!: Phaser.GameObjects.Graphics;
   private previewLabel!: Phaser.GameObjects.Text;
@@ -211,6 +240,11 @@ export class WorldScene extends Phaser.Scene {
   private coreGrowthElapsed = CORE_GROWTH_DURATION;
   private coreGrowthBoundaryHalf = 0;
   private coreGrowthParticleCount = 0;
+  private harvestSequence: HarvestSequence | null = null;
+  private nextHarvestSequence = 1;
+  private bankedDuds = 0;
+  private bankedPulseCharges = 0;
+  private readonly appliedHarvestIds = new Set<string>();
 
   constructor() {
     super("World");
@@ -228,6 +262,7 @@ export class WorldScene extends Phaser.Scene {
     this.coreFieldGraphics = this.add.graphics();
     this.structureGraphics = this.add.graphics();
     this.coreGrowthGraphics = this.add.graphics();
+    this.harvestGraphics = this.add.graphics();
     this.pieceGraphics = this.add.graphics();
     this.previewGraphics = this.add.graphics();
     this.previewLabel = this.add.text(250, -347, "Next piece", {
@@ -237,6 +272,17 @@ export class WorldScene extends Phaser.Scene {
       fontStyle: "bold",
     });
     this.previewLabel.setVisible(false);
+    this.harvestLabel = this.add.text(0, -270, "CAPACITY REACHED", {
+      color: "#f8fdff",
+      fontFamily: '"Segoe UI", Helvetica, Arial, sans-serif',
+      fontSize: "24px",
+      fontStyle: "bold",
+      letterSpacing: 2,
+    });
+    this.harvestLabel.setOrigin(0.5);
+    this.harvestLabel.setBackgroundColor("rgba(7, 19, 29, 0.92)");
+    this.harvestLabel.setPadding(14, 8);
+    this.harvestLabel.setVisible(false);
     this.pulse = createPulse(this);
     this.structureContainer.add([
       this.coreFieldGraphics,
@@ -251,6 +297,8 @@ export class WorldScene extends Phaser.Scene {
       this.pieceGraphics,
       this.previewGraphics,
       this.previewLabel,
+      this.harvestGraphics,
+      this.harvestLabel,
       ...this.particles,
     ]);
     this.world.add(this.pulseSector);
@@ -275,6 +323,9 @@ export class WorldScene extends Phaser.Scene {
     } else if (this.phase === "launching") {
       this.updateLaunch(delta);
       this.updateParticles();
+    } else if (this.phase === "harvesting") {
+      for (const particle of this.particles) particle.setVisible(false);
+      this.updateHarvest(delta);
     } else {
       for (const particle of this.particles) particle.setVisible(false);
       this.updateCoreGrowth(delta);
@@ -303,12 +354,20 @@ export class WorldScene extends Phaser.Scene {
     if (this.phase !== "playing" || this.puzzle.pendingRotation) return false;
 
     let changed = false;
+    let outcome: LockOutcome | null = null;
     if (action === "left") changed = this.puzzle.move(-1, 0);
     if (action === "right") changed = this.puzzle.move(1, 0);
     if (action === "rotate") changed = this.puzzle.rotate();
     if (action === "softDrop") changed = this.puzzle.move(0, 1);
-    if (action === "hardDrop") changed = this.puzzle.hardDrop() !== null;
+    if (action === "hardDrop") {
+      outcome = this.puzzle.hardDrop();
+      changed = outcome !== null;
+    }
     this.consumeCoreGrowth();
+    if (outcome === "capacity") {
+      this.startHarvest();
+      return true;
+    }
     this.renderPuzzle();
     this.publishDiagnostics();
     return changed;
@@ -422,16 +481,21 @@ export class WorldScene extends Phaser.Scene {
       this.puzzle.rotate();
     }
 
+    let outcome: LockOutcome | null = null;
     if (Phaser.Input.Keyboard.JustDown(this.cursors.space)) {
-      this.puzzle.hardDrop();
+      outcome = this.puzzle.hardDrop();
     } else {
-      this.puzzle.advance(delta, {
+      outcome = this.puzzle.advance(delta, {
         softDrop:
           this.cursors.down.isDown || this.letterKeys.softDrop.isDown,
       });
     }
 
     this.consumeCoreGrowth();
+    if (outcome === "capacity") {
+      this.startHarvest();
+      return;
+    }
     this.renderPuzzle();
   }
 
@@ -522,6 +586,310 @@ export class WorldScene extends Phaser.Scene {
     this.puzzle.commitPendingRotation();
     this.structureContainer.setAngle(0);
     this.rotationElapsed = 0;
+    this.publishDiagnostics();
+  }
+
+  private startHarvest() {
+    if (this.phase !== "playing" || this.harvestSequence) return;
+
+    const id = `next-harvest-${this.nextHarvestSequence}`;
+    this.nextHarvestSequence += 1;
+    const harvest = this.puzzle.createHarvest(id);
+    const startingDuds = this.bankedDuds;
+    const startingCharges = this.bankedPulseCharges;
+    this.applyHarvestResult(harvest.result);
+    this.harvestSequence = {
+      id,
+      harvest,
+      startingDuds,
+      startingCharges,
+      phase: "impact",
+      phaseElapsed: 0,
+      displayedDuds: startingDuds,
+      displayedCharges: startingCharges,
+    };
+    this.phase = "harvesting";
+    this.previewLabel.setVisible(false);
+    this.onDudsChanged?.(startingDuds);
+    this.onPulseChargesChanged?.(startingCharges);
+    this.cameras.main.shake(260, 0.004);
+    this.renderHarvest();
+    this.publishDiagnostics();
+  }
+
+  private applyHarvestResult(
+    result: ReturnType<PuzzleRun["createHarvest"]>["result"],
+  ): boolean {
+    if (this.appliedHarvestIds.has(String(result.id))) return false;
+    this.appliedHarvestIds.add(String(result.id));
+    this.bankedDuds += result.earned.duds;
+    this.bankedPulseCharges += result.earned.pulseCharges;
+    return true;
+  }
+
+  private advanceHarvestPhase(phase: HarvestPhase) {
+    if (!this.harvestSequence) return;
+    this.harvestSequence.phase = phase;
+    this.harvestSequence.phaseElapsed = 0;
+  }
+
+  private updateHarvest(delta: number) {
+    const sequence = this.harvestSequence;
+    if (!sequence) return;
+
+    sequence.phaseElapsed += delta;
+
+    if (
+      sequence.phase === "impact" &&
+      sequence.phaseElapsed >= HARVEST_IMPACT_DURATION
+    ) {
+      this.advanceHarvestPhase("fall");
+    } else if (
+      sequence.phase === "fall" &&
+      sequence.phaseElapsed >= HARVEST_FALL_DURATION
+    ) {
+      if (sequence.harvest.dudCells.length > 0) {
+        this.advanceHarvestPhase("duds");
+      } else if (sequence.harvest.result.earned.pulseCharges > 0) {
+        this.advanceHarvestPhase("charges");
+      } else {
+        this.advanceHarvestPhase("return");
+      }
+    } else if (sequence.phase === "duds") {
+      const dudCount = sequence.harvest.dudCells.length;
+      const arrived = Math.min(
+        dudCount,
+        Math.max(
+          0,
+          Math.floor(
+            (sequence.phaseElapsed - HARVEST_DUD_TRAVEL_DURATION) /
+              HARVEST_DUD_INTERVAL,
+          ) + 1,
+        ),
+      );
+      const displayed = sequence.startingDuds + arrived;
+      if (displayed !== sequence.displayedDuds) {
+        sequence.displayedDuds = displayed;
+        this.onDudsChanged?.(displayed);
+      }
+      const duration =
+        Math.max(0, dudCount - 1) * HARVEST_DUD_INTERVAL +
+        HARVEST_DUD_TRAVEL_DURATION;
+      if (sequence.phaseElapsed >= duration) {
+        if (sequence.harvest.result.earned.pulseCharges > 0) {
+          this.advanceHarvestPhase("charges");
+        } else {
+          this.advanceHarvestPhase("return");
+        }
+      }
+    } else if (sequence.phase === "charges") {
+      const chargeCount = sequence.harvest.result.earned.pulseCharges;
+      const arrived = Math.min(
+        chargeCount,
+        Math.max(
+          0,
+          Math.floor(
+            (sequence.phaseElapsed - HARVEST_CHARGE_TRAVEL_DURATION) /
+              HARVEST_CHARGE_INTERVAL,
+          ) + 1,
+        ),
+      );
+      const displayed = sequence.startingCharges + arrived;
+      if (displayed !== sequence.displayedCharges) {
+        sequence.displayedCharges = displayed;
+        this.onPulseChargesChanged?.(displayed);
+      }
+      const duration =
+        Math.max(0, chargeCount - 1) * HARVEST_CHARGE_INTERVAL +
+        HARVEST_CHARGE_TRAVEL_DURATION;
+      if (sequence.phaseElapsed >= duration) {
+        this.advanceHarvestPhase("return");
+      }
+    } else if (
+      sequence.phase === "return" &&
+      sequence.phaseElapsed >= HARVEST_RETURN_DURATION
+    ) {
+      this.finishHarvest();
+      return;
+    }
+
+    this.renderHarvest();
+    this.publishDiagnostics();
+  }
+
+  private renderHarvest() {
+    const sequence = this.harvestSequence;
+    if (!sequence) return;
+
+    this.coreFieldGraphics.clear();
+    this.structureGraphics.clear();
+    this.coreGrowthGraphics.clear();
+    this.pieceGraphics.clear();
+    this.previewGraphics.clear();
+    this.harvestGraphics.clear();
+
+    const phase = sequence.phase;
+    const phaseElapsed = sequence.phaseElapsed;
+    const impactProgress = Phaser.Math.Clamp(
+      phaseElapsed / HARVEST_IMPACT_DURATION,
+      0,
+      1,
+    );
+    const impactPulse =
+      phase === "impact" ? Math.sin(impactProgress * Math.PI) : 0;
+    this.world.setScale(1 + impactPulse * 0.08);
+    this.harvestLabel.setVisible(phase === "impact" || phase === "fall");
+    this.harvestLabel.setAlpha(
+      phase === "fall"
+        ? 1 -
+            Phaser.Math.Clamp(phaseElapsed / HARVEST_FALL_DURATION, 0, 1)
+        : 1,
+    );
+
+    if (phase === "impact" || phase === "fall") {
+      this.drawCoreField();
+      for (const cell of sequence.harvest.dudCells) {
+        this.drawHarvestCell(cell.x, cell.y, cell.color, 1, CELL_SIZE, true);
+      }
+
+      const fallProgress =
+        phase === "fall"
+          ? Phaser.Math.Clamp(phaseElapsed / HARVEST_FALL_DURATION, 0, 1)
+          : 0;
+      const easedFall = fallProgress * fallProgress;
+      for (const cell of sequence.harvest.outerCells) {
+        const drift =
+          (hashUnit(cell.x * 17.13 + cell.y * 11.7) - 0.5) * 1.9;
+        const distance =
+          9 + hashUnit(cell.x * 8.9 + cell.y * 3.7) * 7;
+        this.drawHarvestCell(
+          cell.x + drift * easedFall,
+          cell.y + distance * easedFall,
+          cell.color,
+          1 - fallProgress,
+        );
+      }
+      return;
+    }
+
+    if (phase === "duds") {
+      const targetX = 285;
+      const targetY = 340;
+      sequence.harvest.dudCells.forEach((cell, index) => {
+        const localTime = phaseElapsed - index * HARVEST_DUD_INTERVAL;
+        if (localTime < 0) {
+          this.drawHarvestCell(cell.x, cell.y, cell.color, 1, CELL_SIZE, true);
+          return;
+        }
+        if (localTime >= HARVEST_DUD_TRAVEL_DURATION) return;
+
+        const progress = Phaser.Math.Clamp(
+          localTime / HARVEST_DUD_TRAVEL_DURATION,
+          0,
+          1,
+        );
+        const eased = Phaser.Math.Easing.Cubic.In(progress);
+        const startX = (cell.x - this.puzzle.center) * CELL_SIZE;
+        const startY = (cell.y - this.puzzle.center) * CELL_SIZE;
+        const x = Phaser.Math.Linear(startX, targetX, eased);
+        const y = Phaser.Math.Linear(startY, targetY, eased);
+        this.drawHarvestPixel(
+          x,
+          y,
+          cell.color,
+          1 - progress * 0.28,
+          Phaser.Math.Linear(CELL_SIZE, 8, progress),
+          true,
+        );
+      });
+      return;
+    }
+
+    if (phase === "charges") {
+      const chargeCount = sequence.harvest.result.earned.pulseCharges;
+      for (let index = 0; index < chargeCount; index += 1) {
+        const localTime = phaseElapsed - index * HARVEST_CHARGE_INTERVAL;
+        if (
+          localTime < 0 ||
+          localTime >= HARVEST_CHARGE_TRAVEL_DURATION
+        ) {
+          continue;
+        }
+        const progress = Phaser.Math.Clamp(
+          localTime / HARVEST_CHARGE_TRAVEL_DURATION,
+          0,
+          1,
+        );
+        const eased = Phaser.Math.Easing.Cubic.InOut(progress);
+        const x = Phaser.Math.Linear(0, -285, eased);
+        const y = Phaser.Math.Linear(0, 340, eased);
+        const radius = Phaser.Math.Linear(6, 3, progress);
+        this.harvestGraphics.fillStyle(0xf2d27a, 1 - progress * 0.2);
+        this.harvestGraphics.fillCircle(x, y, radius);
+        this.harvestGraphics.lineStyle(2, 0xffffff, 0.42 * (1 - progress));
+        this.harvestGraphics.lineBetween(0, 0, x, y);
+      }
+    }
+  }
+
+  private drawHarvestCell(
+    gridX: number,
+    gridY: number,
+    color: unknown,
+    alpha = 1,
+    size = CELL_SIZE,
+    influenced = false,
+  ) {
+    const x = (gridX - this.puzzle.center) * CELL_SIZE;
+    const y = (gridY - this.puzzle.center) * CELL_SIZE;
+    this.drawHarvestPixel(x, y, color, alpha, size, influenced);
+  }
+
+  private drawHarvestPixel(
+    x: number,
+    y: number,
+    color: unknown,
+    alpha: number,
+    size: number,
+    influenced: boolean,
+  ) {
+    const gridX = this.puzzle.center + x / CELL_SIZE;
+    const gridY = this.puzzle.center + y / CELL_SIZE;
+    this.drawPuzzleCell(
+      this.harvestGraphics,
+      gridX,
+      gridY,
+      color === "magenta" ? "magenta" : "cyan",
+      alpha,
+      false,
+      size,
+      influenced,
+    );
+  }
+
+  private finishHarvest() {
+    this.phase = "title";
+    this.harvestSequence = null;
+    this.puzzle = new PuzzleRun();
+    this.coreGrowthElapsed = CORE_GROWTH_DURATION;
+    this.world.setScale(IDLE_ZOOM);
+    this.grid.setAlpha(IDLE_GRID_ALPHA);
+    this.structureContainer.setAngle(0);
+    this.pulse.setScale(IDLE_PULSE_SCALE);
+    this.pulse.setAngle(this.titleSpinDegrees);
+    this.logo.setVisible(true);
+    this.logo.setAlpha(1);
+    this.logo.y = 0;
+    this.previewLabel.setVisible(false);
+    this.harvestLabel.setVisible(false);
+    this.coreFieldGraphics.clear();
+    this.structureGraphics.clear();
+    this.coreGrowthGraphics.clear();
+    this.pieceGraphics.clear();
+    this.previewGraphics.clear();
+    this.harvestGraphics.clear();
+    this.setCameraMode("title-closeup");
+    this.onReturnToTitle?.();
     this.publishDiagnostics();
   }
 
@@ -779,6 +1147,11 @@ export class WorldScene extends Phaser.Scene {
     root.dataset.worldPuzzlePulseCharges = String(this.puzzle.pulseCharges);
     root.dataset.worldPuzzleCoreGrowthActive = String(
       this.coreGrowthElapsed < CORE_GROWTH_DURATION,
+    );
+    root.dataset.worldHarvestPhase = this.harvestSequence?.phase ?? "";
+    root.dataset.worldBankedDuds = String(this.bankedDuds);
+    root.dataset.worldBankedPulseCharges = String(
+      this.bankedPulseCharges,
     );
     root.dataset.worldPuzzleStructureAngle = this.structureContainer
       ? this.structureContainer.angle.toFixed(1)

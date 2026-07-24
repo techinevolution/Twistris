@@ -8,7 +8,7 @@ The intended game is one continuous motherboard world. Puzzle play, the Pulse hu
 
 ## Status
 
-Active demo prototype. The core falling, attachment, twisting, centered-square growth, Pulse charge, and animated harvest loops are playable on the trusted legacy route. Vite, TypeScript, and Vitest provide the development foundation, and the isolated Phaser motion proof has passed. The incremental Phaser port at `/next/` now includes the title pullback, core puzzle controls, balance-driven whole-Pulse rotation, centered-square growth, and run Charge feedback. Harvest remains on `/` until the next parity increment. Persistent profiles, crafting, Gravity repair, the first firewall sector, Endless Feed, demo upgrades, and the first-run tutorial are planned but not implemented.
+Active demo prototype. The core falling, attachment, twisting, centered-square growth, Pulse charge, and animated harvest loops are playable on the trusted legacy route. Vite, TypeScript, and Vitest provide the development foundation, and the isolated Phaser motion proof has passed. The incremental Phaser port at `/next/` now includes the title pullback, core puzzle controls, balance-driven whole-Pulse rotation, centered-square growth, run Charge feedback, capacity harvest, session banking, and return to the title state. Persistent profiles, crafting, Gravity repair, the first firewall sector, Endless Feed, demo upgrades, and the first-run tutorial are planned but not implemented.
 
 ## Quick Start
 
@@ -37,7 +37,7 @@ While the legacy controller remains, open `/tests/smoke.html` through the Vite d
 
 The isolated Phaser proof is available at `/proofs/phaser.html`. It does not replace or modify the playable game.
 
-The in-progress Phaser port is available at `/next/`. It currently implements the title transition, core puzzle play, whole-Pulse twist, centered-square growth, and run Charge feedback while `/` remains the trusted full-loop comparison.
+The in-progress Phaser port is available at `/next/`. It currently implements the title transition, core puzzle play, whole-Pulse twist, centered-square growth, Charge feedback, and capacity harvest while `/` remains the trusted full-loop comparison.
 
 ## Controls
 

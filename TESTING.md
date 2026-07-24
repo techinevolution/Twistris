@@ -128,6 +128,13 @@ Current `/next/` puzzle checks:
 - core growth draws an inward white energy burst and briefly expands the Pulse
 - Charge feedback can overlap a staged twist without changing the awarded result
 - the bottom Charge HUD updates once and remains readable at desktop and mobile widths
+- a piece locking above the top boundary enters `harvesting` instead of leaving the run frozen with no active piece
+- capacity creates one immutable result and banks its Duds and Charges exactly once
+- `CAPACITY REACHED` remains readable over the occupied top of the stack
+- outer blocks fall away before secured Duds stream to the right counter
+- run Charges transfer to the left counter after the Dud transfer
+- harvest completion restores the title and Start control with a fresh run ready
+- a second run does not reapply the previous harvest result
 
 The route is not a replacement for `/` until all gameplay and presentation parity checks pass.
 

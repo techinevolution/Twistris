@@ -12,6 +12,7 @@ const startButton = document.querySelector<HTMLButtonElement>("#startButton");
 const gameKeySink = document.querySelector<HTMLInputElement>("#gameKeySink");
 const pulseChargeCounter =
   document.querySelector<HTMLElement>("#pulseChargeCounter");
+const dudCounter = document.querySelector<HTMLElement>("#dudCounter");
 const useKeySinkFocus = /Mac/.test(navigator.platform || navigator.userAgent);
 const testActions = new Set<PuzzleAction>([
   "left",
@@ -45,6 +46,22 @@ worldScene.onPulseChargesChanged = (charges) => {
     void pulseChargeCounter.offsetWidth;
     pulseChargeCounter.classList.add("is-awarded");
   }
+};
+
+worldScene.onDudsChanged = (duds) => {
+  if (dudCounter) {
+    const nextText = `Duds ${duds}`;
+    if (dudCounter.textContent === nextText) return;
+    dudCounter.textContent = nextText;
+    dudCounter.classList.remove("is-awarded");
+    void dudCounter.offsetWidth;
+    dudCounter.classList.add("is-awarded");
+  }
+};
+
+worldScene.onReturnToTitle = () => {
+  startScreen?.classList.remove("is-hidden", "is-launching");
+  startScreen?.style.setProperty("--launch-progress", "0");
 };
 
 startButton?.addEventListener("click", () => {

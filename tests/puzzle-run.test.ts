@@ -145,4 +145,25 @@ describe("PuzzleRun", () => {
     expect(run.pulseCharges).toBe(2);
     expect(run.takeCoreGrowth()?.gainedLayers).toBe(2);
   });
+
+  it("creates an immutable capacity harvest without mutating run resources", () => {
+    const run = new PuzzleRun({ random: () => 0 });
+    run.board[run.center][run.center + 1] = { color: "cyan" };
+    run.board[run.center + 2][run.center] = { color: "magenta" };
+    run.coreLayers = 1;
+    run.pulseCharges = 3;
+
+    const harvest = run.createHarvest("next-harvest-1");
+
+    expect(harvest.result).toEqual({
+      id: "next-harvest-1",
+      earned: { duds: 1, pulseCharges: 3 },
+      runStats: { coreLayersReached: 1, bestSquareSide: 3 },
+      endReason: "capacity_reached",
+    });
+    expect(harvest.outerCells).toHaveLength(1);
+    expect(Object.isFrozen(harvest.result)).toBe(true);
+    expect(run.pulseCharges).toBe(3);
+    expect(run.board[run.center][run.center + 1]).toBeTruthy();
+  });
 });

@@ -116,9 +116,12 @@ body {
   position: absolute;
   z-index: 2;
   bottom: 14px;
-  left: 50%;
+  right: 18px;
+  left: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   opacity: 1;
-  transform: translateX(-50%);
   transition: opacity 180ms ease;
   pointer-events: none;
 }
@@ -142,19 +145,21 @@ body {
   animation: charge-awarded 620ms ease-out;
 }
 
+.currency-chip-duds {
+  border-color: rgba(143, 230, 255, 0.22);
+  color: #8fe6ff;
+}
+
 @keyframes charge-awarded {
   0% {
-    color: #ffffff;
     transform: scale(1);
   }
 
   34% {
-    color: #f8e8a7;
     transform: scale(1.14);
   }
 
   100% {
-    color: #f2d27a;
     transform: scale(1);
   }
 }

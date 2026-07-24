@@ -55,7 +55,8 @@ The tracked architecture is sized for the demo: onboarding, one mission loop, Gr
 - **World scene scaffold:** the first parity port now keeps the logo, close Pulse view, orbiting particles, responsive framing, focus handoff, and 2.05-second Start pullback inside one persistent World scene. Its camera controller distinguishes title close-up, guided pullback, Pulse home, puzzle, and free Board modes. Only the Pulse sector is currently mounted.
 - **Typed puzzle run:** `/next/` renders its active piece, ghost, settled cells, and next-piece preview from a DOM-free model that consumes the existing attachment, balance, and board-rotation rules.
 - **Twist presentation:** a successful off-balance lock stages a separate rotated board, freezes puzzle input, turns the settled mass and Pulse through the characterized 340 ms overshoot, then commits the staged board.
-- **Core-growth presentation:** the typed puzzle run derives completed centered layers and awards run Charges before exposing a one-shot presentation event. The World scene consumes that event for the neutral field, inward burst, Pulse scale, and DOM HUD update without making economy outcomes depend on animation. Harvest and progression still remain on the legacy route.
+- **Core-growth presentation:** the typed puzzle run derives completed centered layers and awards run Charges before exposing a one-shot presentation event. The World scene consumes that event for the neutral field, inward burst, Pulse scale, and DOM HUD update without making economy outcomes depend on animation.
+- **Capacity harvest:** the typed puzzle run creates the immutable harvest classification and result. The World scene applies each result ID to page-session inventory once, then owns only the collapse, resource-transfer counters, and return-to-title presentation. Persistent progression still remains on the legacy route.
 
 ## Approved Target Stack
 
@@ -163,7 +164,7 @@ Current:
 
 Next:
 
-- Slice 7 next ports harvest after centered-square growth and Charge feedback pass review.
+- Slice 7 now needs full-run parity review before slice 8 establishes the durable application and platform boundaries.
 - Playwright will own critical browser flows, responsive checks, and selected visual comparisons after it is introduced.
 - The legacy smoke harness remains until equivalent coverage and runtime parity are approved.
 

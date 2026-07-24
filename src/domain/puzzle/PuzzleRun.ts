@@ -1,6 +1,7 @@
 import {
   analyzeBalance,
   attachesToStructure,
+  calculateHarvest,
   createBoard,
   findCenteredSquareLayers,
   rotateBoard,
@@ -269,6 +270,15 @@ export class PuzzleRun {
     const growth = this.pendingCoreGrowth;
     this.pendingCoreGrowth = null;
     return growth;
+  }
+
+  createHarvest(resultId: string) {
+    return calculateHarvest(this.board, {
+      center: this.center,
+      coreLayers: this.coreLayers,
+      resultId,
+      pulseCharges: this.pulseCharges,
+    });
   }
 
   private randomShape(): PieceShape {
